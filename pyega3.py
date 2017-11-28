@@ -37,13 +37,12 @@ def get_token(username, password):
     r = requests.post(url, headers = headers, data = data)
     if (debug): print( json.dumps(r.text, indent=4) ) 
     reply = r.json()
-    
-    oauth_token = reply['access_token']
-    
-    if oauth_token is None:
-        sys.exit("Login failure for user {}".format(username))        
-    else:        
-        print("Login success for user {}".format(username))        
+
+    try:    
+        oauth_token = reply['access_token']
+        print("Login success for user {}".format(username))
+    except KeyError:    
+        sys.exit("Login failure for user '{}'".format(username))               
 
     return oauth_token
 
