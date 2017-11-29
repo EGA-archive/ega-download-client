@@ -127,16 +127,6 @@ def download_request(req_ticket):
         dl_ticket = res['ticket']
         api_download_ticket(dl_ticket, local_filename, remote_filesize)
 
-def progress(count, total, suffix=''):
-    bar_len = 60
-    filled_len = int(round(bar_len * count / float(total)))
-
-    percents = round(100.0 * count / float(total), 1)
-    bar = '=' * filled_len + '-' * (bar_len - filled_len)
-       
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
-    sys.stdout.flush()  # As suggested by Rom Ruben
-
 def get_file_name_size(token,file_id):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
     url = "https://ega.ebi.ac.uk:8051/elixir/access/files/{}".format(file_id)
@@ -164,26 +154,18 @@ def download_file( token, file_id ):
 
         r = requests.get(url, headers=headers, stream=True)    
         
-        #print_debug_info( url, r.text, "Saving to: {}".format(file_name), "Stream size={}".format(int(r.headers.get('content-length', 0))) )
+        print_debug_info( url, None, "Saving to: {}".format(file_name), "Headers: {}".format(r.headers) )        
         
-        so_far_bytes = 0 
-        #for chunk in r.iter_content(32*1024): 
-        #with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
-        for chunk in r.iter_content(32*1024):
-            if True: # filter out keep-alive new chunks
+        with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+            for chunk in r.iter_content(32*1024):
                 fo.write(chunk)
-                #pbar.update(len(chunk))
-                so_far_bytes+=len(chunk)
-                progress(so_far_bytes, file_size, "progress: {}/{}".format(so_far_bytes, file_size))            
-        
-        #fo.write(r.content)
+                pbar.update(len(chunk))        
 
 def print_debug_info(url, reply_json, *args):
     if(not debug): return
     
     print("Request URL : {}".format(url))
-    #print( json.dumps(reply_json, indent=4) )
-    print("Response    : {}".format("Null" if reply_json is None else json.dumps(reply_json, indent=4)) )
+    if reply_json is not None: print("Response    : {}".format(json.dumps(reply_json, indent=4)) )
 
     for a in args: print a        
 
