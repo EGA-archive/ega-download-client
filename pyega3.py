@@ -35,12 +35,13 @@ def get_token(username, password):
     url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 
     r = requests.post(url, headers = headers, data = data)
-    if (debug): print( json.dumps(r.text, indent=4) ) 
     reply = r.json()
+
+    print_debug_info(url, reply)
 
     try:    
         oauth_token = reply['access_token']
-        print("Login success for user {}".format(username))
+        print("Login success for user '{}".format(username))
     except KeyError:    
         sys.exit("Login failure for user '{}'".format(username))               
 
@@ -54,7 +55,9 @@ def api_list_authorized_datasets(token):
     url = "https://ega.ebi.ac.uk:8051/elixir/access/datasets"
     r = requests.get(url, headers = headers)
     reply = r.json()
-    if(debug):  print( json.dumps(reply, indent=4) )
+
+    print_debug_info(url,reply)
+    
     if reply is None:
         sys.exit("List authorized datasets failed")    
 
@@ -73,7 +76,9 @@ def api_list_files_in_dataset(token, dataset):
     
     r = requests.get(url, headers = headers)
     reply = r.json()
-    if(debug):  print( json.dumps(reply, indent=4) )
+
+    print_debug_info(url,reply)
+
     if reply is None:
         sys.exit("List files in dataset {} failed".format(dataset))
         
@@ -138,7 +143,8 @@ def get_file_name_size(token,file_id):
                 
     r = requests.get(url, headers = headers)
     res = r.json()
-    if(debug):  print( json.dumps(res, indent=4) )
+
+    print_debug_info(url,res)
 
     return ( res['fileName'], res['fileSize'] )
 
@@ -146,14 +152,9 @@ def download_file( token, file_id ):
     """Download an individual file"""
 
     file_name, file_size = get_file_name_size(token, file_id)
-    print("Downloading: {}({} bytes)".format(file_name, file_size))
-    
+    print("Requesting file '{}'({} bytes). Download starting ...".format(file_name, file_size))    
 
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)
-    
-    if (debug): 
-        print("Requesting: {}".format(url))
-        print("Saving to: {}".format(file_name))
+    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
 
     if not os.path.exists(os.path.dirname(file_name)):    
         os.makedirs(os.path.dirname(file_name))
@@ -163,23 +164,32 @@ def download_file( token, file_id ):
 
         r = requests.get(url, headers=headers, stream=True)    
         
-        if (debug): print( json.dumps(r.text, indent=4) )        
-        if (debug): print( "Stream size={}".format(int(r.headers.get('content-length', 0))) )
+        #print_debug_info( url, r.text, "Saving to: {}".format(file_name), "Stream size={}".format(int(r.headers.get('content-length', 0))) )
         
         so_far_bytes = 0 
         #for chunk in r.iter_content(32*1024): 
-        with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
-            for chunk in r.iter_content(32*1024):
-                if True: # filter out keep-alive new chunks
-                    fo.write(chunk)
-                    pbar.update(len(chunk))
-                    #so_far_bytes+=len(chunk)
-                    #progress(so_far_bytes, size, "progress: {}/{}".format(so_far_bytes, total_size))            
+        #with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+        for chunk in r.iter_content(32*1024):
+            if True: # filter out keep-alive new chunks
+                fo.write(chunk)
+                #pbar.update(len(chunk))
+                so_far_bytes+=len(chunk)
+                progress(so_far_bytes, file_size, "progress: {}/{}".format(so_far_bytes, file_size))            
         
         #fo.write(r.content)
 
+def print_debug_info(url, reply_json, *args):
+    if(not debug): return
+    
+    print("Request URL : {}".format(url))
+    #print( json.dumps(reply_json, indent=4) )
+    print("Response    : {}".format("Null" if reply_json is None else json.dumps(reply_json, indent=4)) )
+
+    for a in args: print a        
+
+
 def main():
-    print("EGA python  client version {}".format(version))
+    print("EGA python client version {}".format(version))
 
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
