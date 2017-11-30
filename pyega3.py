@@ -17,20 +17,19 @@ def load_credentials(filepath):
     try:
         with open(filepath) as f:
             creds = json.load(f)
-        if 'username' not in creds or 'password' not in creds or 'key' not in creds:
-            sys.exit("{} does not contain either or any of 'username', 'password', or 'key' fields".format(filepath))
+        if 'username' not in creds or 'password' not in creds or 'client_secret' not in creds:
+            sys.exit("{} does not contain either or any of 'username', 'password', or 'client_secret' fields".format(filepath))
     except ValueError:
             sys.exit("invalid JSON file")
 
-    return (creds['username'], creds['password'], creds['key'])
+    return ( creds['username'], creds['password'], creds['client_secret'], creds.get('key') ) 
 
-def get_token(username, password):
+def get_token(username, password,client_secret):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     data = ( 
-        "grant_type=password&client_id=f20cd2d3-682a-4568-a53e-4262ef54c8f4"
-        "&client_secret=AMenuDLjVdVo4BSwi0QD54LL6NeVDEZRzEQUJ7hJOM3g4imDZBHHX0hNfKHPeQIGkskhtCmqAJtt_jm7EKq-rWw"
-        "&username={}&password={}&scope=openid").format(username, password)
+        "grant_type=password&client_id=f20cd2d3-682a-4568-a53e-4262ef54c8f4&scope=openid"
+        "&client_secret={}&username={}&password={}").format(client_secret,username, password)
         
     url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 
@@ -41,9 +40,9 @@ def get_token(username, password):
 
     try:    
         oauth_token = reply['access_token']
-        print("Login success for user '{}".format(username))
+        print("Authentication success for user '{}'".format(username))
     except KeyError:    
-        sys.exit("Login failure for user '{}'".format(username))               
+        sys.exit("Authentication failure for user '{}'".format(username))               
 
     return oauth_token
 
@@ -199,8 +198,8 @@ def main():
         debug = True
         print("[debugging]")
 
-    (username, password, key) = load_credentials(args.credentials_file)
-    token = get_token(username, password)
+    (username, password, client_secret, key) = load_credentials(args.credentials_file)
+    token = get_token(username, password, client_secret)
 
     if args.subcommand == "datasets":
         reply = api_list_authorized_datasets(token)
