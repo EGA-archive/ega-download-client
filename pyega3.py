@@ -138,28 +138,33 @@ def get_file_name_size(token,file_id):
 
     return ( res['fileName'], res['fileSize'] )
 
-def download_file( token, file_id ):
+def download_file( token, file_id, output_file ):
     """Download an individual file"""
 
     file_name, file_size = get_file_name_size(token, file_id)
-    print("Requesting file '{}'({} bytes). Download starting ...".format(file_name, file_size))    
+    print("File: '{}'({} bytes). Download starting ...".format(file_name, file_size)) 
+
+    if output_file is None: output_file=file_name    
 
     url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
 
-    if not os.path.exists(os.path.dirname(file_name)):    
-        os.makedirs(os.path.dirname(file_name))
+    dir = os.path.dirname(output_file)
+    if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
 
-    with open(file_name, 'wb') as fo:
+    with open(output_file, 'wb') as fo:
         headers = {'Accept': 'application/octet-stream', 'Authorization': 'Bearer {}'.format(token)}
 
         r = requests.get(url, headers=headers, stream=True)    
         
-        print_debug_info( url, None, "Saving to: {}".format(file_name), "Headers: {}".format(r.headers) )        
+        print_debug_info( url, None, "Headers: {}".format(r.headers) )        
         
         with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
             for chunk in r.iter_content(32*1024):
                 fo.write(chunk)
                 pbar.update(len(chunk))        
+
+    print("Saved to : '{}'({} bytes)".format(os.path.abspath(output_file), os.path.getsize(output_file)) )
+        
 
 def print_debug_info(url, reply_json, *args):
     if(not debug): return
@@ -186,6 +191,7 @@ def main():
 
     parser_fetch = subparsers.add_parser("fetch", help="Fetch a dataset or file")
     parser_fetch.add_argument("identifier", help="Id for dataset (e.g. EGAD00000000001) or file (e.g. EGAF12345678901)")
+    parser_fetch.add_argument("outputfile", nargs='?',  help="Output file")
     
     args = parser.parse_args()
     if args.debug:
@@ -207,13 +213,15 @@ def main():
         pretty_print_files_in_dataset(reply, args.identifier)
 
     elif args.subcommand == "fetch":
+    
         if (args.identifier[3] == 'D'):
             id_type = "datasets"
         elif(args.identifier[3] == 'F'):
             id_type = "files"
         else:
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")
-        download_file(token,args.identifier)
+            
+        download_file(token, args.identifier, args.outputfile)
 
 if __name__ == "__main__":
     main()
