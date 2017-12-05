@@ -107,24 +107,7 @@ def pretty_print_files_in_dataset(reply, dataset):
     print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
         print(format_string.format( res['fileId'], status(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
-
-def download_request(req_ticket):
-    
-    if req_ticket['header']['userMessage'] != "OK":
-        print("download_request(): request ticket status Not ok")
-        sys.exit(1)
-
-    nresults = req_ticket['response']['numTotalResults']
-    print("Number of results: {}".format(nresults))
-
-    for res in req_ticket['response']['result']:
-        remote_filename = res['fileName']
-        remote_filesize = res['fileSize']
         
-        local_filename = os.path.split(remote_filename)[1]
-
-        dl_ticket = res['ticket']
-        api_download_ticket(dl_ticket, local_filename, remote_filesize)
 
 def get_file_name_size(token,file_id):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
@@ -137,10 +120,9 @@ def get_file_name_size(token,file_id):
 
     return ( res['fileName'], res['fileSize'] )
 
-def download_file( token, file_id, output_file ):
+def download_file( token, file_id, file_name, file_size, output_file=None ):
     """Download an individual file"""
-
-    file_name, file_size = get_file_name_size(token, file_id)
+    
     print("File: '{}'({} bytes). Download starting ...".format(file_name, file_size)) 
 
     if output_file is None: output_file=file_name    
@@ -163,7 +145,12 @@ def download_file( token, file_id, output_file ):
                 pbar.update(len(chunk))        
 
     print("Saved to : '{}'({} bytes)".format(os.path.abspath(output_file), os.path.getsize(output_file)) )
-        
+
+
+def download_dataset( token, dataset_id ):
+    reply = api_list_files_in_dataset(token, dataset_id)    
+    for res in reply:
+        if (res['fileStatus']=="available"): download_file( token, res['fileId'], res['fileName'], res['fileSize'])        
 
 def print_debug_info(url, reply_json, *args):
     if(not debug): return
@@ -214,13 +201,13 @@ def main():
     elif args.subcommand == "fetch":
     
         if (args.identifier[3] == 'D'):
-            id_type = "datasets"
+            download_dataset( token, args.identifier )
         elif(args.identifier[3] == 'F'):
-            id_type = "files"
+            file_name, file_size = get_file_name_size( token, args.identifier )
+            download_file( token, args.identifier,  file_name, file_size, args.outputfile)
         else:
-            sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")
-            
-        download_file(token, args.identifier, args.outputfile)
+            sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
+        
 
 if __name__ == "__main__":
     main()
