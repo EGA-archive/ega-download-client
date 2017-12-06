@@ -4,7 +4,10 @@ import sys
 import json
 import requests
 import uuid
-from tqdm import tqdm
+#from tqdm import tqdm
+#from urllib.request import urlretrieve
+import progressbar
+from six.moves import urllib
 
 debug = False
 version = "3.0.0"
@@ -120,6 +123,19 @@ def get_file_name_size(token,file_id):
 
     return ( res['fileName'], res['fileSize'] )
 
+# Global variables
+pbar = None
+
+def show_progress(block_num, block_size, total_size): 
+	global pbar 
+	if pbar is None: pbar = progressbar.ProgressBar(maxval=total_size) 
+	downloaded = block_num * block_size 
+	if downloaded < total_size: 
+		pbar.update(downloaded) 
+	else: 
+		pbar.finish() 
+		pbar = None 
+
 def download_file( token, file_id, file_name, file_size, output_file=None ):
     """Download an individual file"""
     
@@ -132,6 +148,14 @@ def download_file( token, file_id, file_name, file_size, output_file=None ):
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
 
+
+    opener = urllib.request.build_opener()
+    opener.addheaders = [('Authorization', 'Bearer {}'.format(token))]
+    urllib.request.install_opener(opener)
+    urllib.request.urlretrieve(url, output_file, show_progress)
+
+    
+    '''
     with open(output_file, 'wb') as fo:
         headers = {'Accept': 'application/octet-stream', 'Authorization': 'Bearer {}'.format(token)}
 
@@ -143,6 +167,7 @@ def download_file( token, file_id, file_name, file_size, output_file=None ):
             for chunk in r.iter_content(32*1024):
                 fo.write(chunk)
                 pbar.update(len(chunk))        
+    '''
 
     print("Saved to : '{}'({} bytes)".format(os.path.abspath(output_file), os.path.getsize(output_file)) )
 
@@ -158,7 +183,7 @@ def print_debug_info(url, reply_json, *args):
     print("Request URL : {}".format(url))
     if reply_json is not None: print("Response    : {}".format(json.dumps(reply_json, indent=4)) )
 
-    for a in args: print a        
+    for a in args: print(a)
 
 
 def main():
