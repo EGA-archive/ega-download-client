@@ -4,10 +4,7 @@ import sys
 import json
 import requests
 import uuid
-#from tqdm import tqdm
-#from urllib.request import urlretrieve
-import progressbar
-from six.moves import urllib
+from tqdm import tqdm
 
 debug = False
 version = "3.0.0"
@@ -123,24 +120,6 @@ def get_file_name_size(token,file_id):
 
     return ( res['fileName'], res['fileSize'] )
 
-#print("{}/{}".format(downloaded,total_size))
-#return
-import time
-def reporthook(count, block_size, total_size):
-    global start_time
-    if count == 0:
-        start_time = time.time()
-        return
-    duration = time.time() - start_time
-    progress_size = int(count * block_size)
-    speed = int(progress_size / (1024 * duration))
-    percent = int(count * block_size * 100 / total_size)
-    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
-                    (percent, progress_size / (1024 * 1024), speed, duration))
-    sys.stdout.flush()
-
-
-
 def download_file( token, file_id, file_name, file_size, output_file=None ):
     """Download an individual file"""
     
@@ -153,14 +132,6 @@ def download_file( token, file_id, file_name, file_size, output_file=None ):
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
 
-
-    opener = urllib.request.build_opener()
-    opener.addheaders = [('Authorization', 'Bearer {}'.format(token))]
-    urllib.request.install_opener(opener)
-    urllib.request.urlretrieve(url, output_file, reporthook)
-
-    
-    '''
     with open(output_file, 'wb') as fo:
         headers = {'Accept': 'application/octet-stream', 'Authorization': 'Bearer {}'.format(token)}
 
@@ -172,7 +143,6 @@ def download_file( token, file_id, file_name, file_size, output_file=None ):
             for chunk in r.iter_content(32*1024):
                 fo.write(chunk)
                 pbar.update(len(chunk))        
-    '''
 
     print("Saved to : '{}'({} bytes)".format(os.path.abspath(output_file), os.path.getsize(output_file)) )
 
@@ -188,7 +158,7 @@ def print_debug_info(url, reply_json, *args):
     print("Request URL : {}".format(url))
     if reply_json is not None: print("Response    : {}".format(json.dumps(reply_json, indent=4)) )
 
-    for a in args: print(a)
+    for a in args: print a        
 
 
 def main():
