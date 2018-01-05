@@ -123,18 +123,23 @@ def get_file_name_size(token,file_id):
 
     return ( res['fileName'], res['fileSize'] )
 
-# Global variables
-pbar = None
+#print("{}/{}".format(downloaded,total_size))
+#return
+import time
+def reporthook(count, block_size, total_size):
+    global start_time
+    if count == 0:
+        start_time = time.time()
+        return
+    duration = time.time() - start_time
+    progress_size = int(count * block_size)
+    speed = int(progress_size / (1024 * duration))
+    percent = int(count * block_size * 100 / total_size)
+    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
+                    (percent, progress_size / (1024 * 1024), speed, duration))
+    sys.stdout.flush()
 
-def show_progress(block_num, block_size, total_size): 
-	global pbar 
-	if pbar is None: pbar = progressbar.ProgressBar(maxval=total_size) 
-	downloaded = block_num * block_size 
-	if downloaded < total_size: 
-		pbar.update(downloaded) 
-	else: 
-		pbar.finish() 
-		pbar = None 
+
 
 def download_file( token, file_id, file_name, file_size, output_file=None ):
     """Download an individual file"""
@@ -152,7 +157,7 @@ def download_file( token, file_id, file_name, file_size, output_file=None ):
     opener = urllib.request.build_opener()
     opener.addheaders = [('Authorization', 'Bearer {}'.format(token))]
     urllib.request.install_opener(opener)
-    urllib.request.urlretrieve(url, output_file, show_progress)
+    urllib.request.urlretrieve(url, output_file, reporthook)
 
     
     '''
