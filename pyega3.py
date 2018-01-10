@@ -51,7 +51,7 @@ def api_list_authorized_datasets(token):
 
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)} 
     
-    url = "https://ega.ebi.ac.uk:8051/elixir/access/datasets"
+    url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets"
     r = requests.get(url, headers = headers)
     reply = r.json()
 
@@ -71,7 +71,7 @@ def pretty_print_authorized_datasets(reply):
 def api_list_files_in_dataset(token, dataset):
 
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
-    url = "https://ega.ebi.ac.uk:8051/elixir/access/datasets/{}/files".format(dataset)
+    url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)
     
     r = requests.get(url, headers = headers)
     reply = r.json()
@@ -82,6 +82,10 @@ def api_list_files_in_dataset(token, dataset):
         sys.exit("List files in dataset {} failed".format(dataset))
         
     return reply
+
+def status_ok(status_string):
+    if (status_string=="available"): return True 
+    else: return False        
 
 def pretty_print_files_in_dataset(reply, dataset):
     """
@@ -98,20 +102,16 @@ def pretty_print_files_in_dataset(reply, dataset):
         }
     
     """
-    format_string = "{:15} {:6} {:12} {:36} {}"
-    
-    def status(status_string):
-        if (status_string=="available"):   return "ok"
-        else: return ""       
+    format_string = "{:15} {:6} {:12} {:36} {}"  
 
     print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
-        print(format_string.format( res['fileId'], status(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
+        print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
         
 
 def get_file_name_size(token,file_id):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
-    url = "https://ega.ebi.ac.uk:8051/elixir/access/files/{}".format(file_id)
+    url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(file_id)
                 
     r = requests.get(url, headers = headers)
     res = r.json()
@@ -150,7 +150,7 @@ def download_file( token, file_id, file_name, file_size, output_file=None ):
 def download_dataset( token, dataset_id ):
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
-        if (res['fileStatus']=="available"): download_file( token, res['fileId'], res['fileName'], res['fileSize'])        
+        if ( status_ok(res['fileStatus']) ): download_file( token, res['fileId'], res['fileName'], res['fileSize'])        
 
 def print_debug_info(url, reply_json, *args):
     if(not debug): return
@@ -158,7 +158,7 @@ def print_debug_info(url, reply_json, *args):
     print("Request URL : {}".format(url))
     if reply_json is not None: print("Response    : {}".format(json.dumps(reply_json, indent=4)) )
 
-    for a in args: print a        
+    for a in args: print(a)
 
 
 def main():
