@@ -158,6 +158,7 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
         for file_name in files_to_merge:
             with open(file_name,'rb') as f:
                 shutil.copyfileobj(f, target_file, 65536)
+            os.remove(file_name)
 
 def download_file( token, file_id, file_name, file_size, num_connections, key, output_file=None ):
     """Download an individual file"""
@@ -184,7 +185,7 @@ def download_file( token, file_id, file_name, file_size, num_connections, key, o
     #with open(output_file, 'wb') as fo:
 
     headers = {}
-    headers['Accept'] = 'application/octet-stream'
+    #headers['Accept'] = 'application/octet-stream'
     headers['Authorization'] = 'Bearer {}'.format(token)
 
     chunk_len = math.ceil(file_size/num_connections)
