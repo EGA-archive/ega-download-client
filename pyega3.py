@@ -135,8 +135,17 @@ def download_file_slice( url, headers, file_name, start_pos, length, pbar ):
 
     file_name += '-from-'+str(start_pos)+'-len-'+str(length)+'.slice'
     
-    with open(file_name, 'wb') as file_out:
-        headers['Range'] = 'bytes={}-{}'.format(start_pos,start_pos+length-1)
+    with open(file_name, 'ba') as file_out:
+
+        existing_size = os.fstat(file_out.fileno()).st_size
+        
+        if( existing_size > length ): existing_size=0; file_out.seek(0, 0); file_out.truncate()            
+        
+        pbar.update( existing_size )
+
+        if( existing_size == length ): return file_name
+        
+        headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
 
         print_debug_info( url, None, "Request headers: {}".format(headers) )
         r = requests.get(url, headers=headers, stream=True)               
@@ -157,6 +166,7 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
     with open(target_file_name,'wb') as target_file:
         for file_name in files_to_merge:
             with open(file_name,'rb') as f:
+                #print( file_name )
                 shutil.copyfileobj(f, target_file, 65536)
             os.remove(file_name)
 
@@ -164,8 +174,13 @@ def download_file( token, file_id, file_name, file_size, num_connections, key, o
     """Download an individual file"""
 
     if( key is not None ):
-        raise ValueError('key parameter: encrypted downloads are not supported yet')
+        raise ValueError('key parameter: encrypted downloads are not supported yet')    
 
+    if output_file is None: output_file=file_name    
+
+    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
+
+    if( key is None ): url += "?destinationFormat=plain"; file_size -= 16 #16 bytes IV not necesary in plain mode
 
     print("File: '{}'({} bytes).".format(file_name, file_size)) 
     num_connections = max( num_connections, 1 ) 
@@ -173,19 +188,12 @@ def download_file( token, file_id, file_name, file_size, num_connections, key, o
     if( file_size < 100*1024*1024 ): num_connections = 1
     print("Download starting [using {} connection(s)]...".format(num_connections))
 
-    if output_file is None: output_file=file_name    
-
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
-
-    if( key is None ): url += "?destinationFormat=plain"        
-
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
 
     #with open(output_file, 'wb') as fo:
 
     headers = {}
-    #headers['Accept'] = 'application/octet-stream'
     headers['Authorization'] = 'Bearer {}'.format(token)
 
     chunk_len = math.ceil(file_size/num_connections)
@@ -220,7 +228,7 @@ def print_debug_info(url, reply_json, *args):
 def main():
     print("EGA python client version {}".format(version))
 
-    parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive")
+    parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf","--credentials-file", required=True, help="JSON file containing credentials e.g.{'username':'user1','password':'toor','key': 'abc'}")
     parser.add_argument("-c","--connections", type=int, default=1, help="Download using specified number of connections")
