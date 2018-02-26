@@ -8,6 +8,7 @@ import math
 from tqdm import tqdm
 import concurrent.futures
 import shutil
+import hashlib
 
 debug = False
 version = "3.0.0"
@@ -112,7 +113,7 @@ def pretty_print_files_in_dataset(reply, dataset):
         print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
         
 
-def get_file_name_size(token,file_id):
+def get_file_name_size_md5(token,file_id):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(file_id)
                 
@@ -121,7 +122,7 @@ def get_file_name_size(token,file_id):
 
     print_debug_info(url,res)
 
-    return ( res['fileName'], res['fileSize'] )
+    return ( res['fileName'], res['fileSize'], res['checksum'] )
 
 
 def download_file_slice( url, headers, file_name, start_pos, length, pbar ):
@@ -170,7 +171,14 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
                 shutil.copyfileobj(f, target_file, 65536)
             os.remove(file_name)
 
-def download_file( token, file_id, file_name, file_size, num_connections, key, output_file=None ):
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+def download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
     """Download an individual file"""
 
     if( key is not None ):
@@ -209,12 +217,16 @@ def download_file( token, file_id, file_name, file_size, num_connections, key, o
         merge_bin_files_on_disk(output_file, results)
         
     print("Saved to : '{}'({} bytes)".format(os.path.abspath(output_file), os.path.getsize(output_file)) )
+    if( md5(os.path.abspath(output_file)) == check_sum ):
+       print("MD5:{}".format(check_sum) )
+    else:
+       print("MD5 does NOT match - corrupted download")
 
 
 def download_dataset( token, dataset_id, num_connections, key ):
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
-        if ( status_ok(res['fileStatus']) ): download_file( token, res['fileId'], res['fileName'], res['fileSize'], num_connections, key )        
+        if ( status_ok(res['fileStatus']) ): download_file( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key )        
 
 def print_debug_info(url, reply_json, *args):
     if(not debug): return
@@ -267,8 +279,8 @@ def main():
         if (args.identifier[3] == 'D'):
             download_dataset( token, args.identifier, args.connections, key )
         elif(args.identifier[3] == 'F'):
-            file_name, file_size = get_file_name_size( token, args.identifier )
-            download_file( token, args.identifier,  file_name, file_size, args.connections, key, args.outputfile )
+            file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )
+            download_file( token, args.identifier,  file_name, file_size, check_sum, args.connections, key, args.outputfile )
         else:
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
         
