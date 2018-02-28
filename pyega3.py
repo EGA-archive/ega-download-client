@@ -199,8 +199,6 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
 
-    #with open(output_file, 'wb') as fo:
-
     headers = {}
     headers['Authorization'] = 'Bearer {}'.format(token)
 
@@ -216,11 +214,11 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
 
         merge_bin_files_on_disk(output_file, results)
         
-    print("Saved to : '{}'({} bytes)".format(os.path.abspath(output_file), os.path.getsize(output_file)) )
-    if( md5(os.path.abspath(output_file)) == check_sum ):
-       print("MD5:{}".format(check_sum) )
+    if( md5(output_file) == check_sum ):
+       print("Saved to : '{}'({} bytes, md5={})".format(os.path.abspath(output_file), os.path.getsize(output_file), check_sum) )
     else:
        print("MD5 does NOT match - corrupted download")
+       os.remove(output_file)              
 
 
 def download_dataset( token, dataset_id, num_connections, key ):
