@@ -212,13 +212,14 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
             for part_file_name in executor.map(download_file_slice_ ,params):
                 results.append(part_file_name)
 
-        merge_bin_files_on_disk(output_file, results)
+        if( sum(os.path.getsize(f) for f in results) == file_size  ):
+            merge_bin_files_on_disk(output_file, results)
         
     if( md5(output_file) == check_sum ):
-       print("Saved to : '{}'({} bytes, md5={})".format(os.path.abspath(output_file), os.path.getsize(output_file), check_sum) )
+        print("Saved to : '{}'({} bytes, md5={})".format(os.path.abspath(output_file), os.path.getsize(output_file), check_sum) )
     else:
-       print("MD5 does NOT match - corrupted download")
-       os.remove(output_file)              
+        print("MD5 does NOT match - corrupted download")
+        os.remove(output_file)              
 
 
 def download_dataset( token, dataset_id, num_connections, key ):
