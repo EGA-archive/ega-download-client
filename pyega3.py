@@ -225,7 +225,10 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
 def download_dataset( token, dataset_id, num_connections, key ):
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
-        if ( status_ok(res['fileStatus']) ): download_file( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key )        
+        try:
+            if ( status_ok(res['fileStatus']) ): 
+                download_file( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key )        
+        except Exception as e: print(e)
 
 def print_debug_info(url, reply_json, *args):
     if(not debug): return
