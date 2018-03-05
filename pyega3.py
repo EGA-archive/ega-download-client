@@ -9,6 +9,7 @@ from tqdm import tqdm
 import concurrent.futures
 import shutil
 import hashlib
+import time
 
 debug = False
 version = "3.0.0"
@@ -164,12 +165,18 @@ def download_file_slice_(args):
     return download_file_slice(*args)
 
 def merge_bin_files_on_disk(target_file_name, files_to_merge):
+    start = time.time()
+    
     with open(target_file_name,'wb') as target_file:
         for file_name in files_to_merge:
             with open(file_name,'rb') as f:
                 #print( file_name )
                 shutil.copyfileobj(f, target_file, 65536)
             os.remove(file_name)
+            
+    end = time.time()
+    
+    if(debug): print('Merged in {} sec'.format(end - start))
 
 def md5(fname):
     hash_md5 = hashlib.md5()
@@ -221,13 +228,31 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         print("MD5 does NOT match - corrupted download")
         os.remove(output_file)              
 
+def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
+    max_retries = 3
+    retry_wait = 5
+
+    done = False
+    num_retries = 0
+    while not done:
+        try:
+            download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None )
+            done = True
+        except Exception as e:
+            print(e)
+            if num_retries == max_retries:
+                raise e
+            time.sleep(retry_wait)
+            num_retries += 1
+            print("retry attempt {}".format(num_retries))
+
 
 def download_dataset( token, dataset_id, num_connections, key ):
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
         try:
             if ( status_ok(res['fileStatus']) ): 
-                download_file( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key )        
+                download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key )        
         except Exception as e: print(e)
 
 def print_debug_info(url, reply_json, *args):
@@ -282,7 +307,7 @@ def main():
             download_dataset( token, args.identifier, args.connections, key )
         elif(args.identifier[3] == 'F'):
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )
-            download_file( token, args.identifier,  file_name, file_size, check_sum, args.connections, key, args.outputfile )
+            download_file_retry( token, args.identifier,  file_name, file_size, check_sum, args.connections, key, args.outputfile )
         else:
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
         
