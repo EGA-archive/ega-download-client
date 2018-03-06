@@ -165,6 +165,9 @@ def download_file_slice_(args):
     return download_file_slice(*args)
 
 def merge_bin_files_on_disk(target_file_name, files_to_merge):
+
+    print('Saving...')
+    
     start = time.time()
     
     with open(target_file_name,'wb') as target_file:
@@ -218,6 +221,8 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_connections) as executor:    
             for part_file_name in executor.map(download_file_slice_ ,params):
                 results.append(part_file_name)
+
+        pbar.close()
 
         if( sum(os.path.getsize(f) for f in results) == file_size  ):
             merge_bin_files_on_disk(output_file, results)
