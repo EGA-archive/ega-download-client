@@ -252,11 +252,13 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
             print("retry attempt {}".format(num_retries))
 
 
-def download_dataset( token, dataset_id, num_connections, key ):
+def download_dataset( username, password, client_secret, dataset_id, num_connections, key ):
+    token = get_token(username, password, client_secret)
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
         try:
             if ( status_ok(res['fileStatus']) ): 
+                token = get_token(username, password, client_secret)
                 download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key )        
         except Exception as e: print(e)
 
@@ -309,7 +311,7 @@ def main():
 
     elif args.subcommand == "fetch":   
         if (args.identifier[3] == 'D'):
-            download_dataset( token, args.identifier, args.connections, key )
+            download_dataset( username, password, client_secret, args.identifier, args.connections, key )
         elif(args.identifier[3] == 'F'):
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )
             download_file_retry( token, args.identifier,  file_name, file_size, check_sum, args.connections, key, args.outputfile )
