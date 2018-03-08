@@ -126,7 +126,7 @@ def get_file_name_size_md5(token,file_id):
     return ( res['fileName'], res['fileSize'], res['checksum'] )
 
 
-def download_file_slice( url, headers, file_name, start_pos, length, pbar ):
+def download_file_slice( url, token, file_name, start_pos, length, pbar ):
 
     CHUNK_SIZE = 32*1024
 
@@ -146,7 +146,9 @@ def download_file_slice( url, headers, file_name, start_pos, length, pbar ):
         pbar.update( existing_size )
 
         if( existing_size == length ): return file_name
-        
+
+        headers = {}
+        headers['Authorization'] = 'Bearer {}'.format(token)        
         headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
 
         print_debug_info( url, None, "Request headers: {}".format(headers) )
@@ -209,13 +211,10 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
 
-    headers = {}
-    headers['Authorization'] = 'Bearer {}'.format(token)
-
     chunk_len = math.ceil(file_size/num_connections)
 
     with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
-        params = [(url, headers, output_file, chunk_start_pos, min(chunk_len,file_size-chunk_start_pos), pbar) for chunk_start_pos in range(0,file_size, chunk_len)]        
+        params = [(url, token, output_file, chunk_start_pos, min(chunk_len,file_size-chunk_start_pos), pbar) for chunk_start_pos in range(0,file_size, chunk_len)]        
 
         results = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_connections) as executor:    
