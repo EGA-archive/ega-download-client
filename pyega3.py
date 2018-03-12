@@ -197,6 +197,7 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         raise ValueError('key parameter: encrypted downloads are not supported yet')    
 
     if output_file is None: output_file=file_name    
+    if(debug): print("Output file:'{}'".format(output_file))
 
     url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
 
@@ -240,7 +241,7 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
     num_retries = 0
     while not done:
         try:
-            download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None )
+            download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file)
             done = True
         except Exception as e:
             print(e)
