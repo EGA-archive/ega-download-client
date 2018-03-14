@@ -190,6 +190,10 @@ def md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+def print_local_file_info( prefix_str, file, md5 ):
+    print( "{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5) )    
+
+
 def download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
     """Download an individual file"""
 
@@ -197,20 +201,25 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         raise ValueError('key parameter: encrypted downloads are not supported yet')    
 
     if output_file is None: output_file=file_name    
-    if(debug): print("Output file:'{}'".format(output_file))
+    if(debug): print("Output file:'{}'".format(output_file))    
 
     url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
 
     if( key is None ): url += "?destinationFormat=plain"; file_size -= 16 #16 bytes IV not necesary in plain mode
 
     print("File: '{}'({} bytes).".format(file_name, file_size)) 
+
+    if( os.path.exists(output_file) and md5(output_file) == check_sum ):
+        print_local_file_info('Local file exists:', output_file, check_sum )
+        return
+    
     num_connections = max( num_connections, 1 ) 
     num_connections = min( num_connections, 128 )
     if( file_size < 100*1024*1024 ): num_connections = 1
     print("Download starting [using {} connection(s)]...".format(num_connections))
 
     dir = os.path.dirname(output_file)
-    if not os.path.exists(dir) and len(dir)>0: os.makedirs(dir)
+    if( not os.path.exists(dir) and len(dir)>0 ): os.makedirs(dir)
 
     chunk_len = math.ceil(file_size/num_connections)
 
@@ -228,7 +237,7 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
             merge_bin_files_on_disk(output_file, results)
         
     if( md5(output_file) == check_sum ):
-        print("Saved to : '{}'({} bytes, md5={})".format(os.path.abspath(output_file), os.path.getsize(output_file), check_sum) )
+        print_local_file_info('Saved to : ', output_file, check_sum )
     else:
         print("MD5 does NOT match - corrupted download")
         os.remove(output_file)              
