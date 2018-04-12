@@ -9,6 +9,13 @@ http://docs.python-requests.org/en/master/
 pip3 install requests
 
 -------------------------------------------------------------------------
+Installation Scripts
+Three scripts are provided to install the required Python environment, based on the host operating system:
+  Linux: install_python.sh
+  Linux (Red Hat): red_hat.sh
+  Mac: mac_prepare.sh
+
+-------------------------------------------------------------------------
 usage: pyega3.py [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS]
                   {datasets,files,fetch} ...
 
@@ -37,6 +44,7 @@ Credentials file supposed to be in json format e.g:
 {
     "username": "my.email@domain.edu",
     "password": "mypassword",    
+    "client_secret":"AMenuDLjVdVo4BSwi0QD54LL6NeVDEZRzEQUJ7hJOM3g4imDZBHHX0hNfKHPeQIGkskhtCmqAJtt_jm7EKq-rWw"
 }
 
 Your username and password are provided to you by EGA.
