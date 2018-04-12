@@ -11,9 +11,9 @@ pip3 install requests
 -------------------------------------------------------------------------
 Installation Scripts
 Three scripts are provided to install the required Python environment, based on the host operating system:
-  Linux: install_python.sh
-  Linux (Red Hat): red_hat.sh
-  Mac: mac_prepare.sh
+  Linux: debian_dependency_install.sh
+  Linux (Red Hat): red_hat_dependency_install.sh
+  Mac: osx_dependency_install
 
 -------------------------------------------------------------------------
 usage: pyega3.py [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS]
