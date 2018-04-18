@@ -39,8 +39,9 @@ def get_token(username, password,client_secret):
     url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 
     r = requests.post(url, headers = headers, data = data)
+    if(debug): print(r)
+    
     reply = r.json()
-
     print_debug_info(url, reply)
 
     try:    
@@ -79,8 +80,9 @@ def api_list_files_in_dataset(token, dataset):
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)
     
     r = requests.get(url, headers = headers)
+    if(debug): print(r)
+    
     reply = r.json()
-
     print_debug_info(url,reply)
 
     if reply is None:
