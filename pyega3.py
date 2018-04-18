@@ -78,6 +78,9 @@ def api_list_files_in_dataset(token, dataset):
 
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)
+
+    if( not dataset in api_list_authorized_datasets(token) ):
+        sys.exit("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))        
     
     r = requests.get(url, headers = headers)
     if(debug): print(r)
@@ -272,6 +275,11 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
 
 def download_dataset( username, password, client_secret, dataset_id, num_connections, key ):
     token = get_token(username, password, client_secret)
+
+    if( not dataset_id in api_list_authorized_datasets(token) ):
+        print("Dataset '{}' is not in the list of your authorized datasets.".format(dataset_id))    
+        return
+    
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
         try:
