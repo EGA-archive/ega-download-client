@@ -29,7 +29,9 @@ def load_credentials(filepath):
 
     return ( creds['username'], creds['password'], creds['client_secret'], creds.get('key') ) 
 
-def get_token(username, password,client_secret):
+def get_token(credentials):
+
+    (username, password, client_secret, *_) = credentials
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     data = ( 
@@ -273,8 +275,8 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
             print("retry attempt {}".format(num_retries))
 
 
-def download_dataset( username, password, client_secret, dataset_id, num_connections, key, output_dir ):
-    token = get_token(username, password, client_secret)
+def download_dataset( credentials,  dataset_id, num_connections, key, output_dir ):
+    token = get_token(credentials)
 
     if( not dataset_id in api_list_authorized_datasets(token) ):
         print("Dataset '{}' is not in the list of your authorized datasets.".format(dataset_id))    
@@ -286,7 +288,7 @@ def download_dataset( username, password, client_secret, dataset_id, num_connect
             if ( status_ok(res['fileStatus']) ):                 
                 output_file = None if( output_dir is None ) else output_dir+res['fileName']                
                 download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file )        
-                token = get_token(username, password, client_secret)
+                token = get_token(credentials)
         except Exception as e: print(e)
 
 def print_debug_info(url, reply_json, *args):
@@ -323,8 +325,8 @@ def main():
         debug = True
         print("[debugging]")
 
-    (username, password, client_secret, key) = load_credentials(args.credentials_file)
-    token = get_token(username, password, client_secret)
+    *credentials, key = load_credentials(args.credentials_file)
+    token = get_token(credentials)
 
     if args.subcommand == "datasets":
         reply = api_list_authorized_datasets(token)
@@ -338,7 +340,7 @@ def main():
 
     elif args.subcommand == "fetch":   
         if (args.identifier[3] == 'D'):
-            download_dataset( username, password, client_secret, args.identifier, args.connections, key, args.saveto )
+            download_dataset( credentials, args.identifier, args.connections, key, args.saveto )
         elif(args.identifier[3] == 'F'):
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )            
             download_file_retry( token, args.identifier,  file_name, file_size, check_sum, args.connections, key, args.saveto )
