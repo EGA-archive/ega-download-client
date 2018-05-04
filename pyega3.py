@@ -31,7 +31,7 @@ def load_credentials(filepath):
 
 def get_token(credentials):
 
-    (username, password, client_secret, *_) = credentials
+    (username, password, client_secret) = credentials
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     data = ( 
