@@ -12,7 +12,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.0"
+version = "3.0.1"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -214,14 +214,14 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         print("GPG files are not supported")
         return
 
-    if output_file is None: output_file=file_name    
+    if output_file is None: output_file = os.path.join( os.getcwd(), file_id, os.path.basename(file_name) ) 
     if(debug): print("Output file:'{}'".format(output_file))    
 
     url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
 
     if( key is None ): url += "?destinationFormat=plain"; file_size -= 16 #16 bytes IV not necesary in plain mode
 
-    print("File: '{}'({} bytes).".format(file_name, file_size)) 
+    print("File Id: '{}'({} bytes).".format(file_id, file_size)) 
 
     if( os.path.exists(output_file) and md5(output_file) == check_sum ):
         print_local_file_info('Local file exists:', output_file, check_sum )
@@ -286,7 +286,7 @@ def download_dataset( credentials,  dataset_id, num_connections, key, output_dir
     for res in reply:
         try:
             if ( status_ok(res['fileStatus']) ):                 
-                output_file = None if( output_dir is None ) else output_dir+res['fileName']                
+                output_file = None if( output_dir is None ) else os.path.join( output_dir, res['fileId'], os.path.basename(res['fileName']) )
                 download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file )        
                 token = get_token(credentials)
         except Exception as e: print(e)
@@ -338,7 +338,7 @@ def main():
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
 
-    elif args.subcommand == "fetch":   
+    elif args.subcommand == "fetch":        
         if (args.identifier[3] == 'D'):
             download_dataset( credentials, args.identifier, args.connections, key, args.saveto )
         elif(args.identifier[3] == 'F'):
