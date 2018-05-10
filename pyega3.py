@@ -12,7 +12,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.1"
+version = "3.0.2"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -295,7 +295,7 @@ def print_debug_info(url, reply_json, *args):
     if(not debug): return
     
     print("Request URL : {}".format(url))
-    if reply_json is not None: print("Response    : {}".format(json.dumps(reply_json, indent=4)) )
+    if reply_json is not None: print("Response    :\n %.200s" % json.dumps(reply_json, indent=4) )
 
     for a in args: print(a)
 
