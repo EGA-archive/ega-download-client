@@ -12,7 +12,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.2"
+version = "3.0.3"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -119,6 +119,9 @@ def pretty_print_files_in_dataset(reply, dataset):
     print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
         print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
+
+    print( '-' * 80 )
+    print( "Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply )/(1024*1024*1024.0)) )
         
 
 def get_file_name_size_md5(token,file_id):
