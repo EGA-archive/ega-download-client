@@ -12,7 +12,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.3"
+version = "3.0.4"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -217,7 +217,12 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         print("GPG files are not supported")
         return
 
-    if output_file is None: output_file = os.path.join( os.getcwd(), file_id, os.path.basename(file_name) ) 
+    if( file_name.endswith(".cip") ): 
+        file_name = file_name[:-len(".cip")]
+
+    if output_file is None: 
+        output_file = os.path.join( os.getcwd(), file_id, os.path.basename(file_name) ) 
+        
     if(debug): print("Output file:'{}'".format(output_file))    
 
     url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
