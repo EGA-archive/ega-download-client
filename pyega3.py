@@ -12,7 +12,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.4"
+version = "3.0.5"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -30,17 +30,20 @@ def load_credentials(filepath):
     return ( creds['username'], creds['password'], creds['client_secret'], creds.get('key') ) 
 
 def get_token(credentials):
+    url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"    
+    
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}        
 
     (username, password, client_secret) = credentials
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    
-    data = ( 
-        "grant_type=password&client_id=f20cd2d3-682a-4568-a53e-4262ef54c8f4&scope=openid"
-        "&client_secret={}&username={}&password={}").format(client_secret,username, password)
+    data = { "grant_type"   : "password", 
+             "client_id"    : "f20cd2d3-682a-4568-a53e-4262ef54c8f4",
+             "scope"        : "openid",
+             "client_secret": client_secret,
+             "username"     : username,
+             "password"     : password
+    }
         
-    url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
-
-    r = requests.post(url, headers = headers, data = data)
+    r = requests.post( url, headers=headers, data=data )
     if(debug): print(r)
     
     reply = r.json()
