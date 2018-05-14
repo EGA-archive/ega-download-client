@@ -16,8 +16,7 @@ Three scripts are provided to install the required Python environment, based on 
   Mac: osx_dependency_install.sh
 
 -------------------------------------------------------------------------
-usage: pyega3.py [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS]
-                  {datasets,files,fetch} ...
+usage: python3 pyega3.py [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS] {datasets,files,fetch} ...
 
 Download from EMBL EBI's EGA (European Genome-phenome Archive)
 
