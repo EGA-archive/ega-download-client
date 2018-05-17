@@ -1,4 +1,4 @@
-EGA python client version 3.0.0
+EGA python client - pyEGA3
 pyEGA3 uses the EGA REST API to download authorized datasets and files
 
 Currently works only with Python3
