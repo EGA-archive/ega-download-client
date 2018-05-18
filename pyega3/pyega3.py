@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import os
 import sys
@@ -12,7 +14,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.5"
+version = "3.0.11"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -361,4 +363,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
+    
