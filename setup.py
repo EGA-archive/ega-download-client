@@ -1,14 +1,14 @@
 from setuptools import setup
 
 with open("README") as f:
-    long_description = f.read()
+    long_description = f.read() 
 
 setup(
     name="pyega3",
     description="EGA python client",
     long_description=long_description,
     packages=["pyega3"],
-    version = "3.0.11",
+    version = "3.0.13",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     install_requires=["requests", "tqdm"],
