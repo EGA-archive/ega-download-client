@@ -48,14 +48,15 @@ def get_token(credentials):
     r = requests.post( url, headers=headers, data=data )
     if(debug): print(r)
     
-    reply = r.json()
-    print_debug_info(url, reply)
-
     try:    
-        oauth_token = reply['access_token']
-        print("Authentication success for user '{}'".format(username))
-    except KeyError:    
-        sys.exit("Authentication failure for user '{}'".format(username))               
+    	reply = r.json()
+    	print_debug_info(url, reply)
+    	oauth_token = reply['access_token']
+    	print("Authentication success for user '{}'".format(username))
+    except Exception as e:
+    	print(str(e))
+    	print(r)
+    	sys.exit("Authentication failure for user '{}'".format(username))               
 
     return oauth_token
 
