@@ -266,8 +266,8 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     if( md5(output_file) == check_sum ):
         print_local_file_info('Saved to : ', output_file, check_sum )
     else:
-        print("MD5 does NOT match - corrupted download")
-        os.remove(output_file)              
+        os.remove(output_file)
+        raise Exception("MD5 does NOT match - corrupted download")
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
     max_retries = 3
