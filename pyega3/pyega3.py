@@ -276,8 +276,8 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         print_local_file_info('Saved to : ', output_file, check_sum )
         if not_valid_server_md5: logging.info("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))
     else:
-        logging.info("MD5 does NOT match - corrupted download")
         os.remove(output_file)
+        raise Exception("MD5 does NOT match - corrupted download")
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
     max_retries = 3
