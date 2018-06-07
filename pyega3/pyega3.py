@@ -298,8 +298,11 @@ def download_dataset( credentials,  dataset_id, num_connections, key, output_dir
     reply = api_list_files_in_dataset(token, dataset_id)    
     for res in reply:
         try:
-            if ( status_ok(res['fileStatus']) ):                 
-                output_file = None if( output_dir is None ) else os.path.join( output_dir, res['fileId'], os.path.basename(res['fileName']) )
+            if ( status_ok(res['fileStatus']) ):
+                file_name = res['fileName']
+                if file_name.endswith('.cip'):
+                    file_name = file_name[:-4]
+                output_file = None if( output_dir is None ) else os.path.join( output_dir, res['fileId'], os.path.basename(file_name) )
                 download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file )        
                 token = get_token(credentials)
         except Exception as e: print(e)
