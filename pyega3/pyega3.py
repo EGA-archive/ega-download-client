@@ -14,27 +14,27 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.14"
+version = "3.0.15"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath): sys.exit("{} does not exist".format(filepath))
-        
+
     try:
         with open(filepath) as f:
             creds = json.load(f)
         if 'username' not in creds or 'password' not in creds or 'client_secret' not in creds:
             sys.exit("{} does not contain either or any of 'username', 'password', or 'client_secret' fields".format(filepath))
     except ValueError:
-            sys.exit("invalid JSON file")
+        sys.exit("invalid JSON file")
 
-    return ( creds['username'], creds['password'], creds['client_secret'], creds.get('key') ) 
+    return (creds['username'], creds['password'], creds['client_secret'], creds.get('key'))
 
 def get_token(credentials):
-    url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"    
-    
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}        
+    url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
+
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}     
 
     (username, password, client_secret) = credentials
     data = { "grant_type"   : "password", 
@@ -43,20 +43,19 @@ def get_token(credentials):
              "client_secret": client_secret,
              "username"     : username,
              "password"     : password
-    }
+            }
         
     r = requests.post( url, headers=headers, data=data )
     if(debug): print(r)
-    
-    try:    
-    	reply = r.json()
-    	print_debug_info(url, reply)
-    	oauth_token = reply['access_token']
-    	print("Authentication success for user '{}'".format(username))
-    except Exception as e:
-    	print(str(e))
-    	print(r)
-    	sys.exit("Authentication failure for user '{}'".format(username))               
+
+    try:
+        reply = r.json()
+        print_debug_info(url, reply)
+        r.raise_for_status()
+        oauth_token = reply['access_token']
+        print("Authentication success for user '{}'".format(username))
+    except Exception:
+        sys.exit("Authentication failure for user '{}'".format(username))
 
     return oauth_token
 
@@ -66,7 +65,9 @@ def api_list_authorized_datasets(token):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)} 
     
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets"
-    r = requests.get(url, headers = headers)
+    r = requests.get(url, headers=headers)
+    r.raise_for_status()
+    
     reply = r.json()
 
     print_debug_info(url,reply)
@@ -91,6 +92,7 @@ def api_list_files_in_dataset(token, dataset):
         sys.exit("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))        
     
     r = requests.get(url, headers = headers)
+    r.raise_for_status()
     if(debug): print(r)
     
     reply = r.json()
@@ -130,11 +132,12 @@ def pretty_print_files_in_dataset(reply, dataset):
     print( "Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply )/(1024*1024*1024.0)) )
         
 
-def get_file_name_size_md5(token,file_id):
+def get_file_name_size_md5(token, file_id):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(file_id)
                 
     r = requests.get(url, headers = headers)
+    r.raise_for_status()
     res = r.json()
 
     print_debug_info(url,res)
@@ -145,7 +148,7 @@ def get_file_name_size_md5(token,file_id):
     return ( res['fileName'], res['fileSize'], res['checksum'] )
 
 
-def download_file_slice( url, token, file_name, start_pos, length, pbar ):
+def download_file_slice( url, token, file_name, start_pos, length, pbar=None ):
 
     CHUNK_SIZE = 32*1024
 
@@ -156,29 +159,26 @@ def download_file_slice( url, token, file_name, start_pos, length, pbar ):
 
     file_name += '-from-'+str(start_pos)+'-len-'+str(length)+'.slice'
     
+    existing_size = os.stat(file_name).st_size if os.path.exists(file_name) else 0
+    if( existing_size > length ): os.remove(file_name)        
+    if pbar: pbar.update( existing_size )
+
+    if( existing_size == length ): return file_name
+
+    headers = {}
+    headers['Authorization'] = 'Bearer {}'.format(token)        
+    headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
+
+    print_debug_info( url, None, "Request headers: {}".format(headers) )
+    r = requests.get(url, headers=headers, stream=True)               
+    print_debug_info( url, None, "Response headers: {}".format(r.headers) )
+
+    r.raise_for_status()           
+
     with open(file_name, 'ba') as file_out:
-
-        existing_size = os.fstat(file_out.fileno()).st_size
-        
-        if( existing_size > length ): existing_size=0; file_out.seek(0, 0); file_out.truncate()            
-        
-        pbar.update( existing_size )
-
-        if( existing_size == length ): return file_name
-
-        headers = {}
-        headers['Authorization'] = 'Bearer {}'.format(token)        
-        headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
-
-        print_debug_info( url, None, "Request headers: {}".format(headers) )
-        r = requests.get(url, headers=headers, stream=True)               
-        print_debug_info( url, None, "Response headers: {}".format(r.headers) )
-
-        r.raise_for_status()           
-
         for chunk in r.iter_content(CHUNK_SIZE):
             file_out.write(chunk)
-            pbar.update(len(chunk))
+            if pbar: pbar.update(len(chunk))
 
     return file_name
 
@@ -194,7 +194,7 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
     with open(target_file_name,'wb') as target_file:
         for file_name in files_to_merge:
             with open(file_name,'rb') as f:
-                #print( file_name )
+                # print( file_name )
                 shutil.copyfileobj(f, target_file, 65536)
             os.remove(file_name)
             
@@ -206,6 +206,7 @@ def md5(fname):
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
+            # print("fff={}, chunk={}".format(fname,chunk[:5] ) )
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
@@ -216,14 +217,14 @@ def print_local_file_info( prefix_str, file, md5 ):
 def download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
     """Download an individual file"""
 
-    if( key is not None ):
+    if key is not None:
         raise ValueError('key parameter: encrypted downloads are not supported yet')    
 
-    if( file_name.endswith(".gpg") ): 
+    if file_name.endswith(".gpg"): 
         print("GPG files are not supported")
         return
 
-    if( file_name.endswith(".cip") ): 
+    if file_name.endswith(".cip"): 
         file_name = file_name[:-len(".cip")]
 
     if output_file is None: 
@@ -247,7 +248,7 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     print("Download starting [using {} connection(s)]...".format(num_connections))
 
     dir = os.path.dirname(output_file)
-    if( not os.path.exists(dir) and len(dir)>0 ): os.makedirs(dir)
+    if not os.path.exists(dir) and len(dir)>0 : os.makedirs(dir)
 
     chunk_len = math.ceil(file_size/num_connections)
 
@@ -309,7 +310,7 @@ def print_debug_info(url, reply_json, *args):
     if(not debug): return
     
     print("Request URL : {}".format(url))
-    if reply_json is not None: print("Response    :\n %.200s" % json.dumps(reply_json, indent=4) )
+    if reply_json is not None: print("Response    :\n %.1200s" % json.dumps(reply_json, indent=4) )
 
     for a in args: print(a)
 
