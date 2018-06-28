@@ -14,7 +14,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.15"
+version = "3.0.16"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""

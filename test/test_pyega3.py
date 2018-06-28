@@ -225,7 +225,7 @@ class Pyega3Test(unittest.TestCase):
         good_token = rand_str() 
 
         mem             = virtual_memory().available
-        file_length     = random.randint(1, mem//8)
+        file_length     = random.randint(1, mem//512)
         slice_start     = random.randint(0,file_length)
         slice_length    = random.randint(0,file_length-slice_start)
         file_name       = rand_str()
@@ -284,9 +284,9 @@ class Pyega3Test(unittest.TestCase):
     def test_merge_bin_files_on_disk(self, mocked_remove):        
         mem = virtual_memory().available        
         files_to_merge = {
-            'f1.bin' : os.urandom(random.randint(1, mem//8)), 
-            'f2.bin' : os.urandom(random.randint(1, mem//8)), 
-            'f3.bin' : os.urandom(random.randint(1, mem//8)), 
+            'f1.bin' : os.urandom(random.randint(1, mem//512)), 
+            'f2.bin' : os.urandom(random.randint(1, mem//512)), 
+            'f3.bin' : os.urandom(random.randint(1, mem//512)), 
         }
         target_file_name = "merged.file"
 
@@ -348,7 +348,7 @@ class Pyega3Test(unittest.TestCase):
         good_token = rand_str() 
 
         mem             = virtual_memory().available
-        file_sz         = random.randint(1, mem//8)
+        file_sz         = random.randint(1, mem//512)
         file_name       = "resulting.file"
         file_contents   = os.urandom(file_sz)         
         file_md5        = hashlib.md5(file_contents).hexdigest()
@@ -403,7 +403,9 @@ class Pyega3Test(unittest.TestCase):
                         pyega3.download_file( 
                             good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
 
-                        mocked_remove.assert_has_calls( [mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in mocked_files.keys()] )
+                        mocked_remove.assert_has_calls( 
+                            [mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in mocked_files.keys()],
+                            any_order=True )
 
         with self.assertRaises(ValueError):
             pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None ) 
