@@ -1,6 +1,6 @@
 from setuptools import setup
 
-with open("README") as f:
+with open("README.txt") as f:
     long_description = f.read()
 
 setup(
@@ -8,7 +8,7 @@ setup(
     description="EGA python client",
     long_description=long_description,
     packages=["pyega3"],
-    version = "3.0.18",
+    version = "3.0.19",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     install_requires=["requests", "tqdm"],
