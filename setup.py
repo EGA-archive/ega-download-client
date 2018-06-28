@@ -8,7 +8,7 @@ setup(
     description="EGA python client",
     long_description=long_description,
     packages=["pyega3"],
-    version = "3.0.17",
+    version = "3.0.18",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     install_requires=["requests", "tqdm"],
