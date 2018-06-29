@@ -13,7 +13,7 @@ This client makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443/) and t
 (e.g. https://ega.ebi.ac.uk:8443/ega-openid-connect-server/, https://ega.ebi.ac.uk:8051/elixir/central/stats/load should not time out).
 -------------------------------------------------------------------------
 INSTALLATION:
-pip3 install pyega3
+sudo pip3 install pyega3
 -------------------------------------------------------------------------
 USAGE:
 pyega3 [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS] {datasets,files,fetch} ...
