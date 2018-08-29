@@ -399,7 +399,7 @@ class Pyega3Test(unittest.TestCase):
                         pyega3.download_file_retry( 
                             good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
 
-                        wrong_md5 = 0
+                        wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                         pyega3.download_file( 
                             good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
 

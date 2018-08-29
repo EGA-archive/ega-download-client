@@ -14,7 +14,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.19"
+version = "3.0.21"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -49,6 +49,7 @@ def get_token(credentials):
     if(debug): print(r)
 
     try:
+        print('')
         reply = r.json()
         print_debug_info(url, reply)
         r.raise_for_status()
@@ -264,12 +265,15 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
 
         if( sum(os.path.getsize(f) for f in results) == file_size  ):
             merge_bin_files_on_disk(output_file, results)
-        
-    if( md5(output_file) == check_sum ):
+            
+    not_valid_server_md5 = len(str(check_sum or ''))!=32
+    
+    if( md5(output_file) == check_sum or not_valid_server_md5 ):
         print_local_file_info('Saved to : ', output_file, check_sum )
+        if not_valid_server_md5: print("WARNING: Server provided invalid MD5({})".format(check_sum))
     else:
         print("MD5 does NOT match - corrupted download")
-        os.remove(output_file)              
+        os.remove(output_file)
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
     max_retries = 3
