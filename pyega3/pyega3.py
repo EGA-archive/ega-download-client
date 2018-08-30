@@ -12,9 +12,10 @@ import concurrent.futures
 import shutil
 import hashlib
 import time
+import logging
 
-debug = False
-version = "3.0.22"
+version = "3.0.23"
+logging_level = logging.INFO
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -46,7 +47,7 @@ def get_token(credentials):
             }
         
     r = requests.post( url, headers=headers, data=data )
-    if(debug): print(r)
+    logging.debug(r)
 
     try:
         print('')
@@ -54,7 +55,7 @@ def get_token(credentials):
         print_debug_info(url, reply)
         r.raise_for_status()
         oauth_token = reply['access_token']
-        print("Authentication success for user '{}'".format(username))
+        logging.info("Authentication success for user '{}'".format(username))
     except Exception:
         sys.exit("Authentication failure for user '{}'".format(username))
 
@@ -94,7 +95,7 @@ def api_list_files_in_dataset(token, dataset):
     
     r = requests.get(url, headers = headers)
     r.raise_for_status()
-    if(debug): print(r)
+    logging.debug(r)
     
     reply = r.json()
     print_debug_info(url,reply)
@@ -188,20 +189,20 @@ def download_file_slice_(args):
 
 def merge_bin_files_on_disk(target_file_name, files_to_merge):
 
-    print('Saving...')
+    logging.info('Saving...')
     
     start = time.time()
     
     with open(target_file_name,'wb') as target_file:
         for file_name in files_to_merge:
             with open(file_name,'rb') as f:
-                # print( file_name )
+                logging.debug( file_name )
                 shutil.copyfileobj(f, target_file, 65536)
             os.remove(file_name)
             
     end = time.time()
     
-    if(debug): print('Merged in {} sec'.format(end - start))
+    logging.debug('Merged in {} sec'.format(end - start))
 
 def md5(fname):
     hash_md5 = hashlib.md5()
@@ -212,7 +213,7 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 def print_local_file_info( prefix_str, file, md5 ):
-    print( "{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5) )    
+    logging.info( "{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5) )    
 
 
 def download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
@@ -222,7 +223,7 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         raise ValueError('key parameter: encrypted downloads are not supported yet')    
 
     if file_name.endswith(".gpg"): 
-        print("GPG files are not supported")
+        logging.info("GPG files are not supported")
         return
 
     if file_name.endswith(".cip"): 
@@ -231,13 +232,13 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     if output_file is None: 
         output_file = os.path.join( os.getcwd(), file_id, os.path.basename(file_name) ) 
         
-    if(debug): print("Output file:'{}'".format(output_file))    
+    logging.debug("Output file:'{}'".format(output_file))    
 
     url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
 
     if( key is None ): url += "?destinationFormat=plain"; file_size -= 16 #16 bytes IV not necesary in plain mode
 
-    print("File Id: '{}'({} bytes).".format(file_id, file_size)) 
+    logging.info("File Id: '{}'({} bytes).".format(file_id, file_size)) 
 
     if( os.path.exists(output_file) and md5(output_file) == check_sum ):
         print_local_file_info('Local file exists:', output_file, check_sum )
@@ -246,7 +247,7 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     num_connections = max( num_connections, 1 ) 
     num_connections = min( num_connections, 128 )
     if( file_size < 100*1024*1024 ): num_connections = 1
-    print("Download starting [using {} connection(s)]...".format(num_connections))
+    logging.info("Download starting [using {} connection(s)]...".format(num_connections))
 
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir)>0 : os.makedirs(dir)
@@ -270,9 +271,9 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     
     if( md5(output_file) == check_sum or not_valid_server_md5 ):
         print_local_file_info('Saved to : ', output_file, check_sum )
-        if not_valid_server_md5: print("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))
+        if not_valid_server_md5: logging.info("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))
     else:
-        print("MD5 does NOT match - corrupted download")
+        logging.info("MD5 does NOT match - corrupted download")
         os.remove(output_file)
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
@@ -286,19 +287,19 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
             download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file)
             done = True
         except Exception as e:
-            print(e)
+            logging.info(e)
             if num_retries == max_retries:
                 raise e
             time.sleep(retry_wait)
             num_retries += 1
-            print("retry attempt {}".format(num_retries))
+            logging.info("retry attempt {}".format(num_retries))
 
 
 def download_dataset( credentials,  dataset_id, num_connections, key, output_dir ):
     token = get_token(credentials)
 
     if( not dataset_id in api_list_authorized_datasets(token) ):
-        print("Dataset '{}' is not in the list of your authorized datasets.".format(dataset_id))    
+        logging.info("Dataset '{}' is not in the list of your authorized datasets.".format(dataset_id))    
         return
 
     reply = api_list_files_in_dataset(token, dataset_id)    
@@ -308,15 +309,13 @@ def download_dataset( credentials,  dataset_id, num_connections, key, output_dir
                 output_file = None if( output_dir is None ) else os.path.join( output_dir, res['fileId'], os.path.basename(res['fileName']) )
                 download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file )        
                 token = get_token(credentials)
-        except Exception as e: print(e)
+        except Exception as e: logging.info(e)
 
 def print_debug_info(url, reply_json, *args):
-    if(not debug): return
-    
-    print("Request URL : {}".format(url))
-    if reply_json is not None: print("Response    :\n %.1200s" % json.dumps(reply_json, indent=4) )
+    logging.debug("Request URL : {}".format(url))
+    if reply_json is not None: logging.debug("Response    :\n %.1200s" % json.dumps(reply_json, indent=4) )
 
-    for a in args: print(a)
+    for a in args: logging.debug(a)
 
 
 def main():
@@ -340,9 +339,11 @@ def main():
         
     args = parser.parse_args()
     if args.debug:
-        global debug
-        debug = True
+        global logging_level
+        logging_level = logging.DEBUG
         print("[debugging]")
+
+    logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
 
     *credentials, key = load_credentials(args.credentials_file)
     token = get_token(credentials)
