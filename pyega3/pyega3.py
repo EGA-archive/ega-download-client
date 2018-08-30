@@ -14,7 +14,7 @@ import hashlib
 import time
 
 debug = False
-version = "3.0.21"
+version = "3.0.22"
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -270,7 +270,7 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     
     if( md5(output_file) == check_sum or not_valid_server_md5 ):
         print_local_file_info('Saved to : ', output_file, check_sum )
-        if not_valid_server_md5: print("WARNING: Server provided invalid MD5({})".format(check_sum))
+        if not_valid_server_md5: print("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))
     else:
         print("MD5 does NOT match - corrupted download")
         os.remove(output_file)
