@@ -291,6 +291,7 @@ class Pyega3Test(unittest.TestCase):
         target_file_name = "merged.file"
 
         merged_bytes = bytearray()
+        #merged_bytes.extend(files_to_merge['f1.bin'])
         def mock_write(buf): merged_bytes.extend(buf)
 
         real_open = open
@@ -310,9 +311,10 @@ class Pyega3Test(unittest.TestCase):
         
 
         with mock.patch('builtins.open', new=open_wrapper):
-            pyega3.merge_bin_files_on_disk(target_file_name, files_to_merge)
+            with mock.patch( 'os.rename', lambda s,d: merged_bytes.extend(files_to_merge[os.path.basename(s)]) ):
+                pyega3.merge_bin_files_on_disk( target_file_name, list(files_to_merge.keys()) )
 
-        mocked_remove.assert_has_calls( [mock.call(f) for f in files_to_merge.keys()] )
+        mocked_remove.assert_has_calls( [mock.call(f) for f in list(files_to_merge.keys())[1:]] )
 
         verified_bytes = 0
         for f_content in files_to_merge.values():
@@ -391,21 +393,22 @@ class Pyega3Test(unittest.TestCase):
                         X = namedtuple('X','st_size f1 f2 f3 f4 f5 f6 f7 f8 f9')
                         sr = [None] * 10; sr[0]=len(mocked_files[fn]); return X(*sr)
                     with mock.patch('os.stat', os_stat_mock):
-                        pyega3.download_file( 
-                            # add 16 bytes to file size ( IV adjustment )
-                            good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
-                        self.assertEqual( file_contents, mocked_files[file_name] )
+                        with mock.patch( 'os.rename', lambda s,d: mocked_files.__setitem__(os.path.basename(d),mocked_files.pop(os.path.basename(s))) ):
+                            pyega3.download_file( 
+                                # add 16 bytes to file size ( IV adjustment )
+                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
+                            self.assertEqual( file_contents, mocked_files[file_name] )
 
-                        pyega3.download_file_retry( 
-                            good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
+                            pyega3.download_file_retry( 
+                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
 
-                        wrong_md5 = "wrong_md5_exactly_32_chars_longg"
-                        pyega3.download_file( 
-                            good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
+                            wrong_md5 = "wrong_md5_exactly_32_chars_longg"
+                            pyega3.download_file( 
+                                good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
 
-                        mocked_remove.assert_has_calls( 
-                            [mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in mocked_files.keys()],
-                            any_order=True )
+                            mocked_remove.assert_has_calls( 
+                                [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys())[1:] ],
+                                any_order=True )
 
         with self.assertRaises(ValueError):
             pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None ) 

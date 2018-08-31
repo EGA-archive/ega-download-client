@@ -14,7 +14,7 @@ import hashlib
 import time
 import logging
 
-version = "3.0.23"
+version = "3.0.24"
 logging_level = logging.INFO
 
 def load_credentials(filepath):
@@ -193,8 +193,11 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
     
     start = time.time()
     
-    with open(target_file_name,'wb') as target_file:
-        for file_name in files_to_merge:
+    os.rename( files_to_merge[0], target_file_name)
+    logging.debug( files_to_merge[0] )
+    
+    with open(target_file_name,'ab') as target_file:
+        for file_name in files_to_merge[1:]:
             with open(file_name,'rb') as f:
                 logging.debug( file_name )
                 shutil.copyfileobj(f, target_file, 65536)
