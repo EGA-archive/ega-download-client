@@ -12,8 +12,12 @@ Firewall Ports
 This client makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443/) and to the EGA Data API (https://ega.ebi.ac.uk:8051). Both ports 8443 and 8051 must be reachable from the location where this client script is run. Otherwise you will experience timeouts.
 (e.g. https://ega.ebi.ac.uk:8443/ega-openid-connect-server/, https://ega.ebi.ac.uk:8051/elixir/central/stats/load should not time out).
 -------------------------------------------------------------------------
-INSTALLATION:
+INSTALLATION via Pip:
 sudo pip3 install pyega3
+-------------------------------------------------------------------------
+INSTALLATION via Conda(Bioconda channel):
+conda config --add channels bioconda
+conda install pyega3
 -------------------------------------------------------------------------
 USAGE:
 pyega3 [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS] {datasets,files,fetch} ...
