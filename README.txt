@@ -3,7 +3,7 @@ pyEGA3 uses the EGA REST API to download authorized datasets and files
 
 Currently works only with Python3
 
-REQUIREMENTS
+REQUIREMENTS:
 Python "requests" module
 http://docs.python-requests.org/en/master/
 pip3 install requests
@@ -11,16 +11,16 @@ pip3 install requests
 Firewall Ports
 This client makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443/) and to the EGA Data API (https://ega.ebi.ac.uk:8051). Both ports 8443 and 8051 must be reachable from the location where this client script is run. Otherwise you will experience timeouts.
 (e.g. https://ega.ebi.ac.uk:8443/ega-openid-connect-server/, https://ega.ebi.ac.uk:8051/elixir/central/stats/load should not time out).
-
 -------------------------------------------------------------------------
-Installation Scripts
-Three scripts are provided to install the required Python environment, based on the host operating system:
-  Linux (Debian, Ubuntu, etc.): debian_dependency_install.sh
-  Linux (Red Hat): red_hat_dependency_install.sh
-  Mac: osx_dependency_install.sh
-
+INSTALLATION via Pip:
+sudo pip3 install pyega3
 -------------------------------------------------------------------------
-usage: python3 pyega3/pyega3.py [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS] {datasets,files,fetch} ...
+INSTALLATION via Conda(Bioconda channel):
+conda config --add channels bioconda
+conda install pyega3
+-------------------------------------------------------------------------
+USAGE:
+pyega3 [-h] [-d] -cf CREDENTIALS_FILE [-c CONNECTIONS] {datasets,files,fetch} ...
 
 Download from EMBL EBI's EGA (European Genome-phenome Archive)
 
@@ -38,8 +38,7 @@ optional arguments:
                         JSON file containing credentials
                         e.g.{'username':'user1','password':'toor'}
   -c CONNECTIONS, --connections CONNECTIONS
-                        Download using specified number of connections
-                        
+                        Download using specified number of connections                      
                         
 -------------------------------------------------------------------------
   
