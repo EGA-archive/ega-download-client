@@ -403,8 +403,9 @@ class Pyega3Test(unittest.TestCase):
                                 good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
-                            pyega3.download_file( 
-                                good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
+                            with self.assertRaises(Exception):
+                                pyega3.download_file( 
+                                    good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
 
                             mocked_remove.assert_has_calls( 
                                 [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys())[1:] ],
