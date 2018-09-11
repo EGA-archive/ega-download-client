@@ -441,7 +441,7 @@ class Pyega3Test(unittest.TestCase):
             "fileId": "EGAF00000000001",
             "checksumType": "MD5",
             "fileSize": file1_sz,
-            "fileName": "EGAZ00000000001/ENCFF000001.bam"
+            "fileName": "EGAZ00000000001/ENCFF000001.bam.cip"
         },
         {
             "checksum": file2_md5,
