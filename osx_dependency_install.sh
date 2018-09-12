@@ -8,3 +8,5 @@ brew install python3
 
 echo "Loading Python DEpendencies"
 pip install tqdm
+pip install requests
+pip install htsget

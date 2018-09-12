@@ -13,6 +13,7 @@ import shutil
 import hashlib
 import time
 import logging
+import htsget
 
 version = "3.0.24"
 logging_level = logging.INFO
@@ -35,7 +36,7 @@ def load_credentials(filepath):
 def get_token(credentials):
     url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}     
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
     (username, password, client_secret) = credentials
     data = { "grant_type"   : "password", 
@@ -188,9 +189,7 @@ def download_file_slice_(args):
     return download_file_slice(*args)
 
 def merge_bin_files_on_disk(target_file_name, files_to_merge):
-
     logging.info('Saving...')
-    
     start = time.time()
     
     os.rename( files_to_merge[0], target_file_name)
@@ -204,7 +203,6 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
             os.remove(file_name)
             
     end = time.time()
-    
     logging.debug('Merged in {} sec'.format(end - start))
 
 def md5(fname):
@@ -216,32 +214,47 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 def print_local_file_info( prefix_str, file, md5 ):
-    logging.info( "{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5) )    
+    logging.info( "{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5) )
+
+def print_local_file_info_genomic_range( prefix_str, file, gr_args ):
+    logging.info( 
+        "{}'{}'({} bytes, referenceName={}, referenceMD5={}, start={}, end={}, format={})".format(
+        prefix_str, 
+        os.path.abspath(file), os.path.getsize(file), 
+        gr_args[0], gr_args[1], gr_args[2], gr_args[3], gr_args[4]) 
+    )    
 
 
-def download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
+def is_genomic_range(genomic_range_args):
+    if not genomic_range_args: return False
+    return genomic_range_args[0] is not None or genomic_range_args[1] is not None
+
+def generate_output_filename( folder, file_id, file_name, genomic_range_args ):
+    ext_to_remove = ".cip"
+    if file_name.endswith(ext_to_remove): file_name = file_name[:-len(ext_to_remove)]
+    name, ext = os.path.splitext(os.path.basename(file_name))        
+
+    genomic_range = ''
+    if is_genomic_range(genomic_range_args):
+        genomic_range = "_genomic_range_"+(genomic_range_args[0] or genomic_range_args[1])
+        genomic_range += '_'+(str(genomic_range_args[2]) or '0')
+        genomic_range += '_'+(str(genomic_range_args[3]) or '')
+        formatExt = '.'+(genomic_range_args[4] or '').strip().lower()
+        if formatExt != ext: ext += formatExt
+    
+    ret_val = os.path.join(folder, file_id, name+genomic_range+ext)    
+    logging.debug("Output file:'{}'".format(ret_val))
+    return ret_val
+
+def download_file( token, file_id, file_size, check_sum, num_connections, key, output_file=None ):
     """Download an individual file"""
 
     if key is not None:
-        raise ValueError('key parameter: encrypted downloads are not supported yet')    
+        raise ValueError('key parameter: encrypted downloads are not supported yet')
 
-    if file_name.endswith(".gpg"): 
-        logging.info("GPG files are not supported")
-        return
+    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)
 
-    if file_name.endswith(".cip"): 
-        file_name = file_name[:-len(".cip")]
-
-    if output_file is None: 
-        output_file = os.path.join( os.getcwd(), file_id, os.path.basename(file_name) ) 
-        
-    logging.debug("Output file:'{}'".format(output_file))    
-
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)    
-
-    if( key is None ): url += "?destinationFormat=plain"; file_size -= 16 #16 bytes IV not necesary in plain mode
-
-    logging.info("File Id: '{}'({} bytes).".format(file_id, file_size)) 
+    if( key is None ): url+="?destinationFormat=plain"; file_size-=16 #16 bytes IV not necesary in plain mode
 
     if( os.path.exists(output_file) and md5(output_file) == check_sum ):
         print_local_file_info('Local file exists:', output_file, check_sum )
@@ -252,16 +265,13 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
     if( file_size < 100*1024*1024 ): num_connections = 1
     logging.info("Download starting [using {} connection(s)]...".format(num_connections))
 
-    dir = os.path.dirname(output_file)
-    if not os.path.exists(dir) and len(dir)>0 : os.makedirs(dir)
-
     chunk_len = math.ceil(file_size/num_connections)
 
     with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
         params = [(url, token, output_file, chunk_start_pos, min(chunk_len,file_size-chunk_start_pos), pbar) for chunk_start_pos in range(0,file_size, chunk_len)]        
 
         results = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_connections) as executor:    
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_connections) as executor:
             for part_file_name in executor.map(download_file_slice_ ,params):
                 results.append(part_file_name)
 
@@ -279,15 +289,39 @@ def download_file( token, file_id, file_name, file_size, check_sum, num_connecti
         os.remove(output_file)
         raise Exception("MD5 does NOT match - corrupted download")
 
-def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file=None ):
+def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
     max_retries = 3
     retry_wait = 5
+
+    if file_name.endswith(".gpg"): 
+        logging.info("GPG files are not supported")
+        return
+
+    logging.info("File Id: '{}'({} bytes).".format(file_id, file_size))
+
+    if output_file is None: 
+        output_file = generate_output_filename(os.getcwd(), file_id, file_name, genomic_range_args)
+    dir = os.path.dirname(output_file)
+    if not os.path.exists(dir) and len(dir)>0 : os.makedirs(dir)
+
+    if is_genomic_range(genomic_range_args):
+        with open(output_file,'wb') as output:
+            htsget.get(
+                "https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/{}".format(file_id),
+                output,
+                reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
+                start=genomic_range_args[2], end=genomic_range_args[3],
+                data_format=genomic_range_args[4],
+                max_retries=max_retries, retry_wait=retry_wait,
+                bearer_token=token)
+        print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)            
+        return
 
     done = False
     num_retries = 0
     while not done:
         try:
-            download_file( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file)
+            download_file(token, file_id, file_size, check_sum, num_connections, key, output_file)
             done = True
         except Exception as e:
             logging.info(e)
@@ -298,7 +332,7 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
             logging.info("retry attempt {}".format(num_retries))
 
 
-def download_dataset( credentials,  dataset_id, num_connections, key, output_dir ):
+def download_dataset( credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args ):
     token = get_token(credentials)
 
     if( not dataset_id in api_list_authorized_datasets(token) ):
@@ -309,11 +343,8 @@ def download_dataset( credentials,  dataset_id, num_connections, key, output_dir
     for res in reply:
         try:
             if ( status_ok(res['fileStatus']) ):
-                file_name = res['fileName']
-                if file_name.endswith('.cip'):
-                    file_name = file_name[:-4]
-                output_file = None if( output_dir is None ) else os.path.join( output_dir, res['fileId'], os.path.basename(file_name) )
-                download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file )        
+                output_file = None if( output_dir is None ) else generate_output_filename(output_dir, res['fileId'], res['fileName'], genomic_range_args)
+                download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args )        
                 token = get_token(credentials)
         except Exception as e: logging.info(e)
 
@@ -340,8 +371,33 @@ def main():
     parser_dsinfo.add_argument("identifier", help="Dataset ID (e.g. EGAD00000000001)")
 
     parser_fetch = subparsers.add_parser("fetch", help="Fetch a dataset or file")
-    parser_fetch.add_argument("identifier", help="Id for dataset (e.g. EGAD00000000001) or file (e.g. EGAF12345678901)")    
-    parser_fetch.add_argument("saveto", nargs='?',  help="Output file(for files)/output dir(for datasets)")  
+    parser_fetch.add_argument("identifier", help="Id for dataset (e.g. EGAD00000000001) or file (e.g. EGAF12345678901)")
+
+    parser_fetch.add_argument(
+        "--reference-name", "-r", type=str, default=None,
+        help=(
+            "The reference sequence name, for example 'chr1', '1', or 'chrX'. "
+            "If unspecified, all data is returned."))
+    parser_fetch.add_argument(
+        "--reference-md5", "-m", type=str, default=None,
+        help=(
+            "The MD5 checksum uniquely representing the requested reference "
+            "sequence as a lower-case hexadecimal string, calculated as the MD5 "
+            "of the upper-case sequence excluding all whitespace characters."))
+    parser_fetch.add_argument(
+        "--start", "-s", type=int, default=None,
+        help=(
+            "The start position of the range on the reference, 0-based, inclusive. "
+            "If specified, reference-name or reference-md5 must also be specified."))
+    parser_fetch.add_argument(
+        "--end", "-e", type=int, default=None,
+        help=(
+            "The end position of the range on the reference, 0-based exclusive. If "
+            "specified, reference-name or reference-md5 must also be specified."))
+    parser_fetch.add_argument(
+        "--format", "-f", type=str, default=None, choices=["BAM","CRAM"], help="The format of data to request.")
+        
+    parser_fetch.add_argument("--saveto", nargs='?',  help="Output file(for files)/output dir(for datasets)")
         
     args = parser.parse_args()
     if args.debug:
@@ -365,11 +421,12 @@ def main():
         pretty_print_files_in_dataset(reply, args.identifier)
 
     elif args.subcommand == "fetch":        
+        genomic_range_args = ( args.reference_name, args.reference_md5, args.start, args.end, args.format )
         if (args.identifier[3] == 'D'):
-            download_dataset( credentials, args.identifier, args.connections, key, args.saveto )
+            download_dataset( credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args )
         elif(args.identifier[3] == 'F'):
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )            
-            download_file_retry( token, args.identifier,  file_name, file_size, check_sum, args.connections, key, args.saveto )
+            download_file_retry( token, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args )
         else:
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
         

@@ -14,3 +14,5 @@ echo "Installing pip3"
 sudo yum install pip3
 echo "Loading Python dependencies"
 pip3 install tqdm
+pip3 install requests
+pip3 install htsget

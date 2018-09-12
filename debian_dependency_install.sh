@@ -9,3 +9,5 @@ sudo apt-get install -y python3-pip
 
 echo "installing python dependencies"
 pip3 install tqdm
+pip3 install requests
+pip3 install htsget

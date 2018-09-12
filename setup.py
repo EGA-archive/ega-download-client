@@ -11,7 +11,7 @@ setup(
     version = "3.0.24",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
-    install_requires=["requests", "tqdm"],
+    install_requires=["requests", "tqdm", "htsget"],
     keywords=["EGA", "archive"],
     license="Apache License, Version 2.0",
     url="https://github.com/EGA-archive/ega-download-client",

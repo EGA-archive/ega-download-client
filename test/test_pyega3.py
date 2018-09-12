@@ -394,13 +394,13 @@ class Pyega3Test(unittest.TestCase):
                         sr = [None] * 10; sr[0]=len(mocked_files[fn]); return X(*sr)
                     with mock.patch('os.stat', os_stat_mock):
                         with mock.patch( 'os.rename', lambda s,d: mocked_files.__setitem__(os.path.basename(d),mocked_files.pop(os.path.basename(s))) ):
-                            pyega3.download_file( 
+                            pyega3.download_file_retry( 
                                 # add 16 bytes to file size ( IV adjustment )
-                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
+                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
                             self.assertEqual( file_contents, mocked_files[file_name] )
 
                             pyega3.download_file_retry( 
-                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None ) 
+                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                             with self.assertRaises(Exception):
@@ -412,9 +412,9 @@ class Pyega3Test(unittest.TestCase):
                                 any_order=True )
 
         with self.assertRaises(ValueError):
-            pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None ) 
+            pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None )
 
-        pyega3.download_file( "", "", "test.gpg",  0, 0, 1, None, output_file=None ) 
+        pyega3.download_file_retry( "", "", "test.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None ) 
 
     @responses.activate    
     @mock.patch("pyega3.pyega3.download_file_retry")
@@ -459,14 +459,14 @@ class Pyega3Test(unittest.TestCase):
                     creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
                     num_connections = 1
                     bad_dataset = "EGAD00000000666"
-                    pyega3.download_dataset( creds, bad_dataset, num_connections, None, None )
+                    pyega3.download_dataset( creds, bad_dataset, num_connections, None, None, None )
                     self.assertEqual( 0, mocked_dfr.call_count )
                 
-                    pyega3.download_dataset( creds, good_dataset, num_connections, None, None )
+                    pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None )
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls( 
-                        [mock.call('token', f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call('token', f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None) for f in files if f["fileStatus"]=="available"] )
 
 if __name__ == '__main__':
     unittest.main(exit=False)
