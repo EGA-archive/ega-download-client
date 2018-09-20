@@ -398,18 +398,32 @@ class Pyega3Test(unittest.TestCase):
                                 # add 16 bytes to file size ( IV adjustment )
                                 good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
                             self.assertEqual( file_contents, mocked_files[file_name] )
-
+                            
+                            # to cover 'local file exists' case
                             pyega3.download_file_retry( 
                                 good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                             with self.assertRaises(Exception):
-                                pyega3.download_file( 
-                                    good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None ) 
+                                pyega3.download_file_retry( 
+                                    good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None) 
 
                             mocked_remove.assert_has_calls( 
                                 [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys())[1:] ],
                                 any_order=True )
+
+                            with mock.patch('htsget.get') as mocked_htsget:
+                                pyega3.download_file_retry( 
+                                    good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None) )
+
+                            args, kwargs = mocked_htsget.call_args
+                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/EGAF00000000001')
+                            
+                            self.assertEqual(kwargs.get('reference_name'), 'chr1')
+                            self.assertEqual(kwargs.get('reference_md5'), None)
+                            self.assertEqual(kwargs.get('start'), 1)
+                            self.assertEqual(kwargs.get('end'), 100)
+                            self.assertEqual(kwargs.get('data_format'), None)
 
         with self.assertRaises(ValueError):
             pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None )
@@ -468,5 +482,34 @@ class Pyega3Test(unittest.TestCase):
                     mocked_dfr.assert_has_calls( 
                         [mock.call('token', f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None) for f in files if f["fileStatus"]=="available"] )
 
+                    # files[1]["checksum"] = "wrong_md5_exactly_32_chars_longg"
+                    def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
+                    with mock.patch("pyega3.pyega3.download_file_retry", dfr_throws ):
+                        pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None )
+                    
+
+       
+    def test_generate_output_filename(self):
+        folder = "FOO"
+        file_id = "EGAF001"
+        base_name = "filename"
+        base_ext = ".ext"
+        full_name = "/really/long/"+base_name+base_ext
+        self.assertEqual(
+            os.path.join(folder, file_id, base_name+base_ext),
+            pyega3.generate_output_filename( folder, file_id, full_name , None )
+        )
+        folder = os.getcwd()
+        self.assertEqual(
+            os.path.join(folder, file_id, base_name+base_ext ),
+            pyega3.generate_output_filename( folder, file_id, full_name , None )
+        )
+        self.assertEqual(
+            os.path.join(folder, file_id, base_name+"_genomic_range_chr1_100_200"+base_ext+".cram" ),
+            pyega3.generate_output_filename( folder, file_id, full_name , ( "chr1", None, 100, 200, "CRAM" ) )
+        )
+
+
 if __name__ == '__main__':
+    del(sys.argv[1:])
     unittest.main(exit=False)
