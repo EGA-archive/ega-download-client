@@ -240,7 +240,7 @@ def generate_output_filename( folder, file_id, file_name, genomic_range_args ):
         genomic_range += '_'+(str(genomic_range_args[2]) or '0')
         genomic_range += '_'+(str(genomic_range_args[3]) or '')
         formatExt = '.'+(genomic_range_args[4] or '').strip().lower()
-        if formatExt != ext: ext += formatExt
+        if formatExt != ext and len(formatExt)>1 : ext += formatExt
     
     ret_val = os.path.join(folder, file_id, name+genomic_range+ext)    
     logging.debug("Output file:'{}'".format(ret_val))
