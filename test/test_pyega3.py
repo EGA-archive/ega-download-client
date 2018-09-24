@@ -38,7 +38,22 @@ class Pyega3Test(unittest.TestCase):
                 self.assertEqual(result[0]   , good_creds["username"]      )
                 self.assertEqual(result[1]   , good_creds["password"]      )
                 self.assertEqual(result[2]   , good_creds["client_secret"] )
-                self.assertEqual(result[3]   , good_creds["key"]           ) 
+                self.assertEqual(result[3]   , good_creds["key"]           )
+
+            password1 = rand_str()
+            good_creds1={"username":rand_str(),"key":rand_str(),"client_secret":rand_str()}
+            m_open1 = mock.mock_open(read_data=json.dumps(good_creds1))
+            with mock.patch( "builtins.open", m_open1 ):
+                with mock.patch( "getpass.getpass" ) as m_get_pw :
+                    m_get_pw.return_value = password1              
+                    good_credentials_file1 = "credentials1.json"
+                    result1 = pyega3.load_credentials(good_credentials_file1)
+                    m_open1.assert_called_once_with(good_credentials_file1)
+                    self.assertEqual(len(result1) , 4                     )
+                    self.assertEqual(result1[0]   , good_creds1["username"]      )
+                    self.assertEqual(result1[1]   , password1                    )
+                    self.assertEqual(result1[2]   , good_creds1["client_secret"] )
+                    self.assertEqual(result1[3]   , good_creds1["key"]           )
 
             bad_creds={"notusername":rand_str(),"password":rand_str(),"key":rand_str(),"client_secret":rand_str()}
             with mock.patch( "builtins.open", mock.mock_open(read_data=json.dumps(bad_creds)) ):         

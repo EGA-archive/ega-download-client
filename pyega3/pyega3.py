@@ -14,6 +14,7 @@ import hashlib
 import time
 import logging
 import htsget
+import getpass
 
 version = "3.0.24"
 logging_level = logging.INFO
@@ -26,10 +27,13 @@ def load_credentials(filepath):
     try:
         with open(filepath) as f:
             creds = json.load(f)
-        if 'username' not in creds or 'password' not in creds or 'client_secret' not in creds:
-            sys.exit("{} does not contain either or any of 'username', 'password', or 'client_secret' fields".format(filepath))
+        if 'username' not in creds or 'client_secret' not in creds:
+            sys.exit("{} does not contain either 'username' or 'client_secret' fields".format(filepath))
     except ValueError:
         sys.exit("invalid JSON file")
+
+    if 'password' not in creds:
+        creds['password'] = getpass.getpass("Password for '{}':".format(creds['username']))
 
     return (creds['username'], creds['password'], creds['client_secret'], creds.get('key'))
 
