@@ -16,7 +16,7 @@ import logging
 import htsget
 import getpass
 
-version = "3.0.24"
+version = "3.0.27"
 logging_level = logging.INFO
 
 def load_credentials(filepath):
