@@ -294,7 +294,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         raise Exception("MD5 does NOT match - corrupted download")
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
-    max_retries = 3
+    max_retries = 50
     retry_wait = 5
 
     if file_name.endswith(".gpg"): 
