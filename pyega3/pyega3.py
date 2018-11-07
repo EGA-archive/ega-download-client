@@ -271,7 +271,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
 
     chunk_len = math.ceil(file_size/num_connections)
 
-    with tqdm(total=int(file_size), unit='B', unit_scale=True, unit_divisor=1024) as pbar:
+    with tqdm(total=int(file_size), unit='B', unit_scale=True) as pbar:
         params = [(url, token, output_file, chunk_start_pos, min(chunk_len,file_size-chunk_start_pos), pbar) for chunk_start_pos in range(0,file_size, chunk_len)]        
 
         results = []
@@ -294,7 +294,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         raise Exception("MD5 does NOT match - corrupted download")
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
-    max_retries = 3
+    max_retries = 50
     retry_wait = 5
 
     if file_name.endswith(".gpg"): 
