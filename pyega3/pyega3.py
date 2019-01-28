@@ -16,7 +16,7 @@ import logging
 import htsget
 import getpass
 
-version = "3.0.27"
+version = "3.0.28"
 logging_level = logging.INFO
 
 def load_credentials(filepath):
@@ -360,7 +360,8 @@ def print_debug_info(url, reply_json, *args):
 
 
 def main():
-    print("EGA python client version {}".format(version))
+    print("pyEGA3 - EGA python client version {} (https://github.com/EGA-archive/ega-download-client)".format(version))
+    print("Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
 
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
