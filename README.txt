@@ -17,6 +17,7 @@ sudo pip3 install pyega3
 ----------------------------------------------------------------------------------
 INSTALLATION via Conda(Bioconda channel):
 conda config --add channels bioconda
+conda config --add channels conda-forge
 conda install pyega3
 ----------------------------------------------------------------------------------
 USAGE:
