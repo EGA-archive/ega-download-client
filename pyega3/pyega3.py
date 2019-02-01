@@ -16,7 +16,7 @@ import logging
 import htsget
 import getpass
 
-version = "3.0.29"
+version = "3.0.30"
 logging_level = logging.INFO
 
 def load_credentials(filepath):
@@ -219,7 +219,7 @@ def calculate_md5(fname):
 def md5(fname):
     fname_md5 = fname+".md5"
     # check if md5 has been previously stored in aux file
-    if os.path.exists(fname_md5): 
+    if os.path.exists(fname_md5) and os.path.getsize(fname_md5)==32: 
         with open(fname_md5,'rb') as f: 
             return f.read().decode()
     # now do the real calculation
