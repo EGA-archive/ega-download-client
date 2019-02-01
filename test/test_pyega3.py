@@ -374,6 +374,7 @@ class Pyega3Test(unittest.TestCase):
         def open_wrapper(filename, mode):
             filename = os.path.basename(filename)
             if filename not in mocked_files :
+                if 'r' in mode: raise Exception("Attempt to read mock file before it was created.")
                 mocked_files[filename] = bytearray()
             content     = bytes(mocked_files[filename])
             content_len = len(content)
@@ -424,7 +425,7 @@ class Pyega3Test(unittest.TestCase):
                                     good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None) 
 
                             mocked_remove.assert_has_calls( 
-                                [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys())[1:] ],
+                                [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys()) if not file_name in f ],
                                 any_order=True )
 
                             with mock.patch('htsget.get') as mocked_htsget:

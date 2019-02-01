@@ -209,13 +209,25 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
     end = time.time()
     logging.debug('Merged in {} sec'.format(end - start))
 
-def md5(fname):
+def calculate_md5(fname):
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
-            # print("fff={}, chunk={}".format(fname,chunk[:5] ) )
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+def md5(fname):
+    fname_md5 = fname+".md5"
+    # check if md5 has been previously stored in aux file
+    if os.path.exists(fname_md5): 
+        with open(fname_md5,'rb') as f: 
+            return f.read().decode()
+    # now do the real calculation
+    result = calculate_md5(fname)
+    # save md5 in aux file for future re-use
+    with open(fname_md5,'wb') as f: 
+        f.write(result.encode())
+    return result
 
 def print_local_file_info( prefix_str, file, md5 ):
     logging.info( "{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5) )
@@ -294,7 +306,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         raise Exception("MD5 does NOT match - corrupted download")
 
 def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
-    max_retries = 50
+    max_retries = 5
     retry_wait = 5
 
     if file_name.endswith(".gpg"): 
