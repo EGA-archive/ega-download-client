@@ -16,7 +16,7 @@ import logging
 import htsget
 import getpass
 
-version = "3.0.30"
+version = "3.0.31"
 logging_level = logging.INFO
 
 def load_credentials(filepath):
@@ -305,7 +305,11 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         os.remove(output_file)
         raise Exception("MD5 does NOT match - corrupted download")
 
-def download_file_retry( token, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
+def download_file_retry( creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
+
+    time0 = time.time()
+    token = get_token(creds)
+
     max_retries = 5
     retry_wait = 5
 
@@ -337,8 +341,11 @@ def download_file_retry( token, file_id, file_name, file_size, check_sum, num_co
     num_retries = 0
     while not done:
         try:
-            download_file(token, file_id, file_size, check_sum, num_connections, key, output_file)
-            done = True
+        	if time.time()-time0 > 1*60*60 : # token expires in 1 hour 
+        		time0 = time.time()
+        		token = get_token(creds)
+        	download_file(token, file_id, file_size, check_sum, num_connections, key, output_file)
+        	done = True
         except Exception as e:
             logging.info(e)
             if num_retries == max_retries:
@@ -360,8 +367,7 @@ def download_dataset( credentials,  dataset_id, num_connections, key, output_dir
         try:
             if ( status_ok(res['fileStatus']) ):
                 output_file = None if( output_dir is None ) else generate_output_filename(output_dir, res['fileId'], res['fileName'], genomic_range_args)
-                download_file_retry( token, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args )        
-                token = get_token(credentials)
+                download_file_retry(credentials, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args )        
         except Exception as e: logging.info(e)
 
 def print_debug_info(url, reply_json, *args):
@@ -425,15 +431,16 @@ def main():
     logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
 
     *credentials, key = load_credentials(args.credentials_file)
-    token = get_token(credentials)
 
     if args.subcommand == "datasets":
+        token = get_token(credentials)
         reply = api_list_authorized_datasets(token)
         pretty_print_authorized_datasets(reply)
 
     if args.subcommand == "files":
         if (args.identifier[3] != 'D'):
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) supported")                        
+        token = get_token(credentials)
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
 
@@ -442,8 +449,9 @@ def main():
         if (args.identifier[3] == 'D'):
             download_dataset( credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args )
         elif(args.identifier[3] == 'F'):
+            token = get_token(credentials)
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )            
-            download_file_retry( token, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args )
+            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args )
         else:
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
         

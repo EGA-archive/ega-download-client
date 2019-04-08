@@ -359,10 +359,11 @@ class Pyega3Test(unittest.TestCase):
     
     @responses.activate
     @mock.patch('os.remove')
+    @mock.patch("pyega3.pyega3.get_token", lambda creds: 'good_token' )
     def test_download_file(self,mocked_remove):        
         file_id = "EGAF00000000001"
         url     = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)        
-        good_token = rand_str() 
+        good_creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
 
         mem             = virtual_memory().available
         file_sz         = random.randint(1, mem//512)
@@ -389,7 +390,7 @@ class Pyega3Test(unittest.TestCase):
 
         def request_callback(request):
             auth_hdr = request.headers['Authorization']
-            if auth_hdr is None or auth_hdr != 'Bearer ' + good_token:
+            if auth_hdr is None or auth_hdr != 'Bearer ' + 'good_token':
                 return ( 400, {}, json.dumps({"error_description": "invalid token"}) )
 
             start, end = parse_ranges( request.headers['Range'] )
@@ -412,17 +413,17 @@ class Pyega3Test(unittest.TestCase):
                         with mock.patch( 'os.rename', lambda s,d: mocked_files.__setitem__(os.path.basename(d),mocked_files.pop(os.path.basename(s))) ):
                             pyega3.download_file_retry( 
                                 # add 16 bytes to file size ( IV adjustment )
-                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
+                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
                             self.assertEqual( file_contents, mocked_files[file_name] )
                             
                             # to cover 'local file exists' case
                             pyega3.download_file_retry( 
-                                good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
+                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                             with self.assertRaises(Exception):
                                 pyega3.download_file_retry( 
-                                    good_token, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None) 
+                                    good_creds, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None) 
 
                             mocked_remove.assert_has_calls( 
                                 [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys()) if not file_name in f ],
@@ -430,7 +431,7 @@ class Pyega3Test(unittest.TestCase):
 
                             with mock.patch('htsget.get') as mocked_htsget:
                                 pyega3.download_file_retry( 
-                                    good_token, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None) )
+                                    good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None) )
 
                             args, kwargs = mocked_htsget.call_args
                             self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/EGAF00000000001')
@@ -496,7 +497,7 @@ class Pyega3Test(unittest.TestCase):
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls( 
-                        [mock.call('token', f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None) for f in files if f["fileStatus"]=="available"] )
 
                     # files[1]["checksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
