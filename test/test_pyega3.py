@@ -353,9 +353,11 @@ class Pyega3Test(unittest.TestCase):
 
         for md5, data in test_list:
             m_open = mock.mock_open(read_data=data)
-            with mock.patch( "builtins.open", m_open ):                
-                result = pyega3.md5(rand_str())
-                self.assertEqual(md5, result)
+            with mock.patch( "builtins.open", m_open ):
+                fname = rand_str()
+                with mock.patch('os.path.exists', lambda path:path==fname):
+                    result = pyega3.md5(fname)
+                    self.assertEqual(md5, result)
     
     @responses.activate
     @mock.patch('os.remove')

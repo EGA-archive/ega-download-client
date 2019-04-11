@@ -16,7 +16,7 @@ import logging
 import htsget
 import getpass
 
-version = "3.0.31"
+version = "3.0.32"
 logging_level = logging.INFO
 
 def load_credentials(filepath):
@@ -213,6 +213,7 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
     logging.debug('Merged in {} sec'.format(end - start))
 
 def calculate_md5(fname):
+    if not os.path.exists(fname): raise Exception("Downloaded file '{}' does not exist".format(fname))
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -300,7 +301,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
             merge_bin_files_on_disk(output_file, results)
             
     not_valid_server_md5 = len(str(check_sum or ''))!=32
-    
+
     if( md5(output_file) == check_sum or not_valid_server_md5 ):
         print_local_file_info('Saved to : ', output_file, check_sum )
         if not_valid_server_md5: logging.info("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))
