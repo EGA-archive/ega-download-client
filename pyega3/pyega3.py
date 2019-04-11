@@ -177,6 +177,9 @@ def download_file_slice( url, token, file_name, start_pos, length, pbar=None ):
     headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
 
     print_debug_info( url, None, "Request headers: {}".format(headers) )
+    # time.sleep(...) to prevent HTTP 104 error 
+    # https://stackoverflow.com/questions/383738/104-connection-reset-by-peer-socket-error-or-when-does-closing-a-socket-resu/383816#383816
+    time.sleep(0.01) 
     r = requests.get(url, headers=headers, stream=True)               
     print_debug_info( url, None, "Response headers: {}".format(r.headers) )
 
