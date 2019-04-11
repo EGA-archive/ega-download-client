@@ -359,6 +359,7 @@ class Pyega3Test(unittest.TestCase):
     
     @responses.activate
     @mock.patch('os.remove')
+    @mock.patch("time.sleep", lambda secs:None )
     @mock.patch("pyega3.pyega3.get_token", lambda creds: 'good_token' )
     def test_download_file(self,mocked_remove):        
         file_id = "EGAF00000000001"
