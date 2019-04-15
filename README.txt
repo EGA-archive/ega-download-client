@@ -99,6 +99,13 @@ optional arguments:
                         reference-md5 must also be specified.
   --format {BAM,CRAM}, -f {BAM,CRAM}
                         The format of data to request.
+  --max-retries MAX_RETRIES, -M MAX_RETRIES
+                        The maximum number of times to retry a failed
+                        transfer. Any negative number means infinite number of
+                        retries( default value = 5 ).
+  --retry-wait RETRY_WAIT, -W RETRY_WAIT
+                        The number of seconds to wait before retrying a failed
+                        transfer( default value = 5 ).
   --saveto [SAVETO]     Output file(for files)/output dir(for datasets)
 
 
