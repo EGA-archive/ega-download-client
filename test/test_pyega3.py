@@ -500,7 +500,7 @@ class Pyega3Test(unittest.TestCase):
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls( 
-                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
 
                     # files[1]["checksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")

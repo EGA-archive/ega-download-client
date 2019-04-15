@@ -309,13 +309,11 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         os.remove(output_file)
         raise Exception("MD5 does NOT match - corrupted download")
 
-def download_file_retry( creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args ):
+def download_file_retry( 
+    creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args, max_retries=5, retry_wait=5 ):
 
     time0 = time.time()
     token = get_token(creds)
-
-    max_retries = 5
-    retry_wait = 5
 
     if file_name.endswith(".gpg"): 
         logging.info("GPG files are not supported")
@@ -336,7 +334,8 @@ def download_file_retry( creds, file_id, file_name, file_size, check_sum, num_co
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],
                 data_format=genomic_range_args[4],
-                max_retries=max_retries, retry_wait=retry_wait,
+                max_retries=sys.maxsize if max_retries<0 else max_retries,
+                retry_wait=retry_wait,
                 bearer_token=token)
         print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)            
         return
@@ -359,7 +358,9 @@ def download_file_retry( creds, file_id, file_name, file_size, check_sum, num_co
             logging.info("retry attempt {}".format(num_retries))
 
 
-def download_dataset( credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args ):
+def download_dataset( 
+    credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5 ):
+    
     token = get_token(credentials)
 
     if( not dataset_id in api_list_authorized_datasets(token) ):
@@ -371,7 +372,8 @@ def download_dataset( credentials,  dataset_id, num_connections, key, output_dir
         try:
             if ( status_ok(res['fileStatus']) ):
                 output_file = None if( output_dir is None ) else generate_output_filename(output_dir, res['fileId'], res['fileName'], genomic_range_args)
-                download_file_retry(credentials, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args )        
+                download_file_retry(
+                    credentials, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
         except Exception as e: logging.info(e)
 
 def print_debug_info(url, reply_json, *args):
@@ -424,6 +426,14 @@ def main():
     parser_fetch.add_argument(
         "--format", "-f", type=str, default=None, choices=["BAM","CRAM"], help="The format of data to request.")
         
+    parser_fetch.add_argument(
+        "--max-retries", "-M", type=int, default=5,
+        help="The maximum number of times to retry a failed transfer. Any negative number means infinite number of retries.")
+
+    parser_fetch.add_argument(
+        "--retry-wait", "-W", type=float, default=5,
+        help="The number of seconds to wait before retrying a failed transfer.")
+    
     parser_fetch.add_argument("--saveto", nargs='?',  help="Output file(for files)/output dir(for datasets)")
         
     args = parser.parse_args()
@@ -451,11 +461,11 @@ def main():
     elif args.subcommand == "fetch":        
         genomic_range_args = ( args.reference_name, args.reference_md5, args.start, args.end, args.format )
         if (args.identifier[3] == 'D'):
-            download_dataset( credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args )
+            download_dataset( credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         elif(args.identifier[3] == 'F'):
             token = get_token(credentials)
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )            
-            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args )
+            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         else:
             sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
         
