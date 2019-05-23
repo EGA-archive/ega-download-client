@@ -1,6 +1,6 @@
 coverage==4.5.1
 psutil==5.4.5
-requests==2.18.4
+requests==2.20.0
 responses==0.9.0
 tqdm==4.19.6
 htsget==0.2.5
