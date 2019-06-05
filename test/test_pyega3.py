@@ -244,6 +244,7 @@ class Pyega3Test(unittest.TestCase):
         slice_start     = random.randint(0,file_length)
         slice_length    = random.randint(0,file_length-slice_start)
         file_name       = rand_str()
+        fname_on_disk   = file_name + '-from-'+str(slice_start)+'-len-'+str(slice_length)+'.slice'        
         file_contents   = os.urandom(file_length)
 
         def parse_ranges(s):
@@ -272,12 +273,12 @@ class Pyega3Test(unittest.TestCase):
             self.written_bytes += buf_len
         
         m_open = mock.mock_open()
-        with mock.patch( "builtins.open", m_open, create=True ):  
-            m_open().write.side_effect = mock_write
-            pyega3.download_file_slice(good_url, good_token, file_name, slice_start, slice_length)        
-            self.assertEqual( slice_length, self.written_bytes )
+        with mock.patch( "builtins.open", m_open, create=True ):
+            with mock.patch("os.path.getsize", lambda path: self.written_bytes if path==fname_on_disk else 0):
+                m_open().write.side_effect = mock_write
+                pyega3.download_file_slice(good_url, good_token, file_name, slice_start, slice_length)        
+                self.assertEqual( slice_length, self.written_bytes )
 
-        fname_on_disk = file_name + '-from-'+str(slice_start)+'-len-'+str(slice_length)+'.slice'
         m_open.assert_called_with(fname_on_disk, 'ba')
 
         bad_token = rand_str()

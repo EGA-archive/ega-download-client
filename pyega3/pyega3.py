@@ -177,18 +177,18 @@ def download_file_slice( url, token, file_name, start_pos, length, pbar=None ):
     headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
 
     print_debug_info( url, None, "Request headers: {}".format(headers) )
-    # time.sleep(...) to prevent HTTP 104 error 
-    # https://stackoverflow.com/questions/383738/104-connection-reset-by-peer-socket-error-or-when-does-closing-a-socket-resu/383816#383816
-    time.sleep(0.01) 
-    r = requests.get(url, headers=headers, stream=True)               
-    print_debug_info( url, None, "Response headers: {}".format(r.headers) )
 
-    r.raise_for_status()           
-
-    with open(file_name, 'ba') as file_out:
-        for chunk in r.iter_content(CHUNK_SIZE):
-            file_out.write(chunk)
-            if pbar: pbar.update(len(chunk))
+    with requests.get(url, headers=headers, stream=True) as r:               
+    	print_debug_info( url, None, "Response headers: {}".format(r.headers) )
+    	r.raise_for_status()
+    	with open(file_name, 'ba') as file_out:
+        	for chunk in r.iter_content(CHUNK_SIZE):
+        		file_out.write(chunk)
+        		if pbar: pbar.update(len(chunk))
+            
+    total_received = os.path.getsize(file_name)
+    if total_received != length:
+    	raise Exception( "Slice error: received={}, requested={}, file='{}'".format(total_received, length, file_name) )
 
     return file_name
 
