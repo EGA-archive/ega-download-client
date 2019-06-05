@@ -220,17 +220,17 @@ def calculate_md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+def get_fname_md5(fname):
+	return fname+".md5"
+
 def md5(fname):
-    fname_md5 = fname+".md5"
+    fname_md5 = get_fname_md5(fname)
     # check if md5 has been previously stored in aux file
-    if os.path.exists(fname_md5) and os.path.getsize(fname_md5)==32: 
-        with open(fname_md5,'rb') as f: 
-            return f.read().decode()
+    if os.path.exists(fname_md5) and os.path.getsize(fname_md5)==32:
+        logging.info( "Reusing pre-calculated md5: '{}'".format(fname_md5) )
+        with open(fname_md5,'rb') as f: return f.read().decode()        
     # now do the real calculation
     result = calculate_md5(fname)
-    # save md5 in aux file for future re-use
-    with open(fname_md5,'wb') as f: 
-        f.write(result.encode())
     return result
 
 def print_local_file_info( prefix_str, file, md5 ):
@@ -302,9 +302,12 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
             
     not_valid_server_md5 = len(str(check_sum or ''))!=32
 
-    if( md5(output_file) == check_sum or not_valid_server_md5 ):
+    received_file_md5 = md5(output_file)
+    if( received_file_md5==check_sum or not_valid_server_md5 ):
         print_local_file_info('Saved to : ', output_file, check_sum )
-        if not_valid_server_md5: logging.info("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))
+        if not_valid_server_md5: logging.info("WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(check_sum))            
+        with open(get_fname_md5(output_file),'wb') as f: # save good md5 in aux file for future re-use
+        	f.write( received_file_md5.encode() )
     else:
         os.remove(output_file)
         raise Exception("MD5 does NOT match - corrupted download")
