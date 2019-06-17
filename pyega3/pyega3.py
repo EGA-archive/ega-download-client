@@ -17,7 +17,7 @@ import htsget
 import getpass
 import random
 
-version = "3.0.37"
+version = "3.0.38"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
@@ -455,6 +455,8 @@ def main():
         print("[debugging]")
 
     logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
+
+    print("Session-Id: {}".format(session_id))
 
     *credentials, key = load_credentials(args.credentials_file)
 
