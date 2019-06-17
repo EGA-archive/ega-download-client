@@ -15,9 +15,14 @@ import time
 import logging
 import htsget
 import getpass
+import random
 
-version = "3.0.36"
+version = "3.0.37"
+session_id = random.getrandbits(32)
 logging_level = logging.INFO
+
+def get_standart_headers():
+	return  {'Client-Version':version, 'Session-Id': str(session_id)}
 
 def load_credentials(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
@@ -41,6 +46,7 @@ def get_token(credentials):
     url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    headers.update( get_standart_headers() )
 
     (username, password, client_secret) = credentials
     data = { "grant_type"   : "password", 
@@ -70,6 +76,7 @@ def api_list_authorized_datasets(token):
     """List datasets to which the credentialed user has authorized access"""
 
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)} 
+    headers.update( get_standart_headers() )
     
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets"
     r = requests.get(url, headers=headers)
@@ -92,7 +99,8 @@ def pretty_print_authorized_datasets(reply):
 
 def api_list_files_in_dataset(token, dataset):
 
-    headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
+    headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
+    headers.update( get_standart_headers() )
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)
 
     if( not dataset in api_list_authorized_datasets(token) ):
@@ -140,7 +148,8 @@ def pretty_print_files_in_dataset(reply, dataset):
         
 
 def get_file_name_size_md5(token, file_id):
-    headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}         
+    headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
+    headers.update( get_standart_headers() )
     url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(file_id)
                 
     r = requests.get(url, headers = headers)
@@ -172,7 +181,7 @@ def download_file_slice( url, token, file_name, start_pos, length, pbar=None ):
 
     if( existing_size == length ): return file_name
 
-    headers = {}
+    headers = get_standart_headers()
     headers['Authorization'] = 'Bearer {}'.format(token)        
     headers['Range'] = 'bytes={}-{}'.format(start_pos+existing_size,start_pos+length-1)
 
