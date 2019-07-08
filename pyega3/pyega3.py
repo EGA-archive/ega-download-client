@@ -21,6 +21,11 @@ version = "3.0.38"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
+URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
+URL_API  = "http://pg-ega-pro-09.ebi.ac.uk:8059"
+#URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
+
+
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
 
@@ -43,8 +48,6 @@ def load_credentials(filepath):
     return (creds['username'], creds['password'], creds['client_secret'], creds.get('key'))
 
 def get_token(credentials):
-    url = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
-
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     headers.update( get_standart_headers() )
 
@@ -57,18 +60,19 @@ def get_token(credentials):
              "password"     : password
             }
         
-    r = requests.post( url, headers=headers, data=data )
+    r = requests.post( URL_AUTH, headers=headers, data=data )
     logging.debug(r)
 
     try:
         print('')
         reply = r.json()
-        print_debug_info(url, reply)
+        print_debug_info(URL_AUTH, reply)
         r.raise_for_status()
         oauth_token = reply['access_token']
         logging.info("Authentication success for user '{}'".format(username))
-    except Exception:
-        sys.exit("Authentication failure for user '{}'".format(username))
+    except Exception as ee:
+    	print(ee)
+    	sys.exit("Authentication failure for user '{}'".format(username))
 
     return oauth_token
 
@@ -78,7 +82,7 @@ def api_list_authorized_datasets(token):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)} 
     headers.update( get_standart_headers() )
     
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets"
+    url = URL_API+"/metadata/datasets"
     r = requests.get(url, headers=headers)
     r.raise_for_status()
     
@@ -101,7 +105,7 @@ def api_list_files_in_dataset(token, dataset):
 
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
     headers.update( get_standart_headers() )
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)
+    url = URL_API+"/metadata/datasets/{}/files".format(dataset)
 
     if( not dataset in api_list_authorized_datasets(token) ):
         sys.exit("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))        
@@ -150,7 +154,7 @@ def pretty_print_files_in_dataset(reply, dataset):
 def get_file_name_size_md5(token, file_id):
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
     headers.update( get_standart_headers() )
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(file_id)
+    url = URL_API+"/metadata/files/{}".format(file_id)
                 
     r = requests.get(url, headers = headers)
     r.raise_for_status()
@@ -281,7 +285,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
     if key is not None:
         raise ValueError('key parameter: encrypted downloads are not supported yet')
 
-    url = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)
+    url = URL_API+"/files/{}".format(file_id)
 
     if( key is None ): url+="?destinationFormat=plain"; file_size-=16 #16 bytes IV not necesary in plain mode
 
@@ -341,7 +345,7 @@ def download_file_retry(
     if is_genomic_range(genomic_range_args):
         with open(output_file,'wb') as output:
             htsget.get(
-                "https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/{}".format(file_id),
+                URL_API+"/tickets/files/{}".format(file_id),
                 output,
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],
