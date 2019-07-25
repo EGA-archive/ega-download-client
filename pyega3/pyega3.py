@@ -22,7 +22,7 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
-URL_API  = "http://pg-ega-pro-09.ebi.ac.uk:8059"
+URL_API  = "http://hh-ega-kube-12.ebi.ac.uk:30000/elixir/data"
 #URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
 
 
@@ -132,7 +132,7 @@ def pretty_print_files_in_dataset(reply, dataset):
 
         {
            "checksumType": "MD5",
-            "checksum": "MD5SUM678901234567890123456789012",
+            "unencryptedChecksum": "MD5SUM678901234567890123456789012",
             "fileName": "EGAZ00001314035/b37/NA12878.bam.bai.cip",
             "fileStatus": "available",
             "fileSize": 0,
@@ -145,7 +145,7 @@ def pretty_print_files_in_dataset(reply, dataset):
 
     print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
-        print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
+        print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['unencryptedChecksum'], res['fileName'] ))
 
     print( '-' * 80 )
     print( "Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply )/(1024*1024*1024.0)) )
@@ -162,10 +162,10 @@ def get_file_name_size_md5(token, file_id):
 
     print_debug_info(url,res)
 
-    if( res['fileName'] is None or res['checksum'] is None ):
+    if( res['fileName'] is None or res['unencryptedChecksum'] is None ):
         raise RuntimeError("Metadata for file id '{}' could not be retrieved".format(file_id))
 
-    return ( res['fileName'], res['fileSize'], res['checksum'] )
+    return ( res['fileName'], res['fileSize'], res['unencryptedChecksum'] )
 
 
 def download_file_slice( url, token, file_name, start_pos, length, pbar=None ):
@@ -389,7 +389,7 @@ def download_dataset(
             if ( status_ok(res['fileStatus']) ):
                 output_file = None if( output_dir is None ) else generate_output_filename(output_dir, res['fileId'], res['fileName'], genomic_range_args)
                 download_file_retry(
-                    credentials, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
+                    credentials, res['fileId'], res['fileName'], res['fileSize'], res['unencryptedChecksum'], num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
         except Exception as e: logging.info(e)
 
 def print_debug_info(url, reply_json, *args):
