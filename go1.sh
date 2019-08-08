@@ -11,9 +11,9 @@ do
 	COUNTER=$[$COUNTER +1]
 	echo "ITERATION: $COUNTER "
 	sleep 1
-	#sudo rm -rf /mnt/big4tb/data
-	#sudo mkdir /mnt/big4tb/data
+	rm -rf ./data1
+	mkdir ./data1
 	get_token
 	set -x			
-	sudo aria2c --log-level=warn -l- -ctrue -d"/mnt/big4tb/data" --check-certificate=false --header="Authorization: Bearer $token " https://ega.ebi.ac.uk:8051/elixir/data/files/EGAF00001753746
+	aria2c --file-allocation=none --log-level=warn -l- -ctrue -d"./data1" --check-certificate=false --header="Authorization: Bearer $token " http://hh-ega-kube-12.ebi.ac.uk:30000/elixir/data/files/EGAF00001753746
 done
