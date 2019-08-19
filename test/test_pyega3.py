@@ -32,7 +32,7 @@ class Pyega3Test(unittest.TestCase):
             m_open = mock.mock_open(read_data=json.dumps(good_creds))
             with mock.patch( "builtins.open", m_open ):                
                 good_credentials_file = "credentials.json"
-                result = pyega3.load_credentials(good_credentials_file)
+                result = pyega3.load_config(good_credentials_file)
                 m_open.assert_called_once_with(good_credentials_file)
                 self.assertEqual(len(result) , 4                     )
                 self.assertEqual(result[0]   , good_creds["username"]      )
@@ -47,7 +47,7 @@ class Pyega3Test(unittest.TestCase):
                 with mock.patch( "getpass.getpass" ) as m_get_pw :
                     m_get_pw.return_value = password1              
                     good_credentials_file1 = "credentials1.json"
-                    result1 = pyega3.load_credentials(good_credentials_file1)
+                    result1 = pyega3.load_config(good_credentials_file1)
                     m_open1.assert_called_once_with(good_credentials_file1)
                     self.assertEqual(len(result1) , 4                     )
                     self.assertEqual(result1[0]   , good_creds1["username"]      )
@@ -59,12 +59,12 @@ class Pyega3Test(unittest.TestCase):
             with mock.patch( "builtins.open", mock.mock_open(read_data=json.dumps(bad_creds)) ):         
                 with self.assertRaises(SystemExit):
                     bad_credentials_file = "bad_credentials.json"                
-                    result = pyega3.load_credentials(bad_credentials_file)
+                    result = pyega3.load_config(bad_credentials_file)
 
             with mock.patch( "builtins.open", mock.mock_open(read_data="bad json") ):         
                 with self.assertRaises(SystemExit):
                     bad_credentials_file = "bad_credentials.json"                
-                    result = pyega3.load_credentials(bad_credentials_file)
+                    result = pyega3.load_config(bad_credentials_file)
 
     @responses.activate    
     def test_get_token(self):        

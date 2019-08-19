@@ -22,30 +22,31 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
-URL_API  = "http://pg-ega-pro-09.ebi.ac.uk:8059"
-#URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
-
+URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
 
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
 
-def load_credentials(filepath):
-    """Load credentials for EMBL/EBI EGA from specified file"""
+def load_config(filepath):
+    """Load credentials/config for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath): sys.exit("{} does not exist".format(filepath))
 
     try:
         with open(filepath) as f:
-            creds = json.load(f)
-        if 'username' not in creds or 'client_secret' not in creds:
+            cfg = json.load(f)
+        if 'username' not in cfg or 'client_secret' not in cfg:
             sys.exit("{} does not contain either 'username' or 'client_secret' fields".format(filepath))
     except ValueError:
         sys.exit("invalid JSON file")
 
-    if 'password' not in creds:
-        creds['password'] = getpass.getpass("Password for '{}':".format(creds['username']))
+    if 'password' not in cfg:
+        cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
 
-    return (creds['username'], creds['password'], creds['client_secret'], creds.get('key'))
+    global URL_API
+    if 'server_url' in cfg: URL_API = cfg['server_url']
+
+    return (cfg['username'], cfg['password'], cfg['client_secret'], cfg.get('key'))
 
 def get_token(credentials):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
@@ -405,7 +406,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
-    parser.add_argument("-cf","--credentials-file", required=True, help="JSON file containing credentials e.g.{'username':'user1','password':'toor','key': 'abc'}")
+    parser.add_argument("-cf","--config-file", required=True, help="JSON file containing credentials/config e.g.{'username':'user1','password':'toor','key': 'abc','server_url': 'https://ega.ebi.ac.uk:8051/elixir/data'}")
     parser.add_argument("-c","--connections", type=int, default=1, help="Download using specified number of connections")
 
     subparsers = parser.add_subparsers(dest="subcommand", help = "subcommands")
@@ -460,9 +461,10 @@ def main():
 
     logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
 
-    print("Session-Id: {}".format(session_id))
-
-    *credentials, key = load_credentials(args.credentials_file)
+    *credentials, key = load_config(args.config_file)
+    print()
+    print("Server URL: {}".format(URL_API))       
+    print("Session-Id: {}".format(session_id))   
 
     if args.subcommand == "datasets":
         token = get_token(credentials)
