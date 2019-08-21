@@ -17,7 +17,7 @@ import htsget
 import getpass
 import random
 
-version = "3.0.38"
+version = "3.0.39"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
@@ -327,7 +327,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         raise Exception("MD5 does NOT match - corrupted download")
 
 def download_file_retry( 
-    creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args, max_retries=5, retry_wait=5 ):
+    creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args, max_retries, retry_wait ):
 
     time0 = time.time()
     token = get_token(creds)
@@ -376,7 +376,7 @@ def download_file_retry(
 
 
 def download_dataset( 
-    credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5 ):
+    credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries, retry_wait ):
     
     token = get_token(credentials)
 
@@ -448,7 +448,7 @@ def main():
         help="The maximum number of times to retry a failed transfer. Any negative number means infinite number of retries.")
 
     parser_fetch.add_argument(
-        "--retry-wait", "-W", type=float, default=5,
+        "--retry-wait", "-W", type=float, default=60,
         help="The number of seconds to wait before retrying a failed transfer.")
     
     parser_fetch.add_argument("--saveto", nargs='?',  help="Output file(for files)/output dir(for datasets)")

@@ -417,12 +417,12 @@ class Pyega3Test(unittest.TestCase):
                         with mock.patch( 'os.rename', lambda s,d: mocked_files.__setitem__(os.path.basename(d),mocked_files.pop(os.path.basename(s))) ):
                             pyega3.download_file_retry( 
                                 # add 16 bytes to file size ( IV adjustment )
-                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
+                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
                             self.assertEqual( file_contents, mocked_files[file_name] )
                             
                             # to cover 'local file exists' case
                             pyega3.download_file_retry( 
-                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None )
+                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                             with self.assertRaises(Exception):
@@ -435,7 +435,7 @@ class Pyega3Test(unittest.TestCase):
 
                             with mock.patch('htsget.get') as mocked_htsget:
                                 pyega3.download_file_retry( 
-                                    good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None) )
+                                    good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None), max_retries=5, retry_wait=5 )
 
                             args, kwargs = mocked_htsget.call_args
                             self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/EGAF00000000001')
@@ -447,9 +447,9 @@ class Pyega3Test(unittest.TestCase):
                             self.assertEqual(kwargs.get('data_format'), None)
 
         with self.assertRaises(ValueError):
-            pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None )
+            pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
-        pyega3.download_file_retry( "", "", "test.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None ) 
+        pyega3.download_file_retry( "", "", "test.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 ) 
 
     @responses.activate    
     @mock.patch("pyega3.pyega3.download_file_retry")
@@ -494,10 +494,10 @@ class Pyega3Test(unittest.TestCase):
                     creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
                     num_connections = 1
                     bad_dataset = "EGAD00000000666"
-                    pyega3.download_dataset( creds, bad_dataset, num_connections, None, None, None )
+                    pyega3.download_dataset( creds, bad_dataset, num_connections, None, None, None, 5,5 )
                     self.assertEqual( 0, mocked_dfr.call_count )
                 
-                    pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None )
+                    pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None, 5,5 )
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls( 
@@ -506,7 +506,7 @@ class Pyega3Test(unittest.TestCase):
                     # files[1]["checksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
                     with mock.patch("pyega3.pyega3.download_file_retry", dfr_throws ):
-                        pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None )
+                        pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None, 5,5 )
                     
 
        
