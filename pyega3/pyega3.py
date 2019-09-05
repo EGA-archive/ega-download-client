@@ -22,9 +22,7 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
-URL_API  = "http://hh-ega-kube-12.ebi.ac.uk:30000/elixir/data"
-#URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
-
+URL_API  = "https://ega.ebi.ac.uk:8052/elixir/data"
 
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
