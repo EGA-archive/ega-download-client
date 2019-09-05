@@ -17,7 +17,7 @@ import htsget
 import getpass
 import random
 
-version = "3.0.38"
+version = "3.0.38b"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
