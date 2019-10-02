@@ -110,7 +110,7 @@ optional arguments:
 
 How to debug and provide the output to the EGA Helpdesk team?
 
-When attempting your download always make sure that you are using the most up-to-date version of the Python Client, which can be always found on our GitHub page.
+When attempting your download always make sure that you are using the most up-to-date version of the Python Client, which can be always found in the current page.
 
 We encourage our users facing download failures to contact us here on Helpdesk (ega-helpdesk@ebi.ac.uk). In order to expedite the trouble shooting process please use the following steps. 
 
