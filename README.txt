@@ -108,4 +108,22 @@ optional arguments:
                         transfer( default value = 5 ).
   --saveto [SAVETO]     Output file(for files)/output dir(for datasets)
 
+How to debug and provide the output to the EGA Helpdesk team?
 
+When attempting your download always make sure that you are using the most up-to-date version of the Python Client, which can be always found on our GitHub page.
+
+We encourage our users facing download failures to contact us here on Helpdesk (ega-helpdesk@ebi.ac.uk). In order to expedite the trouble shooting process please use the following steps. 
+
+1. Make sure you have access to the dataset/s you are trying to download using the following command
+
+pyega3 -cf CREDENTIAL_FILE datasets
+
+2. Try to list out the files in the dataset of interest using the following command
+
+pyega3 -cf CREDENTIAL_FILE files EGAD00001000740
+
+3. Finally, please try and pull down one file using the debug mode
+
+pyega3 -cf CREDENTIAL_FILE -d fetch EGAF00001208713
+
+The debug flag (-d) will generate a log which can be forwarded to our Helpdesk members, which will allow us to gather as much information as possible about your download including connectivity issues and error codes.
