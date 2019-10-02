@@ -127,18 +127,18 @@ pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
 
 Users facing download issues
 ----------------------------
-1.	Make sure you have access to the dataset/s you are trying to download using the following command
+1.Make sure you have access to the dataset/s you are trying to download using the following command
 
 pyega3 -cf  /Path/To/CREDENTIAL_FILE datasets
 
-2.	Try to list out the files in the dataset of interest using the following command.
+2.Try to list out the files in the dataset of interest using the following command.
 
 pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
 
 The output of which will also provide you with the file size. it is recommended that you select a file of small size for the next step
 
-3.	Finally, please try and pull down this file using the debug mode. 
+3.Finally, please try and pull down this file using the debug mode. 
 
 pyega3 -d -cf  /Path/To/CREDENTIAL_FILE fetch EGAF00000000000
 
-The debug flag (-d) will generate a log which can be forwarded to   our   Helpdesk   members. The contents of the debug output will provide us with more clues to the state of your downloads and are needed to query the errors and return codes that your attempts will receive.
+The debug flag (-d) will generate a log which can be forwarded to our Helpdesk members. The contents of the debug output will provide us with more clues to the state of your downloads and are needed to query the errors and return codes that your attempts will receive.
