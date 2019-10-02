@@ -135,7 +135,7 @@ pyega3 -cf  /Path/To/CREDENTIAL_FILE datasets
 
 pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
 
-The output of which will also provide you with the file size. it is recommended that you select a file of small size for the next step
+The output of which will also provide you with the file size. It is recommended that you select a file of small size for the next step
 
 3.Finally, please try and pull down this file using the debug mode. 
 
