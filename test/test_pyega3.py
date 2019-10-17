@@ -438,7 +438,7 @@ class Pyega3Test(unittest.TestCase):
                                     good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None) )
 
                             args, kwargs = mocked_htsget.call_args
-                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/EGAF00000000001')
+                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/tickets/tickets/files/EGAF00000000001')
                             
                             self.assertEqual(kwargs.get('reference_name'), 'chr1')
                             self.assertEqual(kwargs.get('reference_md5'), None)
