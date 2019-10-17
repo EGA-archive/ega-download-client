@@ -23,6 +23,7 @@ logging_level = logging.INFO
 
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 URL_API  = "https://ega.ebi.ac.uk:8052/elixir/data"
+URL_API_TICKET = "https://ega.ebi.ac.uk:8052/elixir/tickets"
 
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
@@ -343,7 +344,7 @@ def download_file_retry(
     if is_genomic_range(genomic_range_args):
         with open(output_file,'wb') as output:
             htsget.get(
-                URL_API+"/tickets/files/{}".format(file_id),
+                URL_API_TICKET+"/tickets/files/{}".format(file_id),
                 output,
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],
