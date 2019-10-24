@@ -24,6 +24,8 @@ logging_level = logging.INFO
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
 
+legacy_dataset_list = [ "EGAD00000000003","EGAD00000000004","EGAD00000000005","EGAD00000000006","EGAD00000000007","EGAD00000000008","EGAD00000000009","EGAD00000000025","EGAD00000000029","EGAD00000000043","EGAD00000000048","EGAD00000000049","EGAD00000000051","EGAD00000000052","EGAD00000000053","EGAD00000000054","EGAD00000000055","EGAD00000000056","EGAD00000000057","EGAD00000000060","EGAD00000000114","EGAD00000000119","EGAD00000000120","EGAD00000000121","EGAD00000000122","EGAD00001000132","EGAD00010000124","EGAD00010000144","EGAD00010000148","EGAD00010000150","EGAD00010000158","EGAD00010000160","EGAD00010000162","EGAD00010000164","EGAD00010000246","EGAD00010000248","EGAD00010000250","EGAD00010000256","EGAD00010000444" ]
+
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
 
@@ -103,6 +105,8 @@ def pretty_print_authorized_datasets(reply):
         print(datasetid)
 
 def api_list_files_in_dataset(token, dataset):
+    if( dataset in legacy_dataset_list):
+        sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
 
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
     headers.update( get_standart_headers() )
@@ -377,7 +381,10 @@ def download_file_retry(
 
 def download_dataset( 
     credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries, retry_wait ):
-    
+
+    if( dataset_id in legacy_dataset_list):
+        sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
+
     token = get_token(credentials)
 
     if( not dataset_id in api_list_authorized_datasets(token) ):
