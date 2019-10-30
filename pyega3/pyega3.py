@@ -231,7 +231,7 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge):
     logging.debug('Merged in {} sec'.format(end - start))
 
 def calculate_md5(fname):
-    if not os.path.exists(fname): raise Exception("Downloaded file '{}' does not exist".format(fname))
+    if not os.path.exists(fname): raise Exception("Local file '{}' does not exist".format(fname))
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -328,7 +328,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         	f.write( received_file_md5.encode() )
     else:
         os.remove(output_file)
-        raise Exception("MD5 does NOT match - corrupted download")
+        raise Exception("Download process expected md5 value '{}' but got '{}'".format(check_sum, received_file_md5))
 
 def download_file_retry( 
     creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args, max_retries, retry_wait ):
