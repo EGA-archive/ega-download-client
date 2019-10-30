@@ -480,7 +480,7 @@ def main():
 
     if args.subcommand == "files":
         if (args.identifier[3] != 'D'):
-            sys.exit("Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")                        
+            sys.exit("Unrecognized identifier - please use EGAD accession for dataset requests")                        
         token = get_token(credentials)
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
