@@ -73,7 +73,7 @@ def get_token(credentials):
         logging.info("Authentication success for user '{}'".format(username))
     except Exception as ee:
     	print(ee)
-    	sys.exit("Authentication failure for user '{}'".format(username))
+    	sys.exit("Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
 
     return oauth_token
 
@@ -92,7 +92,7 @@ def api_list_authorized_datasets(token):
     print_debug_info(url,reply)
     
     if reply is None:
-        sys.exit("List authorized datasets failed")    
+        sys.exit("You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")    
 
     return reply
 
@@ -478,7 +478,7 @@ def main():
 
     if args.subcommand == "files":
         if (args.identifier[3] != 'D'):
-            sys.exit("Unrecognized identifier -- only datasets (EGAD...) supported")                        
+            sys.exit("Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")                        
         token = get_token(credentials)
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
@@ -492,7 +492,7 @@ def main():
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )            
             download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         else:
-            sys.exit("Unrecognized identifier -- only datasets (EGAD...) and and files (EGAF...) supported")            
+            sys.exit("Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")            
         
 
 if __name__ == "__main__":
