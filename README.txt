@@ -46,8 +46,6 @@ optional arguments:
 For reference there is a test CREDENTIALS_FILE provided here in 'credential_file.json'
 
 Your username and password are provided to you by EGA.
-Specifying password is not mandatory - if password is not provided 
-the user will be asked to enter it from the console
 
 ----------------------------------------------------------------------------------
 
