@@ -17,12 +17,13 @@ import htsget
 import getpass
 import random
 
-version = "3.0.39"
+version = "3.0.40"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
-URL_API  = "https://ega.ebi.ac.uk:8051/elixir/data"
+URL_API  = "https://ega.ebi.ac.uk:8052/elixir/data"
+URL_API_TICKET = "https://ega.ebi.ac.uk:8052/elixir/tickets"
 
 legacy_dataset_list = [ "EGAD00000000003","EGAD00000000004","EGAD00000000005","EGAD00000000006","EGAD00000000007","EGAD00000000008","EGAD00000000009","EGAD00000000025","EGAD00000000029","EGAD00000000043","EGAD00000000048","EGAD00000000049","EGAD00000000051","EGAD00000000052","EGAD00000000053","EGAD00000000054","EGAD00000000055","EGAD00000000056","EGAD00000000057","EGAD00000000060","EGAD00000000114","EGAD00000000119","EGAD00000000120","EGAD00000000121","EGAD00000000122","EGAD00001000132","EGAD00010000124","EGAD00010000144","EGAD00010000148","EGAD00010000150","EGAD00010000158","EGAD00010000160","EGAD00010000162","EGAD00010000164","EGAD00010000246","EGAD00010000248","EGAD00010000250","EGAD00010000256","EGAD00010000444" ]
 
@@ -108,6 +109,9 @@ def api_list_files_in_dataset(token, dataset):
     if( dataset in legacy_dataset_list):
         sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
 
+    if( dataset in legacy_dataset_list):
+        sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
+	
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
     headers.update( get_standart_headers() )
     url = URL_API+"/metadata/datasets/{}/files".format(dataset)
@@ -137,7 +141,7 @@ def pretty_print_files_in_dataset(reply, dataset):
 
         {
            "checksumType": "MD5",
-            "checksum": "MD5SUM678901234567890123456789012",
+            "unencryptedChecksum": "MD5SUM678901234567890123456789012",
             "fileName": "EGAZ00001314035/b37/NA12878.bam.bai.cip",
             "fileStatus": "available",
             "fileSize": 0,
@@ -150,7 +154,7 @@ def pretty_print_files_in_dataset(reply, dataset):
 
     print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
-        print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['checksum'], res['fileName'] ))
+        print(format_string.format( res['fileId'], status_ok(res['fileStatus']) , str(res['fileSize']), res['unencryptedChecksum'], res['fileName'] ))
 
     print( '-' * 80 )
     print( "Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply )/(1024*1024*1024.0)) )
@@ -167,10 +171,10 @@ def get_file_name_size_md5(token, file_id):
 
     print_debug_info(url,res)
 
-    if( res['fileName'] is None or res['checksum'] is None ):
+    if( res['fileName'] is None or res['unencryptedChecksum'] is None ):
         raise RuntimeError("Metadata for file id '{}' could not be retrieved".format(file_id))
 
-    return ( res['fileName'], res['fileSize'], res['checksum'] )
+    return ( res['fileName'], res['fileSize'], res['unencryptedChecksum'] )
 
 
 def download_file_slice( url, token, file_name, start_pos, length, pbar=None ):
@@ -350,7 +354,7 @@ def download_file_retry(
     if is_genomic_range(genomic_range_args):
         with open(output_file,'wb') as output:
             htsget.get(
-                URL_API+"/tickets/files/{}".format(file_id),
+                URL_API_TICKET+"/tickets/files/{}".format(file_id),
                 output,
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],
@@ -380,11 +384,11 @@ def download_file_retry(
 
 
 def download_dataset( 
-    credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries, retry_wait ):
+    credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5 ):
 
     if( dataset_id in legacy_dataset_list):
         sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
-
+	
     token = get_token(credentials)
 
     if( not dataset_id in api_list_authorized_datasets(token) ):
@@ -397,7 +401,7 @@ def download_dataset(
             if ( status_ok(res['fileStatus']) ):
                 output_file = None if( output_dir is None ) else generate_output_filename(output_dir, res['fileId'], res['fileName'], genomic_range_args)
                 download_file_retry(
-                    credentials, res['fileId'], res['fileName'], res['fileSize'], res['checksum'], num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
+                    credentials, res['fileId'], res['fileName'], res['fileSize'], res['unencryptedChecksum'], num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
         except Exception as e: logging.info(e)
 
 def print_debug_info(url, reply_json, *args):

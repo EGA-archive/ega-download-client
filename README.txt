@@ -42,17 +42,10 @@ optional arguments:
                         Download using specified number of connections                      
                         
 ----------------------------------------------------------------------------------
-  
-Credentials file supposed to be in json format e.g:
-{
-    "username": "my.email@domain.edu",
-    "password": "mypassword",    
-    "client_secret":"AMenuDLjVdVo4BSwi0QD54LL6NeVDEZRzEQUJ7hJOM3g4imDZBHHX0hNfKHPeQIGkskhtCmqAJtt_jm7EKq-rWw"
-}
+
+For reference there is a test CREDENTIALS_FILE provided here in 'credential_file.json'
 
 Your username and password are provided to you by EGA.
-Specifying password is not mandatory - if password is not provided 
-the user will be asked to enter it from the console
 
 ----------------------------------------------------------------------------------
 

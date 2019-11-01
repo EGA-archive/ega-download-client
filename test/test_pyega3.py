@@ -98,7 +98,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate    
     def test_api_list_authorized_datasets(self):        
-        url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets"
+        url = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets"
 
         good_token = rand_str()       
         datasets = ["EGAD00000000001", "EGAD00000000002","EGAD00000000003"]
@@ -133,14 +133,14 @@ class Pyega3Test(unittest.TestCase):
 
         responses.add(
                 responses.GET, 
-                "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets",
+                "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets",
                 json=json.dumps([dataset]), status=200)
 
-        url_files = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)        
+        url_files = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets/{}/files".format(dataset)
 
         files = [
         {
-            "checksum": "3b89b96387db5199fef6ba613f70e27c",
+            "unencryptedChecksum": "3b89b96387db5199fef6ba613f70e27c",
             "datasetId": dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000001",
@@ -149,7 +149,7 @@ class Pyega3Test(unittest.TestCase):
             "fileName": "EGAZ00000000001/ENCFF000001.bam"
         },
         {
-            "checksum": "b8ae14d5d1f717ab17d45e8fc36946a0",
+            "unencryptedChecksum": "b8ae14d5d1f717ab17d45e8fc36946a0",
             "datasetId": dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000002",
@@ -200,13 +200,13 @@ class Pyega3Test(unittest.TestCase):
         def request_callback(request):   
             auth_hdr = request.headers['Authorization']
             if auth_hdr is not None and auth_hdr == 'Bearer ' + good_token:
-                return ( 200, {}, json.dumps({"fileName": file_name, "fileSize": file_size, "checksum": check_sum}) )
+                return ( 200, {}, json.dumps({"fileName": file_name, "fileSize": file_size, "unencryptedChecksum": check_sum}) )
             else:
                 return ( 400, {}, json.dumps({"error_description": "invalid token"}) )
                 
         responses.add_callback(
             responses.GET, 
-            "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(good_file_id),
+            "https://ega.ebi.ac.uk:8052/elixir/data/metadata/files/{}".format(good_file_id),
             callback=request_callback,
             content_type='application/json',
             )                
@@ -228,8 +228,8 @@ class Pyega3Test(unittest.TestCase):
         bad_file_id_2 = "EGAF00000000666"
         responses.add(
             responses.GET, 
-            "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(bad_file_id_2),
-            json={"fileName": None, "checksum": None}, status=200)            
+            "https://ega.ebi.ac.uk:8052/elixir/data/metadata/files/{}".format(bad_file_id_2),
+            json={"fileName": None, "unencryptedChecksum": None}, status=200)
         with self.assertRaises(RuntimeError):
             pyega3.get_file_name_size_md5(good_token, bad_file_id_2)
   
@@ -366,7 +366,7 @@ class Pyega3Test(unittest.TestCase):
     @mock.patch("pyega3.pyega3.get_token", lambda creds: 'good_token' )
     def test_download_file(self,mocked_remove):        
         file_id = "EGAF00000000001"
-        url     = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)        
+        url     = "https://ega.ebi.ac.uk:8052/elixir/data/files/{}".format(file_id)        
         good_creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
 
         mem             = virtual_memory().available
@@ -438,7 +438,7 @@ class Pyega3Test(unittest.TestCase):
                                     good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None), max_retries=5, retry_wait=5 )
 
                             args, kwargs = mocked_htsget.call_args
-                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/data/tickets/files/EGAF00000000001')
+                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8052/elixir/tickets/tickets/files/EGAF00000000001')
                             
                             self.assertEqual(kwargs.get('reference_name'), 'chr1')
                             self.assertEqual(kwargs.get('reference_md5'), None)
@@ -470,7 +470,7 @@ class Pyega3Test(unittest.TestCase):
             "fileStatus": "not_available"
         },
         {
-            "checksum": file1_md5,
+            "unencryptedChecksum": file1_md5,
             "datasetId": good_dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000001",
@@ -479,7 +479,7 @@ class Pyega3Test(unittest.TestCase):
             "fileName": "EGAZ00000000001/ENCFF000001.bam.cip"
         },
         {
-            "checksum": file2_md5,
+            "unencryptedChecksum": file2_md5,
             "datasetId": good_dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000002",
@@ -501,9 +501,9 @@ class Pyega3Test(unittest.TestCase):
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls( 
-                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
 
-                    # files[1]["checksum"] = "wrong_md5_exactly_32_chars_longg"
+                    # files[1]["unencryptedChecksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
                     with mock.patch("pyega3.pyega3.download_file_retry", dfr_throws ):
                         pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None, 5,5 )
@@ -530,6 +530,8 @@ class Pyega3Test(unittest.TestCase):
             pyega3.generate_output_filename( folder, file_id, full_name , ( "chr1", None, 100, 200, "CRAM" ) )
         )
 
+    def test_pretty_print_authorized_datasets(self):
+        pyega3.pretty_print_authorized_datasets(['EGAD0123'])
 
 if __name__ == '__main__':
     del(sys.argv[1:])
