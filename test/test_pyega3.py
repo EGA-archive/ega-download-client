@@ -140,7 +140,7 @@ class Pyega3Test(unittest.TestCase):
 
         files = [
         {
-            "checksum": "3b89b96387db5199fef6ba613f70e27c",
+            "unencryptedChecksum": "3b89b96387db5199fef6ba613f70e27c",
             "datasetId": dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000001",
@@ -149,7 +149,7 @@ class Pyega3Test(unittest.TestCase):
             "fileName": "EGAZ00000000001/ENCFF000001.bam"
         },
         {
-            "checksum": "b8ae14d5d1f717ab17d45e8fc36946a0",
+            "unencryptedChecksum": "b8ae14d5d1f717ab17d45e8fc36946a0",
             "datasetId": dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000002",
@@ -470,7 +470,7 @@ class Pyega3Test(unittest.TestCase):
             "fileStatus": "not_available"
         },
         {
-            "checksum": file1_md5,
+            "unencryptedChecksum": file1_md5,
             "datasetId": good_dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000001",
@@ -479,7 +479,7 @@ class Pyega3Test(unittest.TestCase):
             "fileName": "EGAZ00000000001/ENCFF000001.bam.cip"
         },
         {
-            "checksum": file2_md5,
+            "unencryptedChecksum": file2_md5,
             "datasetId": good_dataset,
             "fileStatus": "available",
             "fileId": "EGAF00000000002",
@@ -501,9 +501,9 @@ class Pyega3Test(unittest.TestCase):
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls( 
-                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['checksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
 
-                    # files[1]["checksum"] = "wrong_md5_exactly_32_chars_longg"
+                    # files[1]["unencryptedChecksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
                     with mock.patch("pyega3.pyega3.download_file_retry", dfr_throws ):
                         pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None, 5,5 )
