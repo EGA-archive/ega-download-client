@@ -200,7 +200,7 @@ class Pyega3Test(unittest.TestCase):
         def request_callback(request):   
             auth_hdr = request.headers['Authorization']
             if auth_hdr is not None and auth_hdr == 'Bearer ' + good_token:
-                return ( 200, {}, json.dumps({"fileName": file_name, "fileSize": file_size, "checksum": check_sum}) )
+                return ( 200, {}, json.dumps({"fileName": file_name, "fileSize": file_size, "unencryptedChecksum": check_sum}) )
             else:
                 return ( 400, {}, json.dumps({"error_description": "invalid token"}) )
                 
@@ -229,7 +229,7 @@ class Pyega3Test(unittest.TestCase):
         responses.add(
             responses.GET, 
             "https://ega.ebi.ac.uk:8052/elixir/data/metadata/files/{}".format(bad_file_id_2),
-            json={"fileName": None, "checksum": None}, status=200)            
+            json={"fileName": None, "unencryptedChecksum": None}, status=200)
         with self.assertRaises(RuntimeError):
             pyega3.get_file_name_size_md5(good_token, bad_file_id_2)
   
