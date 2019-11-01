@@ -100,5 +100,38 @@ optional arguments:
                         The number of seconds to wait before retrying a failed
                         transfer( default value = 5 ).
   --saveto [SAVETO]     Output file(for files)/output dir(for datasets)
+  
+  
+How to debug and provide the output to the EGA Helpdesk team?
+-------------------------------------------------------------
 
+When attempting your download always make sure that you are using the most up-to-date version of the Python Client, which can be always found on the current page.
 
+We encourage our users facing download failures to contact us here on Helpdesk (ega-helpdesk@ebi.ac.uk). In order to expedite the trouble shooting process we would need the output from your debug attempts. Examples of which are detailed below -
+
+Users facing access issues
+--------------------------
+
+nohup pyega3 -d -cf  /Path/To/CREDENTIAL_FILE datasets > /Path/To/Output.txt
+
+Users facing issues listing the files in a dataset
+---------------------------------------------------
+pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
+
+Users facing download issues
+----------------------------
+1.Make sure you have access to the dataset/s you are trying to download using the following command
+
+pyega3 -cf  /Path/To/CREDENTIAL_FILE datasets
+
+2.Try to list out the files in the dataset of interest using the following command.
+
+pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
+
+The output of which will also provide you with the file size. It is recommended that you select a file of small size for the next step
+
+3.Finally, please try and pull down this file using the debug mode. 
+
+pyega3 -d -cf  /Path/To/CREDENTIAL_FILE fetch EGAF00000000000
+
+The debug flag (-d) will generate a log which can be forwarded to our Helpdesk members. The contents of the debug output will provide us with more clues to the state of your downloads and are needed to query the errors and return codes that your attempts will receive.

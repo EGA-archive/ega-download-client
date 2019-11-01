@@ -30,23 +30,26 @@ legacy_dataset_list = [ "EGAD00000000003","EGAD00000000004","EGAD00000000005","E
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
 
-def load_credentials(filepath):
-    """Load credentials for EMBL/EBI EGA from specified file"""
+def load_config(filepath):
+    """Load credentials/config for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath): sys.exit("{} does not exist".format(filepath))
 
     try:
         with open(filepath) as f:
-            creds = json.load(f)
-        if 'username' not in creds or 'client_secret' not in creds:
+            cfg = json.load(f)
+        if 'username' not in cfg or 'client_secret' not in cfg:
             sys.exit("{} does not contain either 'username' or 'client_secret' fields".format(filepath))
     except ValueError:
         sys.exit("invalid JSON file")
 
-    if 'password' not in creds:
-        creds['password'] = getpass.getpass("Password for '{}':".format(creds['username']))
+    if 'password' not in cfg:
+        cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
 
-    return (creds['username'], creds['password'], creds['client_secret'], creds.get('key'))
+    global URL_API
+    if 'server_url' in cfg: URL_API = cfg['server_url']
+
+    return (cfg['username'], cfg['password'], cfg['client_secret'], cfg.get('key'))
 
 def get_token(credentials):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
@@ -103,6 +106,8 @@ def pretty_print_authorized_datasets(reply):
         print(datasetid)
 
 def api_list_files_in_dataset(token, dataset):
+    if( dataset in legacy_dataset_list):
+        sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
 
     if( dataset in legacy_dataset_list):
         sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
@@ -330,7 +335,7 @@ def download_file( token, file_id, file_size, check_sum, num_connections, key, o
         raise Exception("Download process expected md5 value '{}' but got '{}'".format(check_sum, received_file_md5))
 
 def download_file_retry( 
-    creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args, max_retries=5, retry_wait=5 ):
+    creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args, max_retries, retry_wait ):
 
     time0 = time.time()
     token = get_token(creds)
@@ -412,7 +417,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
-    parser.add_argument("-cf","--credentials-file", required=True, help="JSON file containing credentials e.g.{'username':'user1','password':'toor','key': 'abc'}")
+    parser.add_argument("-cf","--config-file", required=True, help="JSON file containing credentials/config e.g.{'username':'user1','password':'toor','key': 'abc','server_url': 'https://ega.ebi.ac.uk:8051/elixir/data'}")
     parser.add_argument("-c","--connections", type=int, default=1, help="Download using specified number of connections")
 
     subparsers = parser.add_subparsers(dest="subcommand", help = "subcommands")
@@ -454,7 +459,7 @@ def main():
         help="The maximum number of times to retry a failed transfer. Any negative number means infinite number of retries.")
 
     parser_fetch.add_argument(
-        "--retry-wait", "-W", type=float, default=5,
+        "--retry-wait", "-W", type=float, default=60,
         help="The number of seconds to wait before retrying a failed transfer.")
     
     parser_fetch.add_argument("--saveto", nargs='?',  help="Output file(for files)/output dir(for datasets)")
@@ -467,9 +472,10 @@ def main():
 
     logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
 
-    print("Session-Id: {}".format(session_id))
-
-    *credentials, key = load_credentials(args.credentials_file)
+    *credentials, key = load_config(args.config_file)
+    print()
+    print("Server URL: {}".format(URL_API))       
+    print("Session-Id: {}".format(session_id))   
 
     if args.subcommand == "datasets":
         token = get_token(credentials)
