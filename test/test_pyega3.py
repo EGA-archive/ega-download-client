@@ -530,6 +530,8 @@ class Pyega3Test(unittest.TestCase):
             pyega3.generate_output_filename( folder, file_id, full_name , ( "chr1", None, 100, 200, "CRAM" ) )
         )
 
+    def test_pretty_print_authorized_datasets(self):
+        pyega3.pretty_print_authorized_datasets(['EGAD0123'])
 
 if __name__ == '__main__':
     del(sys.argv[1:])
