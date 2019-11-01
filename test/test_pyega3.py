@@ -98,7 +98,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate    
     def test_api_list_authorized_datasets(self):        
-        url = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets"
+        url = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets"
 
         good_token = rand_str()       
         datasets = ["EGAD00000000001", "EGAD00000000002","EGAD00000000003"]
@@ -133,10 +133,10 @@ class Pyega3Test(unittest.TestCase):
 
         responses.add(
                 responses.GET, 
-                "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets",
+                "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets",
                 json=json.dumps([dataset]), status=200)
 
-        url_files = "https://ega.ebi.ac.uk:8051/elixir/data/metadata/datasets/{}/files".format(dataset)        
+        url_files = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets/{}/files".format(dataset)
 
         files = [
         {
@@ -206,7 +206,7 @@ class Pyega3Test(unittest.TestCase):
                 
         responses.add_callback(
             responses.GET, 
-            "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(good_file_id),
+            "https://ega.ebi.ac.uk:8052/elixir/data/metadata/files/{}".format(good_file_id),
             callback=request_callback,
             content_type='application/json',
             )                
@@ -228,7 +228,7 @@ class Pyega3Test(unittest.TestCase):
         bad_file_id_2 = "EGAF00000000666"
         responses.add(
             responses.GET, 
-            "https://ega.ebi.ac.uk:8051/elixir/data/metadata/files/{}".format(bad_file_id_2),
+            "https://ega.ebi.ac.uk:8052/elixir/data/metadata/files/{}".format(bad_file_id_2),
             json={"fileName": None, "checksum": None}, status=200)            
         with self.assertRaises(RuntimeError):
             pyega3.get_file_name_size_md5(good_token, bad_file_id_2)
@@ -366,7 +366,7 @@ class Pyega3Test(unittest.TestCase):
     @mock.patch("pyega3.pyega3.get_token", lambda creds: 'good_token' )
     def test_download_file(self,mocked_remove):        
         file_id = "EGAF00000000001"
-        url     = "https://ega.ebi.ac.uk:8051/elixir/data/files/{}".format(file_id)        
+        url     = "https://ega.ebi.ac.uk:8052/elixir/data/files/{}".format(file_id)        
         good_creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
 
         mem             = virtual_memory().available
@@ -438,7 +438,7 @@ class Pyega3Test(unittest.TestCase):
                                     good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None) )
 
                             args, kwargs = mocked_htsget.call_args
-                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8051/elixir/tickets/tickets/files/EGAF00000000001')
+                            self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8052/elixir/tickets/tickets/files/EGAF00000000001')
                             
                             self.assertEqual(kwargs.get('reference_name'), 'chr1')
                             self.assertEqual(kwargs.get('reference_md5'), None)
