@@ -13,7 +13,6 @@ script:
 - bash test.sh
 after_success:
 - coverage report
-- coveralls
 - python setup.py sdist
 deploy:
   provider: pypi
