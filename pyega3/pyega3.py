@@ -24,42 +24,73 @@ logging_level = logging.INFO
 URL_AUTH = "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 URL_API  = "https://ega.ebi.ac.uk:8052/elixir/data"
 URL_API_TICKET = "https://ega.ebi.ac.uk:8052/elixir/tickets"
+CLIENT_SECRET = "AMenuDLjVdVo4BSwi0QD54LL6NeVDEZRzEQUJ7hJOM3g4imDZBHHX0hNfKHPeQIGkskhtCmqAJtt_jm7EKq-rWw"
 
-legacy_dataset_list = [ "EGAD00000000003","EGAD00000000004","EGAD00000000005","EGAD00000000006","EGAD00000000007","EGAD00000000008","EGAD00000000009","EGAD00000000025","EGAD00000000029","EGAD00000000043","EGAD00000000048","EGAD00000000049","EGAD00000000051","EGAD00000000052","EGAD00000000053","EGAD00000000054","EGAD00000000055","EGAD00000000056","EGAD00000000057","EGAD00000000060","EGAD00000000114","EGAD00000000119","EGAD00000000120","EGAD00000000121","EGAD00000000122","EGAD00001000132","EGAD00010000124","EGAD00010000144","EGAD00010000148","EGAD00010000150","EGAD00010000158","EGAD00010000160","EGAD00010000162","EGAD00010000164","EGAD00010000246","EGAD00010000248","EGAD00010000250","EGAD00010000256","EGAD00010000444" ]
+LEGACY_DATASETS = [ "EGAD00000000003","EGAD00000000004","EGAD00000000005","EGAD00000000006","EGAD00000000007","EGAD00000000008","EGAD00000000009","EGAD00000000025","EGAD00000000029","EGAD00000000043","EGAD00000000048","EGAD00000000049","EGAD00000000051","EGAD00000000052","EGAD00000000053","EGAD00000000054","EGAD00000000055","EGAD00000000056","EGAD00000000057","EGAD00000000060","EGAD00000000114","EGAD00000000119","EGAD00000000120","EGAD00000000121","EGAD00000000122","EGAD00001000132","EGAD00010000124","EGAD00010000144","EGAD00010000148","EGAD00010000150","EGAD00010000158","EGAD00010000160","EGAD00010000162","EGAD00010000164","EGAD00010000246","EGAD00010000248","EGAD00010000250","EGAD00010000256","EGAD00010000444" ]
 
 def get_standart_headers():
 	return  {'Client-Version':version, 'Session-Id': str(session_id)}
 
-def load_config(filepath):
-    """Load credentials/config for EMBL/EBI EGA from specified file"""
+
+def get_credential():
+    cfg = {}
+    cfg['username'] = input("Enter Username :")
+    cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
+    return (cfg['username'], cfg['password'])
+
+
+def load_credential(filepath):
+    """Load credentials for EMBL/EBI EGA from specified file"""
+    filepath = os.path.expanduser(filepath)
+    if not os.path.exists(filepath):
+        print("{} does not exist".format(filepath))
+        return get_credential()
+
+    try:
+        with open(filepath) as f:
+            cfg = json.load(f)
+        if 'username' not in cfg:
+                cfg['username'] = input("Enter Username :")
+        if 'password' not in cfg:
+                cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
+    except ValueError:
+        sys.exit("Invalid credential config JSON file")
+
+    return (cfg['username'], cfg['password'])
+
+
+def load_server_config(filepath):
+    """Load server config for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath): sys.exit("{} does not exist".format(filepath))
 
     try:
         with open(filepath) as f:
-            cfg = json.load(f)
-        if 'username' not in cfg or 'client_secret' not in cfg:
-            sys.exit("{} does not contain either 'username' or 'client_secret' fields".format(filepath))
+            sfg = json.load(f)
+        if 'url_auth' not in sfg or 'url_api' not in sfg or 'url_api_ticket' not in sfg or 'client_secret' not in sfg:
+            sys.exit("{} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields".format(filepath))
     except ValueError:
-        sys.exit("invalid JSON file")
+        sys.exit("Invalid server config JSON file")
 
-    if 'password' not in cfg:
-        cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
-
+    global URL_AUTH
+    URL_AUTH = sfg['url_auth']
     global URL_API
-    if 'server_url' in cfg: URL_API = cfg['server_url']
+    URL_API = sfg['url_api']
+    global URL_API_TICKET
+    URL_API_TICKET = sfg['url_api_ticket']
+    global CLIENT_SECRET
+    CLIENT_SECRET = sfg['client_secret']
 
-    return (cfg['username'], cfg['password'], cfg['client_secret'], cfg.get('key'))
 
 def get_token(credentials):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     headers.update( get_standart_headers() )
 
-    (username, password, client_secret) = credentials
+    (username, password) = credentials
     data = { "grant_type"   : "password", 
              "client_id"    : "f20cd2d3-682a-4568-a53e-4262ef54c8f4",
              "scope"        : "openid",
-             "client_secret": client_secret,
+             "client_secret": CLIENT_SECRET,
              "username"     : username,
              "password"     : password
             }
@@ -106,12 +137,9 @@ def pretty_print_authorized_datasets(reply):
         print(datasetid)
 
 def api_list_files_in_dataset(token, dataset):
-    if( dataset in legacy_dataset_list):
+    if( dataset in LEGACY_DATASETS):
         sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
 
-    if( dataset in legacy_dataset_list):
-        sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
-	
     headers = {'Accept':'application/json', 'Authorization': 'Bearer {}'.format(token)}
     headers.update( get_standart_headers() )
     url = URL_API+"/metadata/datasets/{}/files".format(dataset)
@@ -386,7 +414,7 @@ def download_file_retry(
 def download_dataset( 
     credentials,  dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5 ):
 
-    if( dataset_id in legacy_dataset_list):
+    if( dataset_id in LEGACY_DATASETS):
         sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
 	
     token = get_token(credentials)
@@ -417,7 +445,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
-    parser.add_argument("-cf","--config-file", required=True, help="JSON file containing credentials/config e.g.{'username':'user1','password':'toor','key': 'abc','server_url': 'https://ega.ebi.ac.uk:8051/elixir/data'}")
+    parser.add_argument("-cf","--config-file",dest='config_file', help="JSON file containing credentials/config e.g.{'username':'user1','password':'toor'}")
+    parser.add_argument("-sf","--server-file",dest='server_file', help="JSON file containing server config e.g.{'url_auth':'aai url','url_api':'api url', 'url_api_ticket':'htsget url', 'client_secret':'client secret'}")
     parser.add_argument("-c","--connections", type=int, default=1, help="Download using specified number of connections")
 
     subparsers = parser.add_subparsers(dest="subcommand", help = "subcommands")
@@ -472,7 +501,14 @@ def main():
 
     logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
 
-    *credentials, key = load_config(args.config_file)
+    if args.config_file is None:
+        credentials = get_credential()
+    else:
+        credentials = load_credential(args.config_file)
+
+    if args.server_file is not None:
+        load_server_config(args.server_file)
+
     print()
     print("Server URL: {}".format(URL_API))       
     print("Session-Id: {}".format(session_id))   
@@ -492,11 +528,11 @@ def main():
     elif args.subcommand == "fetch":        
         genomic_range_args = ( args.reference_name, args.reference_md5, args.start, args.end, args.format )
         if (args.identifier[3] == 'D'):
-            download_dataset( credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
+            download_dataset( credentials, args.identifier, args.connections, CLIENT_SECRET, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         elif(args.identifier[3] == 'F'):
             token = get_token(credentials)
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )            
-            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
+            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, CLIENT_SECRET, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         else:
             sys.exit("Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")            
         
