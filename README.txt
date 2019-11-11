@@ -47,7 +47,7 @@ optional arguments:
                         
 ----------------------------------------------------------------------------------
 
-For reference there is a test [CREDENTIALS_FILE](pyega3/config/default_credential_file.json)
+For reference there is a test CREDENTIALS_FILE here https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json
 
 Your username and password are provided to you by EGA.
 
