@@ -537,6 +537,13 @@ class Pyega3Test(unittest.TestCase):
         with mock.patch('builtins.input', side_effect=user_input[0]):
             self.assertEqual(pyega3.get_credential(), (user_input[0],user_input[1]))
 
+    @mock.patch('getpass.getpass')
+    def test_load_credential(self, getpw):
+        user_input = ["U", "P"]
+        getpw.return_value = user_input[1]
+        with mock.patch('builtins.input', side_effect=user_input[0]):
+            self.assertEqual(pyega3.load_credential("unknownfile.txt"), (user_input[0],user_input[1]))
+
 if __name__ == '__main__':
     del(sys.argv[1:])
     unittest.main(exit=False)
