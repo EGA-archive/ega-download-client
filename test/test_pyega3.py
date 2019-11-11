@@ -530,6 +530,13 @@ class Pyega3Test(unittest.TestCase):
                       "fileSize": 0, "datasetId": "EGAD00001003338", "fileId": "EGAF00001753747" }]
         pyega3.pretty_print_files_in_dataset(testReply, ['EGAD0123'])
 
+    @mock.patch('getpass.getpass')
+    def test_get_credential(self, getpw):
+        user_input = ["U", "P"]
+        getpw.return_value = user_input[1]
+        with mock.patch('builtins.input', side_effect=user_input[0]):
+            self.assertEqual(pyega3.get_credential(), (user_input[0],user_input[1]))
+
 if __name__ == '__main__':
     del(sys.argv[1:])
     unittest.main(exit=False)
