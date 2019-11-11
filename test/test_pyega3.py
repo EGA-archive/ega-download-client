@@ -544,6 +544,13 @@ class Pyega3Test(unittest.TestCase):
         with mock.patch('builtins.input', side_effect=user_input[0]):
             self.assertEqual(pyega3.load_credential("unknownfile.txt"), (user_input[0],user_input[1]))
 
+    def test_legacy_dataset(self):
+        with self.assertRaises(SystemExit):
+            pyega3.api_list_files_in_dataset("token", "EGAD00000000003")
+
+        with self.assertRaises(SystemExit):
+            pyega3.download_dataset("credentials", "EGAD00000000003", "1", "key", "output_dir", "genomic_range_args")
+
 if __name__ == '__main__':
     del(sys.argv[1:])
     unittest.main(exit=False)
