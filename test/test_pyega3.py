@@ -106,6 +106,7 @@ class Pyega3Test(unittest.TestCase):
             content_type='application/json',
             )                
 
+
         resp_json = pyega3.api_list_authorized_datasets(good_token)
         self.assertEqual( len(resp_json), 3 )
         self.assertEqual( resp_json[0], datasets[0] )
@@ -522,6 +523,12 @@ class Pyega3Test(unittest.TestCase):
 
     def test_pretty_print_authorized_datasets(self):
         pyega3.pretty_print_authorized_datasets(['EGAD0123'])
+
+    def test_pretty_print_files_in_dataset(self):
+        testReply=  [{"checksumType": "MD5", "unencryptedChecksum": "MD5SUM678901234567890123456789012",
+                      "fileName": "EGAZ00001314035.bam.bai.cip", "fileStatus": "available",
+                      "fileSize": 0, "datasetId": "EGAD00001003338", "fileId": "EGAF00001753747" }]
+        pyega3.pretty_print_files_in_dataset(testReply, ['EGAD0123'])
 
 if __name__ == '__main__':
     del(sys.argv[1:])
