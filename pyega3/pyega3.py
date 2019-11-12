@@ -36,7 +36,7 @@ def get_credential():
     cfg = {}
     cfg['username'] = input("Enter Username :")
     cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
-    return (cfg['username'], cfg['password'])
+    return (cfg['username'], cfg['password'], None)
 
 
 def load_credential(filepath):
@@ -56,7 +56,7 @@ def load_credential(filepath):
     except ValueError:
         sys.exit("Invalid credential config JSON file")
 
-    return (cfg['username'], cfg['password'])
+    return (cfg['username'], cfg['password'], cfg.get('key'))
 
 def load_default_server_config():
     """Load default server config for EMBL/EBI EGA from specified file"""
@@ -511,11 +511,11 @@ def main():
     config_file_path = os.path.join(root_dir, "config", "default_credential_file.json")
 
     if args.test:
-        credentials = load_credential(config_file_path)
+        *credentials, key = load_credential(config_file_path)
     elif args.config_file is None:
-        credentials = load_credential("credential_file.json")
+        *credentials, key = load_credential("credential_file.json")
     else:
-        credentials = load_credential(args.config_file)
+        *credentials, key = load_credential(args.config_file)
 
     if args.server_file is not None:
         load_server_config(args.server_file)
@@ -539,15 +539,14 @@ def main():
     elif args.subcommand == "fetch":
         genomic_range_args = ( args.reference_name, args.reference_md5, args.start, args.end, args.format )
         if (args.identifier[3] == 'D'):
-            download_dataset( credentials, args.identifier, args.connections, CLIENT_SECRET, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
+            download_dataset( credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         elif(args.identifier[3] == 'F'):
             token = get_token(credentials)
             file_name, file_size, check_sum = get_file_name_size_md5( token, args.identifier )
-            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, CLIENT_SECRET, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
+            download_file_retry( credentials, args.identifier, file_name, file_size, check_sum, args.connections, key, args.saveto, genomic_range_args, args.max_retries, args.retry_wait )
         else:
             sys.exit("Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")
 
 
 if __name__ == "__main__":
     main()
-
