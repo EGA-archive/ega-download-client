@@ -47,9 +47,21 @@ optional arguments:
                         
 ----------------------------------------------------------------------------------
 
-For reference there is a test CREDENTIALS_FILE here https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json
-
+How to define your Credential file:
 Your username and password are provided to you by EGA.
+
+Create a file called credential_file.json and place it in the directory from where the client will run.
+Ideally, this file has to be saved in .json format and should contain your registered EGA email address and EGA password.
+Example format https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json
+
+----------------------------------------------------------------------------------
+
+Test commands using test user:
+
+For testing purpose we have a test user account. To check it you can run below example commands:
+1. pyega3 -t datasets
+2. pyega3 -t files EGAD00001003338
+3. pyega3 -t fetch EGAF00001775036
 
 ----------------------------------------------------------------------------------
 
@@ -120,7 +132,7 @@ nohup pyega3 -d -cf  /Path/To/CREDENTIAL_FILE datasets > /Path/To/Output.txt
 
 Users facing issues listing the files in a dataset
 ---------------------------------------------------
-pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
+pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00001000740
 
 Users facing download issues
 ----------------------------
