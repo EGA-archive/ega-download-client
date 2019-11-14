@@ -56,9 +56,7 @@ Example format https://github.com/EGA-archive/ega-download-client/blob/master/py
 
 ----------------------------------------------------------------------------------
 
-Test commands using test user:
-
-For testing purpose we have a test user account. To check it you can run below example commands:
+In order to test/check your usage of the API we have created a test user account which can be used using the following commands:
 1. pyega3 -t datasets
 2. pyega3 -t files EGAD00001003338
 3. pyega3 -t fetch EGAF00001775036
