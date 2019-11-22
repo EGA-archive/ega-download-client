@@ -35,17 +35,31 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -d, --debug           Extra debugging messages
+  -t, --test            Use the default test user credential to run the script
   -cf CREDENTIALS_FILE, --credentials-file CREDENTIALS_FILE
                         JSON file containing credentials
                         e.g.{'username':'user1','password':'toor'}
+  -sf server_file, --server-file server_file
+                        JSON file containing server credentials
+                        e.g.{'url_auth':'aai url','url_api':'api url','url_api_ticket':'htsget url','client_secret':'secret'}
   -c CONNECTIONS, --connections CONNECTIONS
                         Download using specified number of connections                      
                         
 ----------------------------------------------------------------------------------
 
-For reference there is a test CREDENTIALS_FILE provided here in 'credential_file.json'
-
+How to define your Credential file:
 Your username and password are provided to you by EGA.
+
+Create a file called credential_file.json and place it in the directory from where the client will run.
+Ideally, this file has to be saved in .json format and should contain your registered EGA email address and EGA password.
+Example format https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json
+
+----------------------------------------------------------------------------------
+
+In order to test/check your usage of the API we have created a test user account which can be used using the following commands:
+1. pyega3 -t datasets
+2. pyega3 -t files EGAD00001003338
+3. pyega3 -t fetch EGAF00001775036
 
 ----------------------------------------------------------------------------------
 
@@ -116,7 +130,7 @@ nohup pyega3 -d -cf  /Path/To/CREDENTIAL_FILE datasets > /Path/To/Output.txt
 
 Users facing issues listing the files in a dataset
 ---------------------------------------------------
-pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
+pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00001000740
 
 Users facing download issues
 ----------------------------

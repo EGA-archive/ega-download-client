@@ -28,43 +28,33 @@ class Pyega3Test(unittest.TestCase):
         with mock.patch('os.path.exists') as m:
             m.return_value = True
 
-            good_creds={"username":rand_str(),"password":rand_str(),"key":rand_str(),"client_secret":rand_str()}
+            good_creds={"username":rand_str(),"password":rand_str()}
             m_open = mock.mock_open(read_data=json.dumps(good_creds))
             with mock.patch( "builtins.open", m_open ):                
                 good_credentials_file = "credentials.json"
-                result = pyega3.load_config(good_credentials_file)
+                result = pyega3.load_credential(good_credentials_file)
                 m_open.assert_called_once_with(good_credentials_file)
-                self.assertEqual(len(result) , 4                     )
+                self.assertEqual(len(result) , 3                     )
                 self.assertEqual(result[0]   , good_creds["username"]      )
                 self.assertEqual(result[1]   , good_creds["password"]      )
-                self.assertEqual(result[2]   , good_creds["client_secret"] )
-                self.assertEqual(result[3]   , good_creds["key"]           )
 
             password1 = rand_str()
-            good_creds1={"username":rand_str(),"key":rand_str(),"client_secret":rand_str()}
+            good_creds1={"username":rand_str()}
             m_open1 = mock.mock_open(read_data=json.dumps(good_creds1))
             with mock.patch( "builtins.open", m_open1 ):
                 with mock.patch( "getpass.getpass" ) as m_get_pw :
                     m_get_pw.return_value = password1              
                     good_credentials_file1 = "credentials1.json"
-                    result1 = pyega3.load_config(good_credentials_file1)
+                    result1 = pyega3.load_credential(good_credentials_file1)
                     m_open1.assert_called_once_with(good_credentials_file1)
-                    self.assertEqual(len(result1) , 4                     )
+                    self.assertEqual(len(result1) , 3                     )
                     self.assertEqual(result1[0]   , good_creds1["username"]      )
                     self.assertEqual(result1[1]   , password1                    )
-                    self.assertEqual(result1[2]   , good_creds1["client_secret"] )
-                    self.assertEqual(result1[3]   , good_creds1["key"]           )
 
-            bad_creds={"notusername":rand_str(),"password":rand_str(),"key":rand_str(),"client_secret":rand_str()}
-            with mock.patch( "builtins.open", mock.mock_open(read_data=json.dumps(bad_creds)) ):         
+            with mock.patch( "builtins.open", mock.mock_open(read_data="bad json") ):
                 with self.assertRaises(SystemExit):
                     bad_credentials_file = "bad_credentials.json"                
-                    result = pyega3.load_config(bad_credentials_file)
-
-            with mock.patch( "builtins.open", mock.mock_open(read_data="bad json") ):         
-                with self.assertRaises(SystemExit):
-                    bad_credentials_file = "bad_credentials.json"                
-                    result = pyega3.load_config(bad_credentials_file)
+                    result = pyega3.load_credential(bad_credentials_file)
 
     @responses.activate    
     def test_get_token(self):        
@@ -73,7 +63,7 @@ class Pyega3Test(unittest.TestCase):
         id_token     = rand_str()
         access_token = rand_str()          
 
-        good_credentials = (rand_str(), rand_str(), rand_str())
+        good_credentials = (rand_str(), rand_str())
 
         def request_callback(request):
             
@@ -92,7 +82,7 @@ class Pyega3Test(unittest.TestCase):
         resp_token = pyega3.get_token(good_credentials)
         self.assertEqual( resp_token, access_token )
 
-        bad_credentials = (rand_str(), rand_str(), rand_str())
+        bad_credentials = (rand_str(), rand_str())
         with self.assertRaises(SystemExit):
             pyega3.get_token(bad_credentials)                                
 
@@ -115,6 +105,7 @@ class Pyega3Test(unittest.TestCase):
             callback=request_callback,
             content_type='application/json',
             )                
+
 
         resp_json = pyega3.api_list_authorized_datasets(good_token)
         self.assertEqual( len(resp_json), 3 )
@@ -419,27 +410,27 @@ class Pyega3Test(unittest.TestCase):
                                 # add 16 bytes to file size ( IV adjustment )
                                 good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
                             self.assertEqual( file_contents, mocked_files[file_name] )
-                            
+
                             # to cover 'local file exists' case
-                            pyega3.download_file_retry( 
+                            pyega3.download_file_retry(
                                 good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                             with self.assertRaises(Exception):
-                                pyega3.download_file_retry( 
-                                    good_creds, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None) 
+                                pyega3.download_file_retry(
+                                    good_creds, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None)
 
-                            mocked_remove.assert_has_calls( 
+                            mocked_remove.assert_has_calls(
                                 [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys()) if not file_name in f ],
                                 any_order=True )
 
                             with mock.patch('htsget.get') as mocked_htsget:
-                                pyega3.download_file_retry( 
+                                pyega3.download_file_retry(
                                     good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None), max_retries=5, retry_wait=5 )
 
                             args, kwargs = mocked_htsget.call_args
                             self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8052/elixir/tickets/tickets/files/EGAF00000000001')
-                            
+
                             self.assertEqual(kwargs.get('reference_name'), 'chr1')
                             self.assertEqual(kwargs.get('reference_md5'), None)
                             self.assertEqual(kwargs.get('start'), 1)
@@ -449,14 +440,14 @@ class Pyega3Test(unittest.TestCase):
         with self.assertRaises(ValueError):
             pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
-        pyega3.download_file_retry( "", "", "test.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 ) 
+        pyega3.download_file_retry( "", "", "test.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
-    @responses.activate    
+    @responses.activate
     @mock.patch("pyega3.pyega3.download_file_retry")
-    def test_download_dataset(self, mocked_dfr):         
+    def test_download_dataset(self, mocked_dfr):
 
-        good_dataset = "EGAD00000000001"               
-        
+        good_dataset = "EGAD00000000001"
+
         file1_sz       = 4804928
         file1_contents = os.urandom(file1_sz)
         file1_md5      = hashlib.md5(file1_contents).hexdigest()
@@ -486,30 +477,30 @@ class Pyega3Test(unittest.TestCase):
             "checksumType": "MD5",
             "fileSize": file2_sz,
             "fileName": "EGAZ00000000002/ENCFF000002.bam"
-        } ]                     
-              
+        } ]
+
         with mock.patch("pyega3.pyega3.get_token", lambda creds: 'token' ):
-            with mock.patch("pyega3.pyega3.api_list_authorized_datasets", lambda token: [good_dataset]):        
-                with mock.patch("pyega3.pyega3.api_list_files_in_dataset", lambda token, dataset_id: files ):                
+            with mock.patch("pyega3.pyega3.api_list_authorized_datasets", lambda token: [good_dataset]):
+                with mock.patch("pyega3.pyega3.api_list_files_in_dataset", lambda token, dataset_id: files ):
                     creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
                     num_connections = 1
                     bad_dataset = "EGAD00000000666"
                     pyega3.download_dataset( creds, bad_dataset, num_connections, None, None, None, 5,5 )
                     self.assertEqual( 0, mocked_dfr.call_count )
-                
+
                     pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None, 5,5 )
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
-                    mocked_dfr.assert_has_calls( 
+                    mocked_dfr.assert_has_calls(
                         [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
 
                     # files[1]["unencryptedChecksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
                     with mock.patch("pyega3.pyega3.download_file_retry", dfr_throws ):
                         pyega3.download_dataset( creds, good_dataset, num_connections, None, None, None, 5,5 )
-                    
 
-       
+
+
     def test_generate_output_filename(self):
         folder = "FOO"
         file_id = "EGAF001"
@@ -532,6 +523,33 @@ class Pyega3Test(unittest.TestCase):
 
     def test_pretty_print_authorized_datasets(self):
         pyega3.pretty_print_authorized_datasets(['EGAD0123'])
+
+    def test_pretty_print_files_in_dataset(self):
+        testReply=  [{"checksumType": "MD5", "unencryptedChecksum": "MD5SUM678901234567890123456789012",
+                      "fileName": "EGAZ00001314035.bam.bai.cip", "fileStatus": "available",
+                      "fileSize": 0, "datasetId": "EGAD00001003338", "fileId": "EGAF00001753747" }]
+        pyega3.pretty_print_files_in_dataset(testReply, ['EGAD0123'])
+
+    @mock.patch('getpass.getpass')
+    def test_get_credential(self, getpw):
+        user_input = ["U", "P"]
+        getpw.return_value = user_input[1]
+        with mock.patch('builtins.input', side_effect=user_input[0]):
+            self.assertEqual(pyega3.get_credential(), (user_input[0],user_input[1], None))
+
+    @mock.patch('getpass.getpass')
+    def test_load_credential(self, getpw):
+        user_input = ["U", "P"]
+        getpw.return_value = user_input[1]
+        with mock.patch('builtins.input', side_effect=user_input[0]):
+            self.assertEqual(pyega3.load_credential("unknownfile.txt"), (user_input[0],user_input[1], None))
+
+    def test_legacy_dataset(self):
+        with self.assertRaises(SystemExit):
+            pyega3.api_list_files_in_dataset("token", "EGAD00000000003")
+
+        with self.assertRaises(SystemExit):
+            pyega3.download_dataset("credentials", "EGAD00000000003", "1", "key", "output_dir", "genomic_range_args")
 
 if __name__ == '__main__':
     del(sys.argv[1:])

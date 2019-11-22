@@ -1,0 +1,6 @@
+{
+    "url_auth": "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token",
+    "url_api": "https://ega.ebi.ac.uk:8052/elixir/data",
+    "url_api_ticket":"https://ega.ebi.ac.uk:8052/elixir/tickets",
+    "client_secret":"AMenuDLjVdVo4BSwi0QD54LL6NeVDEZRzEQUJ7hJOM3g4imDZBHHX0hNfKHPeQIGkskhtCmqAJtt_jm7EKq-rWw"
+}
