@@ -45,8 +45,8 @@ optional arguments:
                         JSON file containing server credentials
                         e.g.{'url_auth':'aai url','url_api':'api url','url_api_ticket':'htsget url','client_secret':'secret'}
   -c CONNECTIONS, --connections CONNECTIONS
-                        Download using specified number of connections                      
-                        
+                        Download using specified number of connections
+
 ----------------------------------------------------------------------------------
 
 How to define your Credential file:
@@ -65,15 +65,15 @@ In order to test/check your usage of the API we have created a test user account
 
 ----------------------------------------------------------------------------------
 
-Parallelism ( download via multiple connections ) works on the file level, 
-but still usable while downloading whole dataset. 
-If -c command line switch is provided all big files (>100Mb) in the 
+Parallelism ( download via multiple connections ) works on the file level,
+but still usable while downloading whole dataset.
+If -c command line switch is provided all big files (>100Mb) in the
 dataset will be downloaded using specified # of connections.
 
-The number of connections breaks down individual file downloads into segments, 
-which are then downloaded in parallel. So using a very high number actually 
+The number of connections breaks down individual file downloads into segments,
+which are then downloaded in parallel. So using a very high number actually
 introduces overhead that slows down the download of the file.
-Files are still downloaded in sequence – so multiple connections doesn't mean 
+Files are still downloaded in sequence – so multiple connections doesn't mean
 downloading multiple files in parallel, if an entire dataset is being downloaded.
 
 ----------------------------------------------------------------------------------
@@ -116,8 +116,8 @@ optional arguments:
                         The number of seconds to wait before retrying a failed
                         transfer( default value = 5 ).
   --saveto [SAVETO]     Output file(for files)/output dir(for datasets)
-  
-  
+
+
 How to debug and provide the output to the EGA Helpdesk team?
 -------------------------------------------------------------
 
@@ -146,7 +146,7 @@ pyega3 -d -cf  /Path/To/CREDENTIAL_FILE files EGAD00000000000
 
 The output of which will also provide you with the file size. It is recommended that you select a file of small size for the next step
 
-3.Finally, please try and pull down this file using the debug mode. 
+3.Finally, please try and pull down this file using the debug mode.
 
 pyega3 -d -cf  /Path/To/CREDENTIAL_FILE fetch EGAF00000000000
 

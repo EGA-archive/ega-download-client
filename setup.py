@@ -21,7 +21,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 3.4"
+        "Programming Language :: Python :: 3.5"
     ],    
     entry_points={
             "console_scripts": [
