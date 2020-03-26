@@ -31,4 +31,13 @@ test:
     - bash test.sh
     - coverage report
   #  - coveralls
+
+
+deploy:
+  only:
+    - tags
+    - master
+  script:
     - python setup.py sdist
+    - pip install twine
+    - twine upload --username ega-bot --pasword $PYPI_SECRET dist/*
