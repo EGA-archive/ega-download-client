@@ -3,7 +3,7 @@ pyEGA3 uses the EGA REST API to download authorized datasets and files
 
 Currently works only with Python3
 
-Note: For service level requests, such as no response from the EGA AAI or Data API, please email helpdesk@ega-archive.org
+Note: For service level requests, such as no response from the EGA AAI or Data API, please email helpdesk@ega-archive.org a
 
 REQUIREMENTS:
 Python "requests" module
