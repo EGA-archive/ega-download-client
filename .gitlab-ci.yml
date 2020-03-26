@@ -28,3 +28,6 @@ test:
     - echo $TEST_SUITE
     - echo $TEST_SUITE > test.sh
     - bash test.sh
+    - coverage report
+    - coveralls
+    - python setup.py sdist
