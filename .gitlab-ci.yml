@@ -30,5 +30,5 @@ test:
     - echo $TEST_SUITE > test.sh
     - bash test.sh
     - coverage report
-    - coveralls
+  #  - coveralls
     - python setup.py sdist
