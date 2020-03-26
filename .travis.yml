@@ -1,7 +1,7 @@
 sudo: false
 language: python
 python:
-- '3.4'
+- '3.5'
 env:
 - TEST_SUITE='coverage run --source=pyega3 setup.py test'
 install:
