@@ -27,6 +27,7 @@ before_script:
   - pip install python-coveralls
 
 test:
+  stage: test
   script:
     - echo $TEST_SUITE
     - echo $TEST_SUITE > test.sh
@@ -36,6 +37,7 @@ test:
 
 
 deploy:
+  stage: deploy
   #only:
    # - tags
    # - master
