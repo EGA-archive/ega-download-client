@@ -35,7 +35,7 @@ test:
     - coverage report
   #  - coveralls
 
-
+#Deployment statement
 deploy:
   stage: deploy
   only:
