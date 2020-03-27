@@ -43,4 +43,4 @@ deploy:
   script:
     - python setup.py sdist
     - pip install twine
-    - twine upload --username ega-bot --password $PYPI_SECRET dist/*
+    - twine upload --username __token__ --password $PYPI_SECRET dist/*
