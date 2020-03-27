@@ -35,12 +35,11 @@ test:
     - coverage report
   #  - coveralls
 
-#Deployment statement
 deploy:
   stage: deploy
-  only:
-    - tags
-    - master
+  #only:
+   # - tags
+   # - master
   script:
     - python setup.py sdist
     - pip install twine
