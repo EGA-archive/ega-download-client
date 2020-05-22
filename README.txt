@@ -11,8 +11,8 @@ http://docs.python-requests.org/en/master/
 pip3 install requests
 
 Firewall Ports
-This client makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443/) and to the EGA Data API (https://ega.ebi.ac.uk:8051). Both ports 8443 and 8051 must be reachable from the location where this client script is run. Otherwise you will experience timeouts.
-(e.g. https://ega.ebi.ac.uk:8443/ega-openid-connect-server/, https://ega.ebi.ac.uk:8051/elixir/central/stats/load should not time out).
+This client makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443/) and to the EGA Data API (https://ega.ebi.ac.uk:8052). Both ports 8443 and 8052 must be reachable from the location where this client script is run. Otherwise you will experience timeouts.
+(e.g. https://ega.ebi.ac.uk:8443/ega-openid-connect-server/, https://ega.ebi.ac.uk:8052/elixir/central/stats/load should not time out).
 ----------------------------------------------------------------------------------
 INSTALLATION via Pip:
 sudo pip3 install pyega3
