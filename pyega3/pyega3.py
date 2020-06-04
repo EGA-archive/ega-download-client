@@ -80,20 +80,20 @@ def load_server_config(filepath):
 
     try:
         with open(filepath) as f:
-            sfg = json.load(f)
-        if 'url_auth' not in sfg or 'url_api' not in sfg or 'url_api_ticket' not in sfg or 'client_secret' not in sfg:
+            custom_server_config = json.load(f)
+        if 'url_auth' not in custom_server_config or 'url_api' not in custom_server_config or 'url_api_ticket' not in custom_server_config or 'client_secret' not in custom_server_config:
             sys.exit(
                 "{} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields".format(
                     filepath))
 
         global URL_AUTH
-        URL_AUTH = sfg['url_auth']
+        URL_AUTH = custom_server_config['url_auth']
         global URL_API
-        URL_API = sfg['url_api']
+        URL_API = custom_server_config['url_api']
         global URL_API_TICKET
-        URL_API_TICKET = sfg['url_api_ticket']
+        URL_API_TICKET = custom_server_config['url_api_ticket']
         global CLIENT_SECRET
-        CLIENT_SECRET = sfg['client_secret']
+        CLIENT_SECRET = custom_server_config['client_secret']
     except ValueError:
         sys.exit("Invalid server config JSON file")
 
@@ -121,8 +121,8 @@ def get_token(credentials):
         r.raise_for_status()
         oauth_token = reply['access_token']
         logging.info("Authentication success for user '{}'".format(username))
-    except Exception as ee:
-        print(ee)
+    except Exception as expectedException:
+        print(expectedException)
         sys.exit(
             "Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
 
