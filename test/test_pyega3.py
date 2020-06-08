@@ -319,7 +319,7 @@ class Pyega3Test(unittest.TestCase):
 
         with mock.patch('builtins.open', new=open_wrapper):
             with mock.patch( 'os.rename', lambda s,d: merged_bytes.extend(files_to_merge[os.path.basename(s)]) ):
-                pyega3.merge_bin_files_on_disk( target_file_name, list(files_to_merge.keys()) )
+                pyega3.merge_bin_files_on_disk( target_file_name, list(files_to_merge.keys()), 0) #this value can be changed from 0 to other/actual value
 
         mocked_remove.assert_has_calls( [mock.call(f) for f in list(files_to_merge.keys())[1:]] )
 
@@ -348,7 +348,7 @@ class Pyega3Test(unittest.TestCase):
             with mock.patch( "builtins.open", m_open ):
                 fname = rand_str()
                 with mock.patch('os.path.exists', lambda path:path==fname):
-                    result = pyega3.md5(fname)
+                    result = pyega3.md5(fname, len(fname))
                     self.assertEqual(md5, result)
     
     @responses.activate
