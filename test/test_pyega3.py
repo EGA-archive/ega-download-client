@@ -137,7 +137,8 @@ class Pyega3Test(unittest.TestCase):
             "fileId": "EGAF00000000001",
             "checksumType": "MD5",
             "fileSize": 4804928,
-            "fileName": "EGAZ00000000001/ENCFF000001.bam"
+            "fileName": "EGAZ00000000001/ENCFF000001.bam",
+            "displayFileName": "ENCFF000001.bam"
         },
         {
             "unencryptedChecksum": "b8ae14d5d1f717ab17d45e8fc36946a0",
@@ -146,7 +147,8 @@ class Pyega3Test(unittest.TestCase):
             "fileId": "EGAF00000000002",
             "checksumType": "MD5",
             "fileSize": 5991400,
-            "fileName": "EGAZ00000000002/ENCFF000002.bam"
+            "fileName": "EGAZ00000000002/ENCFF000002.bam",
+            "displayFileName": "ENCFF000002.bam"
         } ]
 
         good_token = rand_str()
@@ -184,6 +186,7 @@ class Pyega3Test(unittest.TestCase):
         good_file_id = "EGAF00000000001"
         file_size    = 4804928
         file_name    = "EGAZ00000000001/ENCFF000001.bam"
+        display_file_name    = "ENCFF000001.bam"
         check_sum    = "3b89b96387db5199fef6ba613f70e27c"
 
         good_token = rand_str()       
@@ -191,7 +194,8 @@ class Pyega3Test(unittest.TestCase):
         def request_callback(request):   
             auth_hdr = request.headers['Authorization']
             if auth_hdr is not None and auth_hdr == 'Bearer ' + good_token:
-                return ( 200, {}, json.dumps({"fileName": file_name, "fileSize": file_size, "unencryptedChecksum": check_sum}) )
+                return ( 200, {}, json.dumps({"fileName": file_name, "displayFileName": display_file_name, "fileSize": file_size,
+                                              "unencryptedChecksum": check_sum}) )
             else:
                 return ( 400, {}, json.dumps({"error_description": "invalid token"}) )
                 
@@ -220,7 +224,7 @@ class Pyega3Test(unittest.TestCase):
         responses.add(
             responses.GET, 
             "https://ega.ebi.ac.uk:8052/elixir/data/metadata/files/{}".format(bad_file_id_2),
-            json={"fileName": None, "unencryptedChecksum": None}, status=200)
+            json={"fileName": None, "displayFileName": None, "unencryptedChecksum": None}, status=200)
         with self.assertRaises(RuntimeError):
             pyega3.get_file_name_size_md5(good_token, bad_file_id_2)
   
@@ -467,7 +471,8 @@ class Pyega3Test(unittest.TestCase):
             "fileId": "EGAF00000000001",
             "checksumType": "MD5",
             "fileSize": file1_sz,
-            "fileName": "EGAZ00000000001/ENCFF000001.bam.cip"
+            "fileName": "EGAZ00000000001/ENCFF000001.bam.cip",
+            "displayFileName": "ENCFF000001.bam.cip"
         },
         {
             "unencryptedChecksum": file2_md5,
@@ -476,7 +481,8 @@ class Pyega3Test(unittest.TestCase):
             "fileId": "EGAF00000000002",
             "checksumType": "MD5",
             "fileSize": file2_sz,
-            "fileName": "EGAZ00000000002/ENCFF000002.bam"
+            "fileName": "EGAZ00000000002/ENCFF000002.bam",
+            "displayFileName": "ENCFF000002.bam.cip"
         } ]
 
         with mock.patch("pyega3.pyega3.get_token", lambda creds: 'token' ):
@@ -492,7 +498,7 @@ class Pyega3Test(unittest.TestCase):
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls(
-                        [mock.call(creds, f['fileId'], f['fileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call(creds, f['fileId'], f['displayFileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
 
                     # files[1]["unencryptedChecksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
@@ -526,7 +532,7 @@ class Pyega3Test(unittest.TestCase):
 
     def test_pretty_print_files_in_dataset(self):
         testReply=  [{"checksumType": "MD5", "unencryptedChecksum": "MD5SUM678901234567890123456789012",
-                      "fileName": "EGAZ00001314035.bam.bai.cip", "fileStatus": "available",
+                      "fileName": "EGAZ00001314035.bam.bai.cip", "displayFileName": "EGAZ00001314035.bam.bai.cip", "fileStatus": "available",
                       "fileSize": 0, "datasetId": "EGAD00001003338", "fileId": "EGAF00001753747" }]
         pyega3.pretty_print_files_in_dataset(testReply, ['EGAD0123'])
 
