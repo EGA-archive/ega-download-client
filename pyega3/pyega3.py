@@ -196,9 +196,8 @@ def pretty_print_files_in_dataset(reply, dataset):
            "checksumType": "MD5",
             "unencryptedChecksum": "MD5SUM678901234567890123456789012",
             "fileName": "EGAZ00001314035/b37/NA12878.bam.bai.cip",
-            "displayFileName": "NA12878.bam.bai.cip",
             "fileStatus": "available",
-            "fileSize": 8949984,
+            "fileSize": 0,
             "datasetId": "EGAD00001003338",
             "fileId": "EGAF00001753747"
         }
@@ -209,7 +208,7 @@ def pretty_print_files_in_dataset(reply, dataset):
     print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
         print(format_string.format(res['fileId'], status_ok(res['fileStatus']), str(res['fileSize']),
-                                   res['unencryptedChecksum'], res['displayFileName']))
+                                   res['unencryptedChecksum'], res['fileName']))
 
     print('-' * 80)
     print("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
@@ -226,10 +225,10 @@ def get_file_name_size_md5(token, file_id):
 
     print_debug_info(url, res)
 
-    if (res['displayFileName'] is None or res['unencryptedChecksum'] is None):
+    if (res['fileName'] is None or res['unencryptedChecksum'] is None):
         raise RuntimeError("Metadata for file id '{}' could not be retrieved".format(file_id))
 
-    return (res['displayFileName'], res['fileSize'], res['unencryptedChecksum'])
+    return (res['fileName'], res['fileSize'], res['unencryptedChecksum'])
 
 
 def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
@@ -491,10 +490,10 @@ def download_dataset(
         try:
             if (status_ok(res['fileStatus'])):
                 output_file = None if (output_dir is None) else generate_output_filename(output_dir, res['fileId'],
-                                                                                         res['displayFileName'],
+                                                                                         res['fileName'],
                                                                                          genomic_range_args)
                 download_file_retry(
-                    credentials, res['fileId'], res['displayFileName'], res['fileSize'], res['unencryptedChecksum'],
+                    credentials, res['fileId'], res['fileName'], res['fileSize'], res['unencryptedChecksum'],
                     num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
         except Exception as e:
             logging.info(e)
