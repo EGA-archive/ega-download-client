@@ -551,6 +551,10 @@ class Pyega3Test(unittest.TestCase):
         with self.assertRaises(SystemExit):
             pyega3.download_dataset("credentials", "EGAD00000000003", "1", "key", "output_dir", "genomic_range_args")
 
+    def test_main(self):
+        with self.assertRaises(SystemExit):
+            pyega3.main()
+
 if __name__ == '__main__':
     del(sys.argv[1:])
     unittest.main(exit=False)
