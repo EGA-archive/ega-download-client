@@ -112,12 +112,10 @@ def get_token(credentials):
             }
 
     r = requests.post(URL_AUTH, headers=headers, data=data)
-    logging.debug(r)
 
     try:
         print('')
         reply = r.json()
-        print_debug_info(URL_AUTH, reply)
         r.raise_for_status()
         oauth_token = reply['access_token']
         logging.info("Authentication success for user '{}'".format(username))
@@ -250,8 +248,6 @@ def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
     headers = get_standart_headers()
     headers['Authorization'] = 'Bearer {}'.format(token)
     headers['Range'] = 'bytes={}-{}'.format(start_pos + existing_size, start_pos + length - 1)
-
-    print_debug_info(url, None, "Request headers: {}".format(headers))
 
     with requests.get(url, headers=headers, stream=True) as r:
         print_debug_info(url, None, "Response headers: {}".format(r.headers))
