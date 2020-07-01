@@ -513,9 +513,9 @@ def main():
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf", "--config-file", dest='config_file',
-                        help="JSON file containing credentials/config e.g.{'username':'user1','password':'toor'}")
+                        help='JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}')
     parser.add_argument("-sf", "--server-file", dest='server_file',
-                        help="JSON file containing server config e.g.{'url_auth':'aai url','url_api':'api url', 'url_api_ticket':'htsget url', 'client_secret':'client secret'}")
+                        help='JSON file containing server config e.g.{"url_auth":"aai url","url_api":"api url", "url_api_ticket":"htsget url", "client_secret":"client secret"}')
     parser.add_argument("-c", "--connections", type=int, default=1,
                         help="Download using specified number of connections")
     parser.add_argument("-t", "--test", action="store_true", help="Test user activated")
