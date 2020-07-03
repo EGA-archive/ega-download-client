@@ -9,7 +9,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     packages=find_packages(),
-    version = "3.0.44",
+    version = "3.1.0",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     install_requires=["requests", "tqdm", "htsget"],

@@ -16,7 +16,7 @@ import htsget
 import requests
 from tqdm import tqdm
 
-version = "3.0.44"
+version = "3.1.0"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
