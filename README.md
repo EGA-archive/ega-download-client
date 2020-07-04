@@ -8,13 +8,13 @@ The pyEGA3 download client is a python-based tool for viewing and downloading fi
 * Download resumes from where it left off if errors or interrupted connections are encountered.
 * After download completes, file integrity is verified using checksums.
 
-### Tutorial Video
+### Tutorial video
 
  A video tutorial demonstrating the usage of pyEGA3 from installation through file download is available [here](https://embl-ebi.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=be79bb93-1737-4f95-b80f-ab4300aa6f5a).
 
 ## Requirements
 
-* Python3
+* Python3 ([download instructions](https://www.python.org/downloads/))
 * Python `requests` module
 
 ```bash
@@ -27,7 +27,7 @@ pip3 install requests
 pip3 install requests --upgrade
 ```
 
-### Firewall Ports
+### Firewall ports
 
 pyEGA3 makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443) and the EGA Data API (https://ega.ebi.ac.uk:8052). Ports 8443 and 8052 must both be reachable from the location where pyEGA3 is executed to avoid timeouts.
 
@@ -40,7 +40,7 @@ openssl s_client -connect ega.ebi.ac.uk:8052
 
 If the ports are open, both commands will return `Verify return code: 0 (ok)`.
 
-Alternatively, to check if ports 8443 and 8052 are open, both of the following should load with no timeouts:
+Alternatively, to check if ports 8443 and 8052 are open, both of the following sites should load with no timeouts:
 * https://ega.ebi.ac.uk:8443/ega-openid-connect-server/
 * https://ega.ebi.ac.uk:8052/elixir/central/stats/load
 
@@ -229,7 +229,7 @@ nohup pyega3 -cf </Path/To/CREDENTIALS_FILE> files EGAD<NUM> </Path/To/File/md5s
 pyega3 -c 5 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --saveto </Path/To/Output>
 ```
 
-## Usage - Genomic range requests via Htsget protocol
+## Usage - Genomic range requests via htsget
 
 ```bash
 usage: pyega3 fetch [-h] [--reference-name REFERENCE_NAME]
@@ -310,3 +310,7 @@ Please note that when a file is being saved, it goes through two processes. Firs
 If, after troubleshooting an issue, you are still experiencing difficulties, please email EGA Helpdesk (helpdesk@ega-archive.org) with the following information:
 * Attach the <log file name> log file located in the directory where pyEGA3 is running
 * Indicate the compute environment you are running pyEGA3 in: compute cluster, single machine, other (please describe).
+
+## Attribution
+
+Parts of pyEGA3 are derived from [pyEGA](https://github.com/blachlylab/pyega) developed by James Blachly.
