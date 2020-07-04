@@ -4,9 +4,10 @@
 
 The pyEGA3 download client is a python-based tool for viewing and downloading files from authorized EGA datasets. pyEGA3 uses the EGA Data API and has several key features:
 * Files are transferred over secure https connections and received unencrypted, so no need for decryption after download.
+* Downloads resume from where they left off in the event that the connection is interrupted.
 * pyEGA3 supports file segmenting and parallelized download of segments, improving overall performance.
-* Download resumes from where it left off if errors or interrupted connections are encountered.
 * After download completes, file integrity is verified using checksums.
+* Download of genomic ranges is supported for some files.
 
 ### Tutorial video
 
@@ -151,35 +152,33 @@ optional arguments:
 
 ### Testing pyEGA3 installation
 
-We recommend that all fresh installations of pyEGA3 be tested. A Test Account has been created which can be used (`-t`) to test the following pyEGA3 actions:
+We recommend that all fresh installations of pyEGA3 be tested. A test account has been created which can be used (`-t`) to test the following pyEGA3 actions:
 
-#### List the datasets available to the Test Account
+#### List the datasets available to the test account
 
 ```bash
 pyega3 -d -t datasets
 ```
 
-#### List the files available in a Test Dataset
+#### List the files available in a test dataset
 
 ```bash
 pyega3 -d -t files EGAD00001003338
 ```
 
-#### Download a Test File
+#### Download a test file
 
 ```bash
 pyega3 -d -t fetch EGAF00001775036
 ```
 
-The Test Account does not require an EGA username and password because it contains files from the [1000 Genomes Project](https://www.internationalgenome.org/data) which is publicly accessible. The files in this Test Dataset can be used for troubleshooting and training purposes.
-
-Following successful testing of the pyEGA3 installation, you will now be able to view and download data from datasets that you have been authorized to access.
+The test account does not require an EGA username and password because it contains publicaly accessible files from the [1000 Genomes Project](https://www.internationalgenome.org/data). The files in the test dataset can be used for troubleshooting and training purposes.
 
 ### Defining credentials
 
 To view and download files for which you have been granted access, pyEGA3 requires your EGA username (email address) and password saved to a credentials file.
 
-Create a file called CREDENTIALS_FILE and place it in the directory from where pyEGA3 will run. The credentials file must be in JSON format and must contain your registered EGA username (email address) and password provided by EGA Helpdesk.
+Create a file called CREDENTIALS_FILE and place it in the directory where pyEGA3 will run. The credentials file must be in JSON format and must contain your registered EGA username (email address) and password provided by EGA Helpdesk.
 
 An example CREDENTIALS_FILE is available [here](https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json).
 
@@ -289,11 +288,11 @@ pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --start 0 --end 1000000 --reference
 
 ## Troubleshooting
 
-First, please ensure you are using the most recent version of pyEGA3 by following instructions in "Installation and update" section for updating pyEGA3.
+First, please ensure you are using the most recent version of pyEGA3 by following instructions in the "Installation and update" section for updating pyEGA3.
 
 ### Failure to validate credentials
 
-Please ensure that your credentials are formatted correctly. Note that email addresses (usernames) are case-sensitive. Also note that if you have an EGA submission account, these credentials are different from your data access credentials. Please ensure you are using your data access credentials with pyEGA3. 
+Please ensure that your credentials are formatted correctly. Email addresses (usernames) are case-sensitive. If you have an EGA submission account, these credentials are different from your data access credentials. Please ensure you are using your data access credentials with pyEGA3. 
 
 ### Slow download speeds
 
