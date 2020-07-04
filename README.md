@@ -2,15 +2,15 @@
 
 ## Overview
 
-The pyEGA3 download client is a python-based tool used to view and download files from authorized EGA datasets. pyEGA3 uses the EGA Data API and has several key features:
-* Files are transferred over secure https connections and received unencrypted so there is no need for decryption after download.
-* pyEGA3 supports file segmenting and downloading the segments in parallel, which improves overall performance.
-* File download resumes from where it left off if errors or interrupted connections are encountered.
-* After download completes, file integrity is verified against the unencrypted MD5 checksum.
+The pyEGA3 download client is a python-based tool for viewing and downloading files from authorized EGA datasets. pyEGA3 uses the EGA Data API and has several key features:
+* Files are transferred over secure https connections and received unencrypted, so no need for decryption after download.
+* pyEGA3 supports file segmenting and parallelized download of segments, improving overall performance.
+* Download resumes from where it left off if errors or interrupted connections are encountered.
+* After download completes, file integrity is verified using checksums.
 
 ### Tutorial Video
 
-[Here](https://embl-ebi.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=be79bb93-1737-4f95-b80f-ab4300aa6f5a) is a video tutorial demonstrating the usage of pyEGA3 from installation through file download.
+ A video tutorial demonstrating the usage of pyEGA3 from installation through file download is available [here](https://embl-ebi.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=be79bb93-1737-4f95-b80f-ab4300aa6f5a).
 
 ## Requirements
 
@@ -29,9 +29,9 @@ pip3 install requests --upgrade
 
 ### Firewall Ports
 
-pyEGA3 makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443/) and the EGA Data API (https://ega.ebi.ac.uk:8052). Ports 8443 and 8052 must both be reachable from the location where pyEGA3 is executed, otherwise timeouts will be encountered.
+pyEGA3 makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443) and the EGA Data API (https://ega.ebi.ac.uk:8052). Ports 8443 and 8052 must both be reachable from the location where pyEGA3 is executed to avoid timeouts.
 
-To check if ports 8443 and 8052 are open, please run the following commands:
+To check if ports 8443 and 8052 are open, run the following commands:
 
 ```bash
 openssl s_client -connect ega.ebi.ac.uk:8443
@@ -74,9 +74,9 @@ conda update pyega3
 
 ### Using GitHub
 
-1. Clone the [ega-download-client GitHub repository](https://github.com/EGA-archive/ega-download-client)
+1. Clone the [ega-download-client](https://github.com/EGA-archive/ega-download-client)  GitHub repository.
 
-1. Navigate to the directory where the repository was cloned
+1. Navigate to the directory where the repository was cloned.
 
     ```bash
     cd path/to/ega-download-client
@@ -85,9 +85,9 @@ conda update pyega3
 1. Three scripts are provided to install the required Python environment depending on the host operating system.
     * Linux (Red Hat): red_hat_dependency_install.sh
     * Linux: debian_dependency_install.sh
-    * Mac OS: osx_dependency_install.sh
+    * macOS: osx_dependency_install.sh
 
-1. Execute the script corresponding to the host operating system. For example, if running Red Hat Linux, use:
+1. Execute the script corresponding to the host operating system. For example, if using Red Hat Linux, run:
 
     ```bash
     sh red_hat_dependency_install.sh  
@@ -95,21 +95,21 @@ conda update pyega3
 
 ### For Windows users
 
-1. Download Python3 and install following the prompt commands.
+1. Download [Python3](https://www.python.org/downloads/windows/) for Windows and install following the prompt commands.
 
-1. Verify the correct install from the terminal
+1. Verify the correct install from the terminal.
 
     ```bash
     python --version
     ```
 
-1. Upgrade to the latest version of pip
+1. Upgrade to the latest version of pip.
 
     ```bash
     python -m pip install --upgrade pip
     ```
 
-1. Install the `request`, `tdqm`, and `htsget` modules
+1. Install the `request`, `tdqm`, and `htsget` modules.
 
     ```bash
     python -m pip install requests
@@ -151,41 +151,41 @@ optional arguments:
 
 ### Testing pyEGA3 installation
 
-We recommend that all fresh installations of pyEGA3 be tested. To assist you in accomplishing this, we have created a Test Account which can be used to test the following actions:
+We recommend that all fresh installations of pyEGA3 be tested. A Test Account has been created which can be used (`-t`) to test the following pyEGA3 actions:
 
-1. List the datasets available to the Test Account
+#### List the datasets available to the Test Account
 
-    ```bash
-    pyega3 -d -t datasets
-    ```
+```bash
+pyega3 -d -t datasets
+```
 
-1. List the files available in a Test Dataset
+#### List the files available in a Test Dataset
 
-    ```bash
-    pyega3 -d -t files EGAD00001003338
-    ```
+```bash
+pyega3 -d -t files EGAD00001003338
+```
 
-1. Download a Test File
+#### Download a Test File
 
-    ```bash
-    pyega3 -d -t fetch EGAF00001775036
-    ```
+```bash
+pyega3 -d -t fetch EGAF00001775036
+```
 
-The Test Account does not require a username and password because it contains files from the [1000 Genomes Project](https://www.internationalgenome.org/data) which is publicly accessible. The files in this Test Dataset can be used both for Troubleshooting and for Training purposes.
+The Test Account does not require an EGA username and password because it contains files from the [1000 Genomes Project](https://www.internationalgenome.org/data) which is publicly accessible. The files in this Test Dataset can be used for troubleshooting and training purposes.
 
-Following successful testing of the pyEGA3 installation, you will be able to view and download data from datasets that you have been authorized to access.
+Following successful testing of the pyEGA3 installation, you will now be able to view and download data from datasets that you have been authorized to access.
 
 ### Defining credentials
 
-To view and download files for which you have been granted access, pyEGA3 requires your EGA username (email address) and password in the form of a CREDENTIALS_FILE.
+To view and download files for which you have been granted access, pyEGA3 requires your EGA username (email address) and password saved to a credentials file.
 
-Create a file called CREDENTIALS_FILE and place it in the directory from where pyEGA3 will run. The credentials file must be in JSON format and must contain your registered EGA email address (username) and password provided by EGA Helpdesk.
+Create a file called CREDENTIALS_FILE and place it in the directory from where pyEGA3 will run. The credentials file must be in JSON format and must contain your registered EGA username (email address) and password provided by EGA Helpdesk.
 
-An example CREDENTIALS_FILE can be found [here](https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json).
+An example CREDENTIALS_FILE is available [here](https://github.com/EGA-archive/ega-download-client/blob/master/pyega3/config/default_credential_file.json).
 
 ### Using pyEGA3 for file download
 
-Replace `<these values>` with values relevant for your datasets.
+*Replace `<these values>` with values relevant for your datasets.*
 
 #### Display authorized datasets
 
@@ -273,40 +273,40 @@ optional arguments:
 ```
 ### Using pyEGA3 for fetching a genomic range
 
-Replace `<these values>` with values relevant for your datasets. Please note that only files which have corresponding index files in EGA can be used with the Htsget protocol.
+*Replace `<these values>` with values relevant for your datasets. Please note that htsget can only be used with files that have corresponding index files in EGA.*
 
 #### Download chromosome 1 for a BAM file
 
 ```bash
-pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> fetch --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM>
+pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM>
 ```
 
 #### Download position 0-1000000 on chromosome 1 for a BAM file
 
 ```bash
-pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> fetch --start 0 --end 10000 --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM> 
+pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --start 0 --end 1000000 --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM> 
 ```
 
 ## Troubleshooting
 
-First, make sure that you are using the most up-to-date version of pyEGA3 by following instructions for updating pyEGA3 from "Installation and update" section above.
+First, please ensure you are using the most recent version of pyEGA3 by following instructions in "Installation and update" section for updating pyEGA3.
 
 ### Failure to validate credentials
 
-Be sure that your credentials are correct. Please note that email addresses (usernames) are case-sensitive. Also note that if you have an EGA submission account, these credentials are different from your data access credentials. Please be sure you are using your data access credentials with pyEGA3. 
+Please ensure that your credentials are formatted correctly. Note that email addresses (usernames) are case-sensitive. Also note that if you have an EGA submission account, these credentials are different from your data access credentials. Please ensure you are using your data access credentials with pyEGA3. 
 
 ### Slow download speeds
 
-Download speed can be optimized using the `--connections` parameter. Download using multiple connections works at the file level, but is still usable while downloading a dataset. If the `--connections` parameter is provided, all files >100Mb will be downloaded using the specified number of connections.
+Download speed can be optimized using the `--connections` parameter which will parallelize download at the file level. If the `--connections` parameter is provided, all files >100Mb will be downloaded using the specified number of parallel connections. 
 
-The connections break down the download of individual files into segments, which can be processed in parallel. Using a very high number of connections will introduce an overhead that can slow the download of the file. It is important to note that files are still downloaded sequentially, so using multiple connections does not mean downloading multiple files in parallel.
+Using a very high number of connections will introduce overhead that can slow the download of the file. It is important to note that files are still downloaded sequentially, so using multiple connections does not mean downloading multiple files in parallel.
 
 ### File taking a long time to save
 
-Please note that when a file is being saved, it goes through two processes. First, the downloaded file "chunks" have to be pieced back together to reconstruct the original file. Second, pyEGA3 calculates the checksum of the file to confirm the file downloaded successfully. Larger files will take more time to reconstruct and validate the checksum.
+Please note that when a file is being saved, it goes through two processes. First, the downloaded file "chunks" are pieced back together to reconstruct the original file. Second, pyEGA3 calculates the checksum of the file to confirm the file downloaded successfully. Larger files will take more time to reconstruct and validate the checksum.
 
 ## Further assistance
 
-If, after troubleshooting the issue, you are still experiencing difficulties, please email EGA Helpdesk (helpdesk@ega-archive.org) with the following information:
-* Attach the <log file name> log file located in the directory where you are running pyEGA3
-* Indicate the compute environment you are running pyEGA3 in: compute cluster, single machine, other (please describe)
+If, after troubleshooting an issue, you are still experiencing difficulties, please email EGA Helpdesk (helpdesk@ega-archive.org) with the following information:
+* Attach the <log file name> log file located in the directory where pyEGA3 is running
+* Indicate the compute environment you are running pyEGA3 in: compute cluster, single machine, other (please describe).
