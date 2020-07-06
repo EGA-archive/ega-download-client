@@ -39,7 +39,7 @@ openssl s_client -connect ega.ebi.ac.uk:8443
 openssl s_client -connect ega.ebi.ac.uk:8052
 ```
 
-If the ports are open, both commands will return `Verify return code: 0 (ok)`.
+If the ports are open, the commands should print `CONNECTED` to the terminal.
 
 Alternatively, to check if ports 8443 and 8052 are open, both of the following sites should load with no timeouts:
 * https://ega.ebi.ac.uk:8443/ega-openid-connect-server/
@@ -75,7 +75,7 @@ conda update pyega3
 
 ### Using GitHub
 
-1. Clone the [ega-download-client](https://github.com/EGA-archive/ega-download-client)  GitHub repository.
+1. Clone the [ega-download-client](https://github.com/EGA-archive/ega-download-client) GitHub repository.
 
 1. Navigate to the directory where the repository was cloned.
 
@@ -307,7 +307,7 @@ Please note that when a file is being saved, it goes through two processes. Firs
 ## Further assistance
 
 If, after troubleshooting an issue, you are still experiencing difficulties, please email EGA Helpdesk (helpdesk@ega-archive.org) with the following information:
-* Attach the <log file name> log file located in the directory where pyEGA3 is running
+* Attach the log file located in the directory where pyEGA3 is running
 * Indicate the compute environment you are running pyEGA3 in: compute cluster, single machine, other (please describe).
 
 ## Attribution
