@@ -307,7 +307,7 @@ Please note that when a file is being saved, it goes through two processes. Firs
 ## Further assistance
 
 If, after troubleshooting an issue, you are still experiencing difficulties, please email EGA Helpdesk (helpdesk@ega-archive.org) with the following information:
-* Attach the log file located in the directory where pyEGA3 is running
+* Attach the log file (pyega3_output.log) located in the directory where pyEGA3 is running
 * Indicate the compute environment you are running pyEGA3 in: compute cluster, single machine, other (please describe).
 
 ## Attribution
