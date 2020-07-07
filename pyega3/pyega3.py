@@ -447,7 +447,7 @@ def download_file_retry(
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir) > 0: os.makedirs(dir)
 
-    hdd = psutil.disk_usage(dir)
+    hdd = psutil.disk_usage(os.getcwd())
     logging.info("Total memory : {:.2f} GiB".format(hdd.total / (2 ** 30)))
     logging.info("Used memory : {:.2f} GiB".format(hdd.used / (2 ** 30)))
     logging.info("Free memory : {:.2f} GiB".format(hdd.free / (2 ** 30)))
