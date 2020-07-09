@@ -118,6 +118,27 @@ class Pyega3Test(unittest.TestCase):
             pyega3.api_list_authorized_datasets(bad_token)
 
     @responses.activate
+    def test_api_list_authorized_datasets_user_has_no_dataset(self):
+        url = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets"
+
+        good_token = rand_str()
+        datasets = None
+
+        def request_callback(request):
+            auth_hdr = request.headers['Authorization']
+            if auth_hdr is not None and auth_hdr == 'Bearer ' + good_token:
+                return ( 200, {}, json.dumps(datasets) )
+
+        responses.add_callback(
+            responses.GET, url,
+            callback=request_callback,
+            content_type='application/json',
+        )
+
+        with self.assertRaises(SystemExit):
+            pyega3.api_list_authorized_datasets(good_token)
+
+    @responses.activate
     def test_api_list_files_in_dataset(self):
 
         dataset = "EGAD00000000001"
@@ -179,6 +200,31 @@ class Pyega3Test(unittest.TestCase):
         bad_dataset  = rand_str()
         with self.assertRaises(SystemExit):
             pyega3.api_list_files_in_dataset(good_token, bad_dataset)
+
+    @responses.activate
+    def test_api_list_files_when_no_file_in_dataset(self):
+        dataset = "EGAD00000000001"
+        responses.add(
+            responses.GET,
+            "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets",
+            json=json.dumps([dataset]), status=200)
+        url_files = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets/{}/files".format(dataset)
+        files = None
+        good_token = rand_str()
+
+        def request_callback(request):
+            auth_hdr = request.headers['Authorization']
+            if auth_hdr is not None and auth_hdr == 'Bearer ' + good_token:
+                return ( 200, {}, json.dumps(files) )
+
+        responses.add_callback(
+            responses.GET, url_files,
+            callback=request_callback,
+            content_type='application/json',
+        )
+
+        with self.assertRaises(SystemExit):
+            pyega3.api_list_files_in_dataset(good_token, dataset)
 
     @responses.activate
     def test_get_file_name_size_md5(self):
@@ -560,6 +606,28 @@ class Pyega3Test(unittest.TestCase):
     def test_main(self):
         with self.assertRaises(SystemExit):
             pyega3.main()
+
+    def test_load_server_config_invalidPath(self):
+        with self.assertRaises(SystemExit):
+            pyega3.load_server_config("/invalidpath");
+
+    def test_load_server_config_invalidJson(self):
+        with mock.patch('os.path.exists') as m:
+            m.return_value = True
+            with mock.patch( "builtins.open", mock.mock_open(read_data="bad json") ):
+                with self.assertRaises(SystemExit):
+                    bad_credentials_file = "bad_server_config.json"
+                    pyega3.load_server_config(bad_credentials_file)
+
+    def test_load_server_config_missingAttributesInJsonFile(self):
+        with mock.patch('os.path.exists') as m:
+            m.return_value = True
+            good_server_config_file={"url_auth":rand_str(),"url_api":rand_str()}
+            m_open = mock.mock_open(read_data=json.dumps(good_server_config_file))
+            with mock.patch( "builtins.open", m_open ):
+                with self.assertRaises(SystemExit):
+                    good_server_config_file = "server.json"
+                    pyega3.load_server_config(good_server_config_file)
 
 if __name__ == '__main__':
     del(sys.argv[1:])

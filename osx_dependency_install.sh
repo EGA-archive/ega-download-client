@@ -10,3 +10,4 @@ echo "Loading Python DEpendencies"
 pip install tqdm
 pip install requests
 pip install htsget
+pip install psutil

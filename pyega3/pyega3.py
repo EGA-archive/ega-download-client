@@ -52,7 +52,7 @@ def load_credential(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath):
-        logging.info("{} does not exist".format(filepath))
+        logging.error("{} does not exist".format(filepath))
         return get_credential()
 
     try:
@@ -63,7 +63,7 @@ def load_credential(filepath):
         if 'password' not in cfg:
             cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
     except ValueError:
-        logging.info("Invalid credential config JSON file")
+        logging.error("Invalid credential config JSON file")
         sys.exit()
 
     return (cfg['username'], cfg['password'], cfg.get('key'))
@@ -80,14 +80,14 @@ def load_server_config(filepath):
     """Load custom server config for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath): 
-    	logging.info("{} does not exist".format(filepath))
+    	logging.error("{} does not exist".format(filepath))
     	sys.exit()
 
     try:
         with open(filepath) as f:
             custom_server_config = json.load(f)
         if 'url_auth' not in custom_server_config or 'url_api' not in custom_server_config or 'url_api_ticket' not in custom_server_config or 'client_secret' not in custom_server_config:
-            logging.info(
+            logging.error(
                 "{} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields".format(
                     filepath))
             sys.exit()
@@ -101,7 +101,7 @@ def load_server_config(filepath):
         global CLIENT_SECRET
         CLIENT_SECRET = custom_server_config['client_secret']
     except ValueError:
-        logging.info("Invalid server config JSON file")
+        logging.error("Invalid server config JSON file")
         sys.exit()
 
 def get_token(credentials):
@@ -126,8 +126,7 @@ def get_token(credentials):
         oauth_token = reply['access_token']
         logging.info("Authentication success for user '{}'".format(username))
     except Exception as expectedException:
-        logging.info("Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
-        logging.exception(expectedException)
+        logging.exception("Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
         sys.exit()
 
     return oauth_token
@@ -148,7 +147,7 @@ def api_list_authorized_datasets(token):
     print_debug_info(url, reply)
 
     if reply is None:
-        logging.info("You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
+        logging.error("You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
         sys.exit()
 
     return reply
@@ -163,7 +162,7 @@ def pretty_print_authorized_datasets(reply):
 
 def api_list_files_in_dataset(token, dataset):
     if (dataset in LEGACY_DATASETS):
-        logging.info("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
+        logging.error("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
         sys.exit()
 
     headers = {'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(token)}
@@ -171,7 +170,7 @@ def api_list_files_in_dataset(token, dataset):
     url = URL_API + "/metadata/datasets/{}/files".format(dataset)
 
     if (not dataset in api_list_authorized_datasets(token)):
-        logging.info("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))
+        logging.error("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))
         sys.exit()
 
     r = requests.get(url, headers=headers)
@@ -182,7 +181,7 @@ def api_list_files_in_dataset(token, dataset):
     print_debug_info(url, reply)
 
     if reply is None:
-        logging.info("List files in dataset {} failed".format(dataset))
+        logging.error("List files in dataset {} failed".format(dataset))
         sys.exit()
 
     return reply
@@ -448,9 +447,9 @@ def download_file_retry(
     if not os.path.exists(dir) and len(dir) > 0: os.makedirs(dir)
 
     hdd = psutil.disk_usage(os.getcwd())
-    logging.info("Total memory : {:.2f} GiB".format(hdd.total / (2 ** 30)))
-    logging.info("Used memory : {:.2f} GiB".format(hdd.used / (2 ** 30)))
-    logging.info("Free memory : {:.2f} GiB".format(hdd.free / (2 ** 30)))
+    logging.info("Total space : {:.2f} GiB".format(hdd.total / (2 ** 30)))
+    logging.info("Used space : {:.2f} GiB".format(hdd.used / (2 ** 30)))
+    logging.info("Free space : {:.2f} GiB".format(hdd.free / (2 ** 30)))
     
     if is_genomic_range(genomic_range_args):
         with open(output_file, 'wb') as output:
@@ -487,7 +486,7 @@ def download_file_retry(
 def download_dataset(
         credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
     if (dataset_id in LEGACY_DATASETS):
-        logging.info("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
+        logging.error("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
         sys.exit()
 
     token = get_token(credentials)
@@ -615,7 +614,7 @@ def main():
 
     if args.subcommand == "files":
         if (args.identifier[3] != 'D'):
-            logging.info("Unrecognized identifier - please use EGAD accession for dataset requests")
+            logging.error("Unrecognized identifier - please use EGAD accession for dataset requests")
             sys.exit()
         token = get_token(credentials)
         reply = api_list_files_in_dataset(token, args.identifier)
@@ -632,7 +631,7 @@ def main():
             download_file_retry(credentials, args.identifier, file_name, file_size, check_sum, args.connections, key,
                                 args.saveto, genomic_range_args, args.max_retries, args.retry_wait)
         else:
-            logging.info(
+            logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")
             sys.exit()
 
