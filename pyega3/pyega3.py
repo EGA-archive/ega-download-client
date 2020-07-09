@@ -6,6 +6,7 @@ import getpass
 import hashlib
 import json
 import logging
+import logging.handlers
 import math
 import os
 import platform
@@ -581,7 +582,7 @@ def main():
 
     logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]',  
     					handlers=[
-            logging.FileHandler("pyega3_output.log"),
+            logging.handlers.RotatingFileHandler("pyega3_output.log", maxBytes=5*1024*1024, backupCount=1),
             logging.StreamHandler()
         ])
 
