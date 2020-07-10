@@ -6,13 +6,16 @@ import getpass
 import hashlib
 import json
 import logging
+import logging.handlers
 import math
 import os
+import platform
 import random
 import sys
 import time
 
 import htsget
+import psutil
 import requests
 from tqdm import tqdm
 
@@ -50,7 +53,7 @@ def load_credential(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath):
-        print("{} does not exist".format(filepath))
+        logging.error("{} does not exist".format(filepath))
         return get_credential()
 
     try:
@@ -61,7 +64,8 @@ def load_credential(filepath):
         if 'password' not in cfg:
             cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
     except ValueError:
-        sys.exit("Invalid credential config JSON file")
+        logging.error("Invalid credential config JSON file")
+        sys.exit()
 
     return (cfg['username'], cfg['password'], cfg.get('key'))
 
@@ -76,15 +80,18 @@ def load_default_server_config():
 def load_server_config(filepath):
     """Load custom server config for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
-    if not os.path.exists(filepath): sys.exit("{} does not exist".format(filepath))
+    if not os.path.exists(filepath): 
+    	logging.error("{} does not exist".format(filepath))
+    	sys.exit()
 
     try:
         with open(filepath) as f:
             custom_server_config = json.load(f)
         if 'url_auth' not in custom_server_config or 'url_api' not in custom_server_config or 'url_api_ticket' not in custom_server_config or 'client_secret' not in custom_server_config:
-            sys.exit(
+            logging.error(
                 "{} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields".format(
                     filepath))
+            sys.exit()
 
         global URL_AUTH
         URL_AUTH = custom_server_config['url_auth']
@@ -95,8 +102,8 @@ def load_server_config(filepath):
         global CLIENT_SECRET
         CLIENT_SECRET = custom_server_config['client_secret']
     except ValueError:
-        sys.exit("Invalid server config JSON file")
-
+        logging.error("Invalid server config JSON file")
+        sys.exit()
 
 def get_token(credentials):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
@@ -114,15 +121,14 @@ def get_token(credentials):
     r = requests.post(URL_AUTH, headers=headers, data=data)
 
     try:
-        print('')
+        logging.info('')
         reply = r.json()
         r.raise_for_status()
         oauth_token = reply['access_token']
         logging.info("Authentication success for user '{}'".format(username))
     except Exception as expectedException:
-        print(expectedException)
-        sys.exit(
-            "Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
+        logging.exception("Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
+        sys.exit()
 
     return oauth_token
 
@@ -142,29 +148,31 @@ def api_list_authorized_datasets(token):
     print_debug_info(url, reply)
 
     if reply is None:
-        sys.exit(
-            "You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
+        logging.error("You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
+        sys.exit()
 
     return reply
 
 
 def pretty_print_authorized_datasets(reply):
-    print("Dataset ID")
-    print("-----------------")
+    logging.info("Dataset ID")
+    logging.info("-----------------")
     for datasetid in reply:
-        print(datasetid)
+        logging.info(datasetid)
 
 
 def api_list_files_in_dataset(token, dataset):
     if (dataset in LEGACY_DATASETS):
-        sys.exit("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
+        logging.error("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
+        sys.exit()
 
     headers = {'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(token)}
     headers.update(get_standart_headers())
     url = URL_API + "/metadata/datasets/{}/files".format(dataset)
 
     if (not dataset in api_list_authorized_datasets(token)):
-        sys.exit("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))
+        logging.error("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))
+        sys.exit()
 
     r = requests.get(url, headers=headers)
     r.raise_for_status()
@@ -174,7 +182,8 @@ def api_list_files_in_dataset(token, dataset):
     print_debug_info(url, reply)
 
     if reply is None:
-        sys.exit("List files in dataset {} failed".format(dataset))
+        logging.error("List files in dataset {} failed".format(dataset))
+        sys.exit()
 
     return reply
 
@@ -204,13 +213,13 @@ def pretty_print_files_in_dataset(reply, dataset):
     """
     format_string = "{:15} {:6} {:12} {:36} {}"
 
-    print(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
+    logging.info(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
-        print(format_string.format(res['fileId'], status_ok(res['fileStatus']), str(res['fileSize']),
+        logging.info(format_string.format(res['fileId'], status_ok(res['fileStatus']), str(res['fileSize']),
                                    res['unencryptedChecksum'], res['displayFileName']))
 
-    print('-' * 80)
-    print("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
+    logging.info('-' * 80)
+    logging.info("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
 
 
 def get_file_name_size_md5(token, file_id):
@@ -438,6 +447,11 @@ def download_file_retry(
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir) > 0: os.makedirs(dir)
 
+    hdd = psutil.disk_usage(os.getcwd())
+    logging.info("Total space : {:.2f} GiB".format(hdd.total / (2 ** 30)))
+    logging.info("Used space : {:.2f} GiB".format(hdd.used / (2 ** 30)))
+    logging.info("Free space : {:.2f} GiB".format(hdd.free / (2 ** 30)))
+    
     if is_genomic_range(genomic_range_args):
         with open(output_file, 'wb') as output:
             htsget.get(
@@ -462,7 +476,7 @@ def download_file_retry(
             download_file(token, file_id, file_size, check_sum, num_connections, key, output_file)
             done = True
         except Exception as e:
-            logging.info(e)
+            logging.exception(e)
             if num_retries == max_retries:
                 raise e
             time.sleep(retry_wait)
@@ -473,8 +487,8 @@ def download_file_retry(
 def download_dataset(
         credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
     if (dataset_id in LEGACY_DATASETS):
-        sys.exit(
-            "This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
+        logging.error("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
+        sys.exit()
 
     token = get_token(credentials)
 
@@ -493,7 +507,7 @@ def download_dataset(
                     credentials, res['fileId'], res['displayFileName'], res['fileSize'], res['unencryptedChecksum'],
                     num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
         except Exception as e:
-            logging.info(e)
+            logging.exception(e)
 
 
 def print_debug_info(url, reply_json, *args):
@@ -507,9 +521,6 @@ load_default_server_config()
 
 
 def main():
-    print("pyEGA3 - EGA python client version {} (https://github.com/EGA-archive/ega-download-client)".format(version))
-    print("Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
-
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf", "--config-file", dest='config_file',
@@ -568,9 +579,18 @@ def main():
     if args.debug:
         global logging_level
         logging_level = logging.DEBUG
-        print("[debugging]")
 
-    logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]')
+    logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]',  
+    					handlers=[
+            logging.handlers.RotatingFileHandler("pyega3_output.log", maxBytes=5*1024*1024, backupCount=1),
+            logging.StreamHandler()
+        ])
+
+    logging.info("")
+    logging.info("pyEGA3 - EGA python client version {} (https://github.com/EGA-archive/ega-download-client)".format(version))
+    logging.info("Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
+    logging.info("Python version : {}".format(platform.python_version()))
+    logging.info("OS version : {} {}".format(platform.system(), platform.version()))
 
     root_dir = os.path.split(os.path.realpath(__file__))[0]
     config_file_path = os.path.join(root_dir, "config", "default_credential_file.json")
@@ -585,9 +605,8 @@ def main():
     if args.server_file is not None:
         load_server_config(args.server_file)
 
-    print()
-    print("Server URL: {}".format(URL_API))
-    print("Session-Id: {}".format(session_id))
+    logging.info("Server URL: {}".format(URL_API))
+    logging.info("Session-Id: {}".format(session_id))
 
     if args.subcommand == "datasets":
         token = get_token(credentials)
@@ -596,7 +615,8 @@ def main():
 
     if args.subcommand == "files":
         if (args.identifier[3] != 'D'):
-            sys.exit("Unrecognized identifier - please use EGAD accession for dataset requests")
+            logging.error("Unrecognized identifier - please use EGAD accession for dataset requests")
+            sys.exit()
         token = get_token(credentials)
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
@@ -612,8 +632,9 @@ def main():
             download_file_retry(credentials, args.identifier, file_name, file_size, check_sum, args.connections, key,
                                 args.saveto, genomic_range_args, args.max_retries, args.retry_wait)
         else:
-            sys.exit(
+            logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")
+            sys.exit()
 
         logging.info("Download complete")
 

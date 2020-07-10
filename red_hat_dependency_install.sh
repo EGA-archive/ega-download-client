@@ -16,3 +16,4 @@ echo "Loading Python dependencies"
 pip3 install tqdm
 pip3 install requests
 pip3 install htsget
+pip3 install psutil
