@@ -16,17 +16,6 @@ The pyEGA3 download client is a python-based tool for viewing and downloading fi
 ## Requirements
 
 * Python3 ([download instructions](https://www.python.org/downloads/))
-* Python `requests` module
-
-```bash
-pip3 install requests
-```
-
-* If the `requests` module is already installed, we recommend updating to the latest version
-
-```bash
-pip3 install requests --upgrade
-```
 
 ### Firewall ports
 
