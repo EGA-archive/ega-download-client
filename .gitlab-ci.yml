@@ -1,15 +1,12 @@
 # This file is a template, and might need editing before it works on your project.
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
-image: python:latest
-stages:
-  - test
-  - deploy
+image: python:3.5
+
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  TEST_SUITE: "coverage run --source=pyega3 setup.py test"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
@@ -23,17 +20,19 @@ cache:
 
 before_script:
   - python -V  # Print out python version for debugging
-  - pip install -r requirements.txt
-  - pip install python-coveralls
+  - pip install -r requirements.txt python-coveralls pylint pycodestyle
 
 test:
   stage: test
   script:
-    - echo $TEST_SUITE
-    - echo $TEST_SUITE > test.sh
-    - bash test.sh
-    - coverage report
-  #  - coveralls
+    # TODO bjuhasz: use tox because "setup.py test" is deprecated:
+    # https://setuptools.readthedocs.io/en/latest/setuptools.html#test-build-package-and-run-a-unittest-suite
+    - coverage run --branch --source=pyega3 setup.py test
+    - coverage report --fail-under=$COVERAGE_FAIL_UNDER
+    - pylint --ignore=test/support --fail-under=$PYLINT_FAIL_UNDER pyega3/ test/
+    - pycodestyle --show-source --show-pep8 --statistics --count --max-line-length=120 --exclude=test/support,.git,__pycache__
+  # TODO bjuhasz: connect GitLab with coveralls.io:
+  # - coveralls
 
 deploy:
   stage: deploy

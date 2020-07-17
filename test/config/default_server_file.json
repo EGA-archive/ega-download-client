@@ -1,0 +1,6 @@
+{
+    "url_auth": "https://test/ega-openid-connect-server/token",
+    "url_api": "https://test/elixir/data",
+    "url_api_ticket":"https://test/elixir/tickets",
+    "client_secret":"test"
+}

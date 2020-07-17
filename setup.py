@@ -9,7 +9,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     packages=find_packages(),
-    version = "3.1.0",
+    version="3.1.0",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     install_requires=["requests", "tqdm", "htsget", "psutil"],
@@ -22,7 +22,7 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3.5"
-    ],    
+    ],
     entry_points={
             "console_scripts": [
                 "pyega3 = pyega3.pyega3:main",
