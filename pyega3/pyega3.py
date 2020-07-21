@@ -236,7 +236,7 @@ def get_file_name_size_md5(token, file_id):
     if (res['displayFileName'] is None or res['unencryptedChecksum'] is None):
         raise RuntimeError("Metadata for file id '{}' could not be retrieved".format(file_id))
 
-    return (res['displayFileName'], res['fileSize'], res['unencryptedChecksum'])
+    return (res['displayFileName'], res['fileName'], res['fileSize'], res['unencryptedChecksum'])
 
 
 def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
@@ -431,7 +431,7 @@ def download_file(token, file_id, file_size, check_sum, num_connections, key, ou
 
 
 def download_file_retry(
-        creds, file_id, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args,
+        creds, file_id, display_file_name, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args,
         max_retries, retry_wait):
     time0 = time.time()
     token = get_token(creds)
@@ -443,7 +443,7 @@ def download_file_retry(
     logging.info("File Id: '{}'({} bytes).".format(file_id, file_size))
 
     if output_file is None:
-        output_file = generate_output_filename(os.getcwd(), file_id, file_name, genomic_range_args)
+        output_file = generate_output_filename(os.getcwd(), file_id, display_file_name, genomic_range_args)
     dir = os.path.dirname(output_file)
     if not os.path.exists(dir) and len(dir) > 0: os.makedirs(dir)
 
@@ -504,7 +504,7 @@ def download_dataset(
                                                                                          res['displayFileName'],
                                                                                          genomic_range_args)
                 download_file_retry(
-                    credentials, res['fileId'], res['displayFileName'], res['fileSize'], res['unencryptedChecksum'],
+                    credentials, res['fileId'], res['displayFileName'], res['fileName'], res['fileSize'], res['unencryptedChecksum'],
                     num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
         except Exception as e:
             logging.exception(e)
@@ -628,8 +628,8 @@ def main():
                              args.max_retries, args.retry_wait)
         elif (args.identifier[3] == 'F'):
             token = get_token(credentials)
-            file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier)
-            download_file_retry(credentials, args.identifier, file_name, file_size, check_sum, args.connections, key,
+            display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier)
+            download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum, args.connections, key,
                                 args.saveto, genomic_range_args, args.max_retries, args.retry_wait)
         else:
             logging.error(
