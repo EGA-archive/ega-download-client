@@ -437,7 +437,7 @@ def download_file_retry(
     token = get_token(creds)
 
     if file_name.endswith(".gpg"):
-        logging.info("GPG files are not supported")
+        logging.info("GPG files are not supported, please use the Java client - https://ega-archive.org/download/using-ega-download-client")
         return
 
     logging.info("File Id: '{}'({} bytes).".format(file_id, file_size))
