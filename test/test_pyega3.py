@@ -240,7 +240,7 @@ class Pyega3Test(unittest.TestCase):
         def request_callback(request):
             auth_hdr = request.headers['Authorization']
             if auth_hdr is not None and auth_hdr == 'Bearer ' + good_token:
-                return ( 200, {}, json.dumps({"fileName": file_name, "displayFileName": display_file_name, "fileSize": file_size,
+                return ( 200, {}, json.dumps({"displayFileName": display_file_name, "fileName": file_name, "displayFileName": display_file_name, "fileSize": file_size,
                                               "unencryptedChecksum": check_sum}) )
             else:
                 return ( 400, {}, json.dumps({"error_description": "invalid token"}) )
@@ -253,10 +253,11 @@ class Pyega3Test(unittest.TestCase):
         )
 
         rv = pyega3.get_file_name_size_md5(good_token, good_file_id)
-        self.assertEqual( len(rv), 3 )
+        self.assertEqual( len(rv), 4 )
         self.assertEqual( rv[0], display_file_name )
-        self.assertEqual( rv[1], file_size )
-        self.assertEqual( rv[2], check_sum )
+        self.assertEqual( rv[1], file_name )
+        self.assertEqual( rv[2], file_size )
+        self.assertEqual( rv[3], check_sum )
 
         bad_token = rand_str()
         with self.assertRaises(requests.exceptions.HTTPError):
@@ -458,17 +459,17 @@ class Pyega3Test(unittest.TestCase):
                         with mock.patch( 'os.rename', lambda s,d: mocked_files.__setitem__(os.path.basename(d),mocked_files.pop(os.path.basename(s))) ):
                             pyega3.download_file_retry(
                                 # add 16 bytes to file size ( IV adjustment )
-                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
+                                good_creds, file_id, file_name, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
                             self.assertEqual( file_contents, mocked_files[file_name] )
 
                             # to cover 'local file exists' case
                             pyega3.download_file_retry(
-                                good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
+                                good_creds, file_id, file_name, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
                             wrong_md5 = "wrong_md5_exactly_32_chars_longg"
                             with self.assertRaises(Exception):
                                 pyega3.download_file_retry(
-                                    good_creds, file_id, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None)
+                                    good_creds, file_id, file_name, file_name+".cip", file_sz+16, wrong_md5, 1, None, output_file=None, genomic_range_args=None)
 
                             mocked_remove.assert_has_calls(
                                 [ mock.call(os.path.join( os.getcwd(), file_id, os.path.basename(f) )) for f in list(mocked_files.keys()) if not file_name in f ],
@@ -476,7 +477,7 @@ class Pyega3Test(unittest.TestCase):
 
                             with mock.patch('htsget.get') as mocked_htsget:
                                 pyega3.download_file_retry(
-                                    good_creds, file_id, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None), max_retries=5, retry_wait=5 )
+                                    good_creds, file_id, file_name, file_name+".cip", file_sz+16, file_md5, 1, None, output_file=None, genomic_range_args=("chr1",None,1,100,None), max_retries=5, retry_wait=5 )
 
                             args, kwargs = mocked_htsget.call_args
                             self.assertEqual(args[0], 'https://ega.ebi.ac.uk:8052/elixir/tickets/tickets/files/EGAF00000000001')
@@ -488,9 +489,9 @@ class Pyega3Test(unittest.TestCase):
                             self.assertEqual(kwargs.get('data_format'), None)
 
         with self.assertRaises(ValueError):
-            pyega3.download_file_retry( "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
+            pyega3.download_file_retry( "", "", "", "", 0, 0, 1, "key", output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
-        pyega3.download_file_retry( "", "", "test.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
+        pyega3.download_file_retry( "", "", "test.gz", "test.gz.gpg",  0, 0, 1, None, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5 )
 
     @responses.activate
     @mock.patch("pyega3.pyega3.download_file_retry")
@@ -544,7 +545,7 @@ class Pyega3Test(unittest.TestCase):
                     self.assertEqual( len(files)-1, mocked_dfr.call_count )
 
                     mocked_dfr.assert_has_calls(
-                        [mock.call(creds, f['fileId'], f['displayFileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
+                        [mock.call(creds, f['fileId'], f['displayFileName'], f['fileName'], f['fileSize'],f['unencryptedChecksum'],num_connections,None,None,None,5,5) for f in files if f["fileStatus"]=="available"] )
 
                     # files[1]["unencryptedChecksum"] = "wrong_md5_exactly_32_chars_longg"
                     def dfr_throws(p1,p2,p3,p4,p5,p6): raise Exception("bad MD5")
