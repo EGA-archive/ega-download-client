@@ -144,6 +144,7 @@ positional arguments:
     datasets            List authorized datasets
     files               List files in a specified dataset
     fetch               Fetch a dataset or file
+    clean               Delete temporary files created during download
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -276,6 +277,8 @@ optional arguments:
                         The maximum number of times to retry a failed
                         transfer. Any negative number means infinite number of
                         retries.
+  --delete-temp-files   Do not keep those temporary, partial files which were
+                        left on the disk after a failed transfer.
   --retry-wait RETRY_WAIT, -W RETRY_WAIT
                         The number of seconds to wait before retrying a failed
                         transfer.
