@@ -569,10 +569,9 @@ class DownloadClient:
         parser_fetch.add_argument("identifier", help="Id for dataset (e.g. EGAD00000000001) "
                                                      "or file (e.g. EGAF12345678901)")
 
-        parser_clean = subparsers.add_parser("clean", help="Deletes those temporary files "
-                                                           "which were created during the download process.")
-        parser_clean.add_argument("--dir", "-d", type=str, default=None,
-                                  help="The directory in which the temporary files should be deleted. "
+        parser_clean = subparsers.add_parser("clean", help="Delete temporary files created during download")
+        parser_clean.add_argument("--directory", "-dir", type=str, default=None,
+                                  help="The directory from which the temporary files should be deleted. "
                                        "If not specified, the current directory will be used.")
 
         parser_fetch.add_argument(
@@ -605,7 +604,7 @@ class DownloadClient:
                  "Any negative number means infinite number of retries.")
 
         parser_fetch.add_argument("--delete-temp-files", action="store_true",
-                                  help="Delete those temporary, partial files "
+                                  help="Do not keep those temporary, partial files "
                                        "which were left on the disk after a failed transfer.")
 
         parser_fetch.add_argument(
@@ -692,7 +691,7 @@ class DownloadClient:
             logging.info("Download complete")
 
         elif args.subcommand == "clean":
-            self.delete_temporary_files_in_dir(args.dir)
+            self.delete_temporary_files_in_dir(args.directory)
 
     def main(self, args=None):
         if args is None:

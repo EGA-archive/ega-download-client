@@ -1117,7 +1117,7 @@ class Pyega3Test(unittest.TestCase):
         self.client.delete_temporary_files_in_dir.assert_called_with(None)
 
     @mock.patch("pyega3.pyega3.DownloadClient.delete_temporary_files_in_dir")
-    def test_clean_in_default_specified_dir_is_called_with_expected_params(self, mocked_method):
+    def test_clean_in_default_specified_dir_is_called_with_expected_params__long_argument(self, mocked_method):
         test_dir = os.path.dirname(__file__)
         config_file = test_dir + '/config/default_credential_file.json'
         server_file = test_dir + '/config/default_server_file.json'
@@ -1128,7 +1128,24 @@ class Pyega3Test(unittest.TestCase):
                           '--server-file', server_file,
                           '--connections=1',
                           'clean',
-                          '--dir', expected_dir])
+                          '--directory', expected_dir])
+
+        # noinspection PyUnresolvedReferences
+        self.client.delete_temporary_files_in_dir.assert_called_with(expected_dir)
+
+    @mock.patch("pyega3.pyega3.DownloadClient.delete_temporary_files_in_dir")
+    def test_clean_in_default_specified_dir_is_called_with_expected_params__short_argument(self, mocked_method):
+        test_dir = os.path.dirname(__file__)
+        config_file = test_dir + '/config/default_credential_file.json'
+        server_file = test_dir + '/config/default_server_file.json'
+
+        expected_dir = '/tmp/some/where'
+        self.client.main(['-d',
+                          '--config-file', config_file,
+                          '--server-file', server_file,
+                          '--connections=1',
+                          'clean',
+                          '-dir', expected_dir])
 
         # noinspection PyUnresolvedReferences
         self.client.delete_temporary_files_in_dir.assert_called_with(expected_dir)
