@@ -38,19 +38,19 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
 
 ### Using Pip3
 
-1. Install pyega3 using pip3.
+1. Install pyEGA3 using pip3.
 
     ```bash
     sudo pip3 install pyega3
     ```
 
-1. Update pyega3, if needed, using pip3.
+1. Update pyEGA3, if needed, using pip3.
 
     ```bash
     pip3 install pyega3 --upgrade
     ```
 
-1. Run pyega3 from your pip3 installation.
+1. Run pyEGA3 from your pip3 installation.
 
     ```bash
     pyega3 [options]
@@ -58,7 +58,7 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
 
 ### Using conda (bioconda channel)
 
-1. Install pyega3 using conda.
+1. Install pyEGA3 using conda.
 
     ```bash
     conda config --add channels bioconda
@@ -66,13 +66,13 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
     conda install pyega3
     ```
 
-1. Update pyega3, if needed, using conda.
+1. Update pyEGA3, if needed, using conda.
 
     ```bash
     conda update pyega3
     ```
 
-1. Run pyega3 from your conda installation.
+1. Run pyEGA3 from your conda installation.
 
     ```bash
     pyega3 [options]
@@ -99,11 +99,11 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
     sh red_hat_dependency_install.sh  
     ```
 
-1. Run pyega3 from the GitHub installation.
+1. Run pyEGA3 from the GitHub installation.
 
     ```bash
     python3 pyega3/pyega3.py [options]
-   ```
+    ```
 
 ### For Windows users
 
