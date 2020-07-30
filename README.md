@@ -102,7 +102,7 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
 1. Run pyEGA3 from the GitHub installation.
 
     ```bash
-    python3 pyega3/pyega3.py [options]
+    pyega3/pyega3.py [options]
     ```
 
 ### For Windows users
