@@ -105,30 +105,6 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
     pyega3/pyega3.py [options]
     ```
 
-### For Windows users
-
-1. Download [Python3](https://www.python.org/downloads/windows/) for Windows and install following the prompt commands.
-
-1. Verify the correct install from the terminal.
-
-    ```bash
-    python --version
-    ```
-
-1. Upgrade to the latest version of pip.
-
-    ```bash
-    python -m pip install --upgrade pip
-    ```
-
-1. Install the `request`, `tdqm`, and `htsget` modules.
-
-    ```bash
-    python -m pip install requests
-    python -m pip install tdqm
-    python -m pip install htsget
-    ```
-
 ## Usage - File download
 
 ```bash
