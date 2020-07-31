@@ -7,7 +7,7 @@ The pyEGA3 download client is a python-based tool for viewing and downloading fi
 * Downloads resume from where they left off in the event that the connection is interrupted.
 * pyEGA3 supports file segmenting and parallelized download of segments, improving overall performance.
 * After download completes, file integrity is verified using checksums.
-* Download of genomic ranges is supported for some files.
+* pyEGA3 implements the GA4GH-compliant htsget protocol for download of genomic ranges for data files with accompanying index files.
 
 ### Tutorial video
 
@@ -16,11 +16,6 @@ The pyEGA3 download client is a python-based tool for viewing and downloading fi
 ## Requirements
 
 * Python3 ([download instructions](https://www.python.org/downloads/))
-* Additional requirements are automatically installed during pyEGA3 installation, but can manually be installed using:
-
-    ```bash
-    pip install -r requirements.txt
-    ```
 
 ### Firewall ports
 
@@ -55,10 +50,10 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
     pip3 install pyega3 --upgrade
     ```
 
-1. Run pyEGA3 from your pip3 installation.
+1. Test your pip3 installation by running pyEGA3.
 
     ```bash
-    pyega3 [options]
+    pyega3 --help
     ```
 
 ### Using conda (bioconda channel)
@@ -77,10 +72,10 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
     conda update pyega3
     ```
 
-1. Run pyEGA3 from your conda installation.
+1. Test your conda installation by running pyEGA3.
 
     ```bash
-    pyega3 [options]
+    pyega3 --help
     ```
 
 ### Using GitHub
@@ -104,10 +99,10 @@ Alternatively, to check if ports 8443 and 8052 are open, both of the following s
     sh red_hat_dependency_install.sh  
     ```
 
-1. Run pyEGA3 from the GitHub installation.
+1. Test your GitHub installation by running pyEGA3.
 
     ```bash
-    pyega3/pyega3.py [options]
+    pyega3/pyega3.py --help
     ```
 
 ## Usage - File download
@@ -164,7 +159,7 @@ pyega3 -d -t files EGAD00001003338
 pyega3 -d -t fetch EGAF00001775036
 ```
 
-The test account does not require an EGA username and password because it contains publicaly accessible files from the [1000 Genomes Project](https://www.internationalgenome.org/data). The files in the test dataset can be used for troubleshooting and training purposes.
+The test dataset (EGAD00001003338) is large (almost 1TB), so please be mindful if deciding to test downloading the entire dataset. The test account does not require an EGA username and password because it contains publicaly accessible files from the [1000 Genomes Project](https://www.internationalgenome.org/data). The files in the test dataset can be used for troubleshooting and training purposes.
 
 ### Defining credentials
 
@@ -290,7 +285,7 @@ Please ensure that your credentials are formatted correctly. Email addresses (us
 
 Download speed can be optimized using the `--connections` parameter which will parallelize download at the file level. If the `--connections` parameter is provided, all files >100Mb will be downloaded using the specified number of parallel connections. 
 
-Using a very high number of connections will introduce overhead that can slow the download of the file. It is important to note that files are still downloaded sequentially, so using multiple connections does not mean downloading multiple files in parallel.
+Using a very high number of connections will introduce overhead that can slow the download of the file. It is important to note that files are still downloaded sequentially, so using multiple connections does not mean downloading multiple files in parallel. We recommend trying with 30 connections initially and adjusting from there to get maximum throughput.
 
 ### File taking a long time to save
 
