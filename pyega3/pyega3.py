@@ -27,6 +27,9 @@ URL_AUTH = ""
 URL_API = ""
 URL_API_TICKET = ""
 CLIENT_SECRET = ""
+DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
+TEMPORARY_FILES = set()
+TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
                    "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
@@ -240,14 +243,13 @@ def get_file_name_size_md5(token, file_id):
 
 
 def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
-    CHUNK_SIZE = 32 * 1024
-
     if start_pos < 0:
         raise ValueError("start : must be positive")
     if length <= 0:
         raise ValueError("length : must be positive")
 
     file_name += '-from-' + str(start_pos) + '-len-' + str(length) + '.slice'
+    TEMPORARY_FILES.add(file_name)
 
     existing_size = os.stat(file_name).st_size if os.path.exists(file_name) else 0
     if (existing_size > length): os.remove(file_name)
@@ -263,7 +265,7 @@ def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
         print_debug_info(url, None, "Response headers: {}".format(r.headers))
         r.raise_for_status()
         with open(file_name, 'ba') as file_out:
-            for chunk in r.iter_content(CHUNK_SIZE):
+            for chunk in r.iter_content(DOWNLOAD_FILE_SLICE_CHUNK_SIZE):
                 file_out.write(chunk)
                 if pbar: pbar.update(len(chunk))
 
@@ -478,6 +480,9 @@ def download_file_retry(
         except Exception as e:
             logging.exception(e)
             if num_retries == max_retries:
+                if TEMPORARY_FILES_SHOULD_BE_DELETED:
+                    delete_temporary_files(TEMPORARY_FILES)
+
                 raise e
             time.sleep(retry_wait)
             num_retries += 1
@@ -518,6 +523,15 @@ def print_debug_info(url, reply_json, *args):
 
 
 load_default_server_config()
+
+
+def delete_temporary_files(temporary_files):
+    try:
+        for temporary_file in temporary_files:
+            logging.debug('Deleting the {} temporary file...'.format(temporary_file))
+            os.remove(temporary_file)
+    except FileNotFoundError as ex:
+        logging.error('Could not delete the temporary file: {}'.format(ex))
 
 
 def main():
@@ -575,6 +589,10 @@ def main():
 
     parser_fetch.add_argument("--saveto", nargs='?', help="Output file(for files)/output dir(for datasets)")
 
+    parser_fetch.add_argument("--delete-temp-files", action="store_true",
+                              help="Do not keep those temporary, partial files "
+                                   "which were left on the disk after a failed transfer.")
+
     args = parser.parse_args()
     if args.debug:
         global logging_level
@@ -623,6 +641,11 @@ def main():
 
     elif args.subcommand == "fetch":
         genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
+
+        if args.delete_temp_files:
+            global TEMPORARY_FILES_SHOULD_BE_DELETED
+            TEMPORARY_FILES_SHOULD_BE_DELETED = True
+
         if (args.identifier[3] == 'D'):
             download_dataset(credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args,
                              args.max_retries, args.retry_wait)

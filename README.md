@@ -258,6 +258,8 @@ optional arguments:
                         The number of seconds to wait before retrying a failed
                         transfer.
   --saveto [SAVETO]     Output file(for files)/output dir(for datasets)
+  --delete-temp-files   Do not keep those temporary, partial files which were
+                        left on the disk after a failed transfer.
 ```
 ### Using pyEGA3 for fetching a genomic range
 

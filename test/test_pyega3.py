@@ -6,6 +6,8 @@ import json
 import random
 import string
 import hashlib
+import tempfile
+
 import requests
 import responses
 import unittest
@@ -23,6 +25,16 @@ def rand_str(min_len=6, max_len=127):
     return random_string(random.randint(1, max_len))
 
 class Pyega3Test(unittest.TestCase):
+
+    def setUp(self):
+        # Reset the global variables to make the tests less dependent on each other:
+        pyega3.URL_AUTH = ''
+        pyega3.URL_API = ''
+        pyega3.URL_API_TICKET = ''
+        pyega3.CLIENT_SECRET = ''
+        pyega3.TEMPORARY_FILES = set()
+        pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
     def test_load_credentials(self):
 
         with mock.patch('os.path.exists') as m:
@@ -58,6 +70,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate
     def test_get_token(self):
+        pyega3.URL_AUTH = 'https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token'
         url  =  "https://ega.ebi.ac.uk:8443/ega-openid-connect-server/token"
 
         id_token     = rand_str()
@@ -88,6 +101,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate
     def test_api_list_authorized_datasets(self):
+        pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
         url = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets"
 
         good_token = rand_str()
@@ -119,6 +133,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate
     def test_api_list_authorized_datasets_user_has_no_dataset(self):
+        pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
         url = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets"
 
         good_token = rand_str()
@@ -140,6 +155,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate
     def test_api_list_files_in_dataset(self):
+        pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
 
         dataset = "EGAD00000000001"
 
@@ -203,6 +219,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate
     def test_api_list_files_when_no_file_in_dataset(self):
+        pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
         dataset = "EGAD00000000001"
         responses.add(
             responses.GET,
@@ -228,6 +245,7 @@ class Pyega3Test(unittest.TestCase):
 
     @responses.activate
     def test_get_file_name_size_md5(self):
+        pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
 
         good_file_id = "EGAF00000000001"
         file_size    = 4804928
@@ -407,6 +425,8 @@ class Pyega3Test(unittest.TestCase):
     @mock.patch("time.sleep", lambda secs:None )
     @mock.patch("pyega3.pyega3.get_token", lambda creds: 'good_token' )
     def test_download_file(self,mocked_remove):
+        pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
+        pyega3.URL_API_TICKET = 'https://ega.ebi.ac.uk:8052/elixir/tickets'
         file_id = "EGAF00000000001"
         url     = "https://ega.ebi.ac.uk:8052/elixir/data/files/{}".format(file_id)
         good_creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
@@ -629,6 +649,246 @@ class Pyega3Test(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     good_server_config_file = "server.json"
                     pyega3.load_server_config(good_server_config_file)
+
+    def test_temporary_files_are_not_deleted_if_the_user_says_so(self):
+        # The user asks for keeping the temporary files:
+        pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
+        self.server_config_file_loaded_successfully()
+        self.user_has_authenticated_successfully()
+
+        output_file_path = self.create_output_file_path()
+        expected_file_size = pyega3.DOWNLOAD_FILE_SLICE_CHUNK_SIZE * 3
+        self.download_with_exception(output_file_path, expected_file_size)
+
+        temp_file = pyega3.TEMPORARY_FILES.pop()
+        # The temporary file should exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
+        # variable was set to False previously:
+        self.assertTrue(os.path.exists(temp_file))
+
+        temp_file_size = os.stat(temp_file).st_size
+        # The download client should have been able to download the whole file:
+        self.assertEqual(temp_file_size, expected_file_size - 3 * 1000)
+        os.remove(temp_file)
+
+        self.assertFalse(os.path.exists(output_file_path))
+
+    def test_temporary_files_are_deleted_if_the_user_says_so(self):
+        pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = True
+
+        self.server_config_file_loaded_successfully()
+        self.user_has_authenticated_successfully()
+
+        output_file_path = self.create_output_file_path()
+        expected_file_size = pyega3.DOWNLOAD_FILE_SLICE_CHUNK_SIZE * 3
+        self.download_with_exception(output_file_path, expected_file_size)
+
+        temp_file = pyega3.TEMPORARY_FILES.pop()
+        # The temporary file should not exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
+        # variable was set to True previously:
+        self.assertFalse(os.path.exists(temp_file))
+
+        self.assertFalse(os.path.exists(output_file_path))
+
+    @responses.activate
+    def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(self):
+        """
+        The temporary files are deleted by the algorithm automatically, during the happy path,
+        when the temporary files are assembled into the final, big file.
+        There's no need for extra deleting-mechanism.
+        """
+        pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
+        file_size_without_iv = 92700
+        file_size_with_iv = file_size_without_iv + 16
+
+        self.server_config_file_loaded_successfully()
+        self.user_has_authenticated_successfully()
+
+        input_file = bytearray(os.urandom(file_size_without_iv))
+        self.file_can_be_downloaded(input_file)
+
+        output_file_path = self.create_output_file_path()
+
+        pyega3.download_file_retry(('', ''), 'test_file_id1', output_file_path, output_file_path,
+                                        file_size_with_iv, 'check_sum', 1, None, output_file_path, None, 2, 0.1)
+
+        temp_file = pyega3.TEMPORARY_FILES.pop()
+        # The temporary file should not exist because everything went fine,
+        # and it was deleted automatically:
+        self.assertFalse(os.path.exists(temp_file))
+
+        self.assertTrue(os.path.exists(output_file_path))
+        output_file_size = os.stat(output_file_path).st_size
+        self.assertEqual(output_file_size, file_size_without_iv)
+        os.remove(output_file_path)
+
+    @responses.activate
+    def test_second_attempt_succeeds(self):
+        """
+        It was not possible to download the whole file on the first download attempt,
+        so the script retries for a second time and continues from where it stopped
+        on the first attempt.
+        """
+
+        pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
+        file_size_without_iv = 92700
+        file_size_with_iv = file_size_without_iv + 16
+
+        self.server_config_file_loaded_successfully()
+        self.user_has_authenticated_successfully()
+
+        amount_of_missing_bytes = 123
+        file_size_with_missing_bytes = file_size_without_iv - amount_of_missing_bytes
+        input_file_with_few_bytes_missing = bytearray(os.urandom(file_size_with_missing_bytes))
+        self.file_can_be_downloaded(input_file_with_few_bytes_missing)
+
+        rest_of_the_input_file = bytearray(os.urandom(amount_of_missing_bytes))
+        self.file_can_be_downloaded(rest_of_the_input_file)
+
+        output_file_path = self.create_output_file_path()
+
+        pyega3.download_file_retry(('', ''), 'test_file_id1', output_file_path, output_file_path,
+                                   file_size_with_iv, 'check_sum', 1, None, output_file_path, None, 2, 0.1)
+
+        temp_file = pyega3.TEMPORARY_FILES.pop()
+        # The temporary file should not exist because everything went fine,
+        # and it was deleted automatically:
+        self.assertFalse(os.path.exists(temp_file))
+
+        self.assertEqual(responses.calls[1].request.headers.get('Range'), 'bytes=0-92699')
+        self.assertEqual(responses.calls[2].request.headers.get('Range'), 'bytes=92577-92699')
+        self.assertEqual(responses.calls[2].request.headers.get('Range'), 'bytes={}-92699'
+                         .format(file_size_with_missing_bytes))
+
+        self.assertTrue(os.path.exists(output_file_path))
+        output_file_size = os.stat(output_file_path).st_size
+        self.assertEqual(output_file_size, file_size_without_iv)
+        os.remove(output_file_path)
+
+    def test_deleting_non_existent_file_does_not_raise_exception(self):
+        non_existent_file = '/tmp/non/existent/file'
+        self.assertFalse(os.path.exists(non_existent_file))
+
+        # No exception is raised:
+        pyega3.delete_temporary_files([non_existent_file])
+
+    def test_calculating_md5_of_non_existent_file_raises_exception(self):
+        non_existent_file = '/tmp/non/existent/file'
+        self.assertFalse(os.path.exists(non_existent_file))
+
+        with self.assertRaises(Exception):
+            pyega3.calculate_md5(non_existent_file, -1)
+
+    @responses.activate
+    def download_with_exception(self, output_file_path, expected_file_size):
+        """
+        Simulates downloading a file of the given size: "true_file_size".
+        During the transfer, an exception happens and the temporary file is either deleted
+        or kept, depending on the TEMPORARY_FILES_SHOULD_BE_DELETED flag.
+        """
+
+        number_of_retries = 2
+        not_enough_bytes = int(expected_file_size / 3 - 1000)
+
+        # First, normal GET request:
+        self.file_can_be_downloaded(self.create_input_file(not_enough_bytes))
+        # First retry attempt:
+        self.file_can_be_downloaded(self.create_input_file(not_enough_bytes))
+        # Second, last retry attempt:
+        self.file_can_be_downloaded(self.create_input_file(not_enough_bytes))
+
+        with self.assertRaises(Exception) as context_manager:
+            pyega3.download_file_retry(('', ''), 'test_file_id1', output_file_path, output_file_path,
+                                            expected_file_size, 'check_sum', 1, None, output_file_path, None,
+                                            number_of_retries, 0.1)
+
+        exception_message = str(context_manager.exception)
+        self.assertRegex(exception_message, r'Slice error: received=\d+, requested=\d+')
+
+        self.assertFalse(os.path.exists(output_file_path))
+
+    @staticmethod
+    def server_config_file_loaded_successfully():
+        pyega3.URL_AUTH = 'https://test.ebi.ac.uk/ega-openid-connect-server/token'
+        pyega3.URL_API = 'https://test.ebi.ac.uk/elixir/data'
+        pyega3.URL_API_TICKET = 'https://test.ebi.ac.uk/elixir/tickets',
+        pyega3.CLIENT_SECRET = 'test-client-secret'
+
+    @staticmethod
+    def user_has_authenticated_successfully(access_token_response='test_access_token1'):
+        responses.add(responses.POST,
+                      re.compile(r'.+/ega-openid-connect-server/token$'),
+                      json={'access_token': access_token_response},
+                      status=200)
+
+    @staticmethod
+    def file_can_be_downloaded(input_file, file_id='test_file_id1'):
+        responses.add(responses.GET,
+                      re.compile(r'.+/files/{}\?destinationFormat=plain$'.format(file_id)),
+                      body=input_file,
+                      status=200)
+
+    @staticmethod
+    def user_can_list_datasets(datasets=None):
+        if datasets is None:
+            datasets = ['test_dataset1']
+
+        responses.add(responses.GET,
+                      re.compile(r'.+/metadata/datasets$'),
+                      # json={'datasets': datasets},
+                      json=datasets,
+                      status=200)
+
+    @staticmethod
+    def user_can_list_files_in_dataset(dataset, files_response=None):
+        if files_response is None:
+            file_response = {
+                'fileStatus': 'available',
+                'fileId': 'test_fileId1',
+                'fileName': 'test_fileName1',
+                'displayFileName': 'test_displayFileName1',
+                'fileSize': 123,
+                'unencryptedChecksum': 'test_unencryptedChecksum1'
+            }
+            files_response = [file_response]
+
+            responses.add(responses.GET,
+                          re.compile(r'.+/metadata/datasets/{}/files$'.format(dataset)),
+                          json=files_response,
+                          status=200)
+
+    @staticmethod
+    def user_can_access_file_metadata(file_id, file_response=None):
+        if file_response is None:
+            file_response = {
+                'displayFileName': 'test_displayFileName1',
+                'fileName': 'test_fileName1',
+                'fileSize': 123,
+                'unencryptedChecksum': 'test_unencryptedChecksum1'
+            }
+
+            responses.add(responses.GET,
+                          re.compile(r'.+/metadata/files/{}$'.format(file_id)),
+                          json=file_response,
+                          status=200)
+
+    @staticmethod
+    def user_can_access_dataset(dataset):
+        Pyega3Test.user_can_list_datasets([dataset])
+
+    @staticmethod
+    def create_input_file(file_size):
+        return bytearray(os.urandom(file_size))
+
+    @staticmethod
+    def create_output_file_path():
+        """Returns a file-path to a random, temporary file-name."""
+        _, output_file_path = tempfile.mkstemp()
+        os.remove(output_file_path)
+        return output_file_path
+
 
 if __name__ == '__main__':
     del(sys.argv[1:])
