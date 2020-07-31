@@ -21,7 +21,7 @@ The pyEGA3 download client is a python-based tool for viewing and downloading fi
 
 pyEGA3 makes https calls to the EGA AAI (https://ega.ebi.ac.uk:8443) and the EGA Data API (https://ega.ebi.ac.uk:8052). Ports 8443 and 8052 must both be reachable from the location where pyEGA3 is executed to avoid timeouts.
 
-To check if ports 8443 and 8052 are open, run the following commands:
+For Linux/Max users, check if ports 8443 and 8052 are open by running the following commands:
 
 ```bash
 openssl s_client -connect ega.ebi.ac.uk:8443
@@ -30,9 +30,11 @@ openssl s_client -connect ega.ebi.ac.uk:8052
 
 If the ports are open, the commands should print `CONNECTED` to the terminal.
 
-Alternatively, to check if ports 8443 and 8052 are open, both of the following sites should load with no timeouts:
+For Windows users, check if ports 8443 and 8052 are open by going to the following URLs:
 * https://ega.ebi.ac.uk:8443/ega-openid-connect-server/
 * https://ega.ebi.ac.uk:8052/elixir/central/stats/load
+
+If the ports are open, both of the sites should load with no timeouts.
 
 ## Installation and update
 
