@@ -261,6 +261,10 @@ def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
 
     with requests.get(url, headers=headers, stream=True) as r:
         print_debug_info(url, None, "Response headers: {}".format(r.headers))
+        if r.status_code == 204:
+            raise Exception("Legacy archive format not supported, please contact EGA to download this file")
+        if r.status_code == 451:
+            raise Exception("Unavailable For legal reasons")
         r.raise_for_status()
         with open(file_name, 'ba') as file_out:
             for chunk in r.iter_content(CHUNK_SIZE):
