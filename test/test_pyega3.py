@@ -294,6 +294,10 @@ class Pyega3Test(unittest.TestCase):
 
         def request_callback(request):
             auth_hdr = request.headers['Authorization']
+            if auth_hdr == 'Bearer 204':
+                return (204, {}, json.dumps({"error_description": "invalid file"}))
+            if auth_hdr == 'Bearer 451':
+                return (451, {}, json.dumps({"error_description": "Legacy archive format not supported"}))
             if auth_hdr is None or auth_hdr != 'Bearer ' + good_token:
                 return ( 400, {}, json.dumps({"error_description": "invalid token"}) )
 
@@ -336,6 +340,12 @@ class Pyega3Test(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             pyega3.download_file_slice(rand_str(), rand_str(), file_name, slice_start, -1)
+
+        with self.assertRaises(Exception):
+            pyega3.download_file_slice(good_url, 204, file_name, slice_start, slice_length)
+
+        with self.assertRaises(Exception):
+            pyega3.download_file_slice(good_url, 451, file_name, slice_start, slice_length)            
 
 
     @mock.patch('os.remove')
