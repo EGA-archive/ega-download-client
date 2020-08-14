@@ -40,9 +40,23 @@ LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGA
                    "EGAD00010000158", "EGAD00010000160", "EGAD00010000162", "EGAD00010000164", "EGAD00010000246",
                    "EGAD00010000248", "EGAD00010000250", "EGAD00010000256", "EGAD00010000444"]
 
+def get_client_ip():
+    endpoint = 'https://ipinfo.io/json'
+    try:
+        response = requests.get(endpoint, verify = True)
+        if response.status_code != 200:
+            print('Status:', response.status_code, 'Problem with the request. Exiting.')
+            return 'Unknown'
+
+        data = response.json()
+        return data['ip']
+    except Exception as expectedException:
+        logging.error("Failed to obtain IP address")
+
+CLIENT_IP = get_client_ip();
 
 def get_standart_headers():
-    return {'Client-Version': version, 'Session-Id': str(session_id)}
+    return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip' : CLIENT_IP}
 
 
 def get_credential():
