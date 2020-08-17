@@ -100,6 +100,22 @@ class Pyega3Test(unittest.TestCase):
             pyega3.get_token(bad_credentials)
 
     @responses.activate
+    def test_get_client_ip_endpoint_url_blocked(self):
+        endpoint = 'https://ipinfo.io/json'
+        unknown_status = 'Unknown'
+
+    def request_callback(request):
+        return ( 403 )
+
+        responses.add_callback(
+            responses.GET, endpoint,
+            callback=request_callback,
+            content_type='application/json',
+        )
+        resp_ip = pyega3.get_client_ip()
+        self.assertEqual( resp_ip, unknown_status )
+        
+    @responses.activate
     def test_api_list_authorized_datasets(self):
         pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
         url = "https://ega.ebi.ac.uk:8052/elixir/data/metadata/datasets"

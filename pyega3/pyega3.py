@@ -42,18 +42,20 @@ LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGA
 
 def get_client_ip():
     endpoint = 'https://ipinfo.io/json'
+    unknown_status = 'Unknown'
     try:
         response = requests.get(endpoint, verify = True)
         if response.status_code != 200:
-            print('Status:', response.status_code, 'Problem with the request. Exiting.')
-            return 'Unknown'
+            print('Status:', response.status_code, 'Problem with the request.')
+            return unknown_status
 
         data = response.json()
         return data['ip']
     except Exception as expectedException:
         logging.error("Failed to obtain IP address")
+        return unknown_status
 
-CLIENT_IP = get_client_ip();
+CLIENT_IP = get_client_ip()
 
 def get_standart_headers():
     return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip' : CLIENT_IP}
