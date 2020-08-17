@@ -104,8 +104,8 @@ class Pyega3Test(unittest.TestCase):
         endpoint = 'https://ipinfo.io/json'
         unknown_status = 'Unknown'
 
-    def request_callback(request):
-        return ( 403 )
+        def request_callback(request):
+            return ( 403 )
 
         responses.add_callback(
             responses.GET, endpoint,
