@@ -19,7 +19,7 @@ import psutil
 import requests
 from tqdm import tqdm
 
-version = "3.2.0"
+version = "3.3.0"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
@@ -457,7 +457,7 @@ def download_file_retry(
     if is_genomic_range(genomic_range_args):
         with open(output_file, 'wb') as output:
             htsget.get(
-                URL_API_TICKET + "/tickets/files/{}".format(file_id),
+                URL_API_TICKET + "/files/{}".format(file_id),
                 output,
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],

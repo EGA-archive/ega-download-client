@@ -426,7 +426,7 @@ class Pyega3Test(unittest.TestCase):
     @mock.patch("pyega3.pyega3.get_token", lambda creds: 'good_token' )
     def test_download_file(self,mocked_remove):
         pyega3.URL_API = 'https://ega.ebi.ac.uk:8052/elixir/data'
-        pyega3.URL_API_TICKET = 'https://ega.ebi.ac.uk:8052/elixir/tickets'
+        pyega3.URL_API_TICKET = 'https://ega.ebi.ac.uk:8052/elixir/tickets/tickets'
         file_id = "EGAF00000000001"
         url     = "https://ega.ebi.ac.uk:8052/elixir/data/files/{}".format(file_id)
         good_creds={"username":rand_str(),"password":rand_str(),"client_secret":rand_str()}
@@ -813,7 +813,7 @@ class Pyega3Test(unittest.TestCase):
     def server_config_file_loaded_successfully():
         pyega3.URL_AUTH = 'https://test.ebi.ac.uk/ega-openid-connect-server/token'
         pyega3.URL_API = 'https://test.ebi.ac.uk/elixir/data'
-        pyega3.URL_API_TICKET = 'https://test.ebi.ac.uk/elixir/tickets',
+        pyega3.URL_API_TICKET = 'https://test.ebi.ac.uk/elixir/tickets/tickets',
         pyega3.CLIENT_SECRET = 'test-client-secret'
 
     @staticmethod
