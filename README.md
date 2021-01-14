@@ -224,7 +224,7 @@ usage: pyega3 fetch [-h] [--reference-name REFERENCE_NAME]
                     [--reference-md5 REFERENCE_MD5] [--start START]
                     [--end END] [--format {BAM,CRAM}]
                     [--max-retries MAX_RETRIES] [--retry-wait RETRY_WAIT]
-                    [--saveto [SAVETO]]
+                    [--saveto [SAVETO]] [--delete-temp-files]
                     identifier
 
 positional arguments:
