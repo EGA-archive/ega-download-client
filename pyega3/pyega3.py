@@ -19,7 +19,7 @@ import psutil
 import requests
 from tqdm import tqdm
 
-version = "3.4.0"
+version = "3.4.1"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
