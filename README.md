@@ -15,7 +15,7 @@ The pyEGA3 download client is a python-based tool for viewing and downloading fi
 
 ## Requirements
 
-* Python3 ([download instructions](https://www.python.org/downloads/))
+* Python 3.6 or newer. ([download instructions](https://www.python.org/downloads/))
 
 ### Firewall ports
 
@@ -106,6 +106,21 @@ If the ports are open, both of the sites should load with no timeouts.
     ```bash
     pyega3/pyega3.py --help
     ```
+
+### Using Docker
+
+There are Docker images built by Bioconda: https://bioconda.github.io/recipes/pyega3/README.html  
+An example of running pyEGA3 in a Docker container:
+
+```bash
+docker run --rm -v /tmp:/app -w /app quay.io/biocontainers/pyega3:3.4.0--py_0 pyega3 -d -t fetch EGAF00001775036
+```
+
+This example command mounts your /tmp folder into the Docker container as /app,
+starts the 3.4.0 version of pyEGA3 and downloads a test file.
+The test file will be downloaded into your /tmp folder.
+You can find other, possibly newer, versions ("tags") of the pyEGA3 Docker image
+on the above-mentioned Bioconda page.
 
 ## Usage - File download
 

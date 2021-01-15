@@ -1,4 +1,24 @@
+import sys
+
 from setuptools import setup, find_packages
+
+CURRENT_PYTHON_VERSION = sys.version_info[:2]
+
+# When changing the value of the REQUIRED_PYTHON_VERSION variable,
+# make sure to also change the "python_requires" variable
+# and the "classifiers" section in this file (setup.py).
+REQUIRED_PYTHON_VERSION = (3, 6)
+
+if CURRENT_PYTHON_VERSION < REQUIRED_PYTHON_VERSION:
+    sys.stderr.write("""
+==========================
+Unsupported Python version
+==========================
+This version of pyEGA3 requires Python {}.{}, but you're trying to
+install it on Python {}.{}. Please try to upgrade to a newer Python
+version or maybe use pyEGA3 in a Docker container (see the README for that).
+""".format(*(REQUIRED_PYTHON_VERSION + CURRENT_PYTHON_VERSION)))
+    sys.exit(1)
 
 with open("README.md", encoding='utf-8') as f:
     long_description = f.read()
@@ -9,9 +29,10 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     packages=find_packages(),
-    version = "3.4.0",
+    version="3.4.1",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
+    python_requires=">=3.6",
     install_requires=["requests", "tqdm", "htsget", "psutil"],
     keywords=["EGA", "archive"],
     license="Apache License, Version 2.0",
@@ -21,11 +42,11 @@ setup(
         "Development Status :: 3 - Alpha",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 3.5"
-    ],    
+        "Programming Language :: Python :: 3.6"
+    ],
     entry_points={
-            "console_scripts": [
-                "pyega3 = pyega3.pyega3:main",
-            ]
-        }
+        "console_scripts": [
+            "pyega3 = pyega3.pyega3:main",
+        ]
+    }
 )
