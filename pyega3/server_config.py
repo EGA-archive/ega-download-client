@@ -36,7 +36,7 @@ class ServerConfig:
             def check_key(key):
                 if key not in custom_server_config:
                     logging.error(f"{filepath} does not contain '{key}' field")
-                sys.exit()
+                    sys.exit()
 
             check_key('url_auth')
             check_key('url_api')
