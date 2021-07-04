@@ -60,32 +60,44 @@ def get_standart_headers():
     return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': CLIENT_IP}
 
 
-def get_credential():
-    cfg = {}
-    cfg['username'] = input("Enter Username :")
-    cfg['password'] = getpass.getpass(f"Password for '{cfg['username']}':")
-    return (cfg['username'], cfg['password'], None)
+class Credentials:
+    def __init__(self, username=None, password=None, key=None):
+        self.username = username
+        self.password = password
+        self.key = key
 
+    @staticmethod
+    def from_file(filepath):
+        """Load credentials for EMBL/EBI EGA from specified file"""
+        result = Credentials()
+        filepath = os.path.expanduser(filepath)
+        if not os.path.exists(filepath):
+            logging.error(f"{filepath} does not exist")
+        else:
+            try:
+                with open(filepath) as f:
+                    cfg = json.load(f)
 
-def load_credential(filepath):
-    """Load credentials for EMBL/EBI EGA from specified file"""
-    filepath = os.path.expanduser(filepath)
-    if not os.path.exists(filepath):
-        logging.error(f"{filepath} does not exist")
-        return get_credential()
+                if 'username' in cfg:
+                    result.username = cfg['username']
+                if 'password' in cfg:
+                    result.password = cfg['password']
+                if 'key' in cfg:
+                    result.key = cfg['key']
 
-    try:
-        with open(filepath) as f:
-            cfg = json.load(f)
-        if 'username' not in cfg:
-            cfg['username'] = input("Enter Username :")
-        if 'password' not in cfg:
-            cfg['password'] = getpass.getpass(f"Password for '{cfg['username']}':")
-    except ValueError:
-        logging.error("Invalid credential config JSON file")
-        sys.exit()
+            except ValueError:
+                logging.error("Invalid credential config JSON file")
+                sys.exit()
 
-    return (cfg['username'], cfg['password'], cfg.get('key'))
+        result.prompt_for_missing_values()
+
+        return result
+
+    def prompt_for_missing_values(self):
+        if self.username is None:
+            self.username = input("Enter Username :")
+        if self.password is None:
+            self.password = getpass.getpass(f"Password for '{self.username}':")
 
 
 class ServerConfig:
@@ -141,13 +153,12 @@ def get_token(credentials, config):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     headers.update(get_standart_headers())
 
-    (username, password) = credentials
     data = {"grant_type": "password",
             "client_id": "f20cd2d3-682a-4568-a53e-4262ef54c8f4",
             "scope": "openid",
             "client_secret": config.client_secret,
-            "username": username,
-            "password": password
+            "username": credentials.username,
+            "password": credentials.password
             }
 
     r = requests.post(config.url_auth, headers=headers, data=data)
@@ -157,7 +168,7 @@ def get_token(credentials, config):
         reply = r.json()
         r.raise_for_status()
         oauth_token = reply['access_token']
-        logging.info(f"Authentication success for user '{username}'")
+        logging.info(f"Authentication success for user '{credentials.username}'")
     except Exception:
         logging.exception(
             "Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
@@ -472,11 +483,11 @@ def download_file(token, file_id, file_size, check_sum, num_connections, key, ou
 
 
 def download_file_retry(
-        creds, file_id, display_file_name, file_name, file_size, check_sum, num_connections, key, output_file,
+        credentials, file_id, display_file_name, file_name, file_size, check_sum, num_connections, output_file,
         genomic_range_args,
         max_retries, retry_wait, config):
     time0 = time.time()
-    token = get_token(creds, config)
+    token = get_token(credentials, config)
 
     if file_name.endswith(".gpg"):
         logging.info(
@@ -516,8 +527,8 @@ def download_file_retry(
         try:
             if time.time() - time0 > 1 * 60 * 60:  # token expires in 1 hour
                 time0 = time.time()
-                token = get_token(creds, config)
-            download_file(token, file_id, file_size, check_sum, num_connections, key, output_file, config)
+                token = get_token(credentials, config)
+            download_file(token, file_id, file_size, check_sum, num_connections, credentials.key, output_file, config)
             done = True
         except Exception as e:
             logging.exception(e)
@@ -532,7 +543,7 @@ def download_file_retry(
 
 
 def download_dataset(
-        config, credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5,
+        config, credentials, dataset_id, num_connections, output_dir, genomic_range_args, max_retries=5,
         retry_wait=5):
     if dataset_id in LEGACY_DATASETS:
         logging.error(f"This is a legacy dataset {dataset_id}. Please contact the EGA helpdesk for more information.")
@@ -554,7 +565,7 @@ def download_dataset(
                 download_file_retry(
                     credentials, res['fileId'], res['displayFileName'], res['fileName'], res['fileSize'],
                     res['unencryptedChecksum'],
-                    num_connections, key, output_file, genomic_range_args, max_retries, retry_wait, config)
+                    num_connections, output_file, genomic_range_args, max_retries, retry_wait, config)
         except Exception as e:
             logging.exception(e)
 
@@ -661,11 +672,11 @@ def main():
     config_file_path = os.path.join(root_dir, "config", "default_credential_file.json")
 
     if args.test:
-        *credentials, key = load_credential(config_file_path)
+        credentials = Credentials.from_file(config_file_path)
     elif args.config_file is None:
-        *credentials, key = load_credential("credential_file.json")
+        credentials = Credentials.from_file("credential_file.json")
     else:
-        *credentials, key = load_credential(args.config_file)
+        credentials = Credentials.from_file(args.config_file)
 
     if args.server_file is not None:
         server_config = ServerConfig.from_file(args.server_file)
@@ -696,7 +707,7 @@ def main():
             TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
         if args.identifier[3] == 'D':
-            download_dataset(server_config, credentials, args.identifier, args.connections, key, args.saveto,
+            download_dataset(server_config, credentials, args.identifier, args.connections, args.saveto,
                              genomic_range_args,
                              args.max_retries, args.retry_wait)
         elif args.identifier[3] == 'F':
@@ -704,8 +715,7 @@ def main():
             display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier,
                                                                                         server_config)
             download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum,
-                                args.connections, key,
-                                args.saveto, genomic_range_args, args.max_retries, args.retry_wait, server_config)
+                                args.connections, args.saveto, genomic_range_args, args.max_retries, args.retry_wait, server_config)
         else:
             logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")

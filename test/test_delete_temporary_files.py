@@ -38,8 +38,8 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     input_file = bytearray(os.urandom(file_size_without_iv))
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=input_file, status=200)
 
-    pyega3.download_file_retry(('', ''), test_file_id, temporary_output_file, temporary_output_file,
-                               file_size_with_iv, 'check_sum', 1, None, temporary_output_file, None, 2, 0.1, mock_server_config)
+    pyega3.download_file_retry(pyega3.Credentials(), test_file_id, temporary_output_file, temporary_output_file,
+                               file_size_with_iv, 'check_sum', 1, temporary_output_file, None, 2, 0.1, mock_server_config)
 
     temp_file = pyega3.TEMPORARY_FILES.pop()
     # The temporary file should not exist because everything went fine,
@@ -70,8 +70,8 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config)
         mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=content, status=200)
 
     with pytest.raises(Exception) as context_manager:
-        pyega3.download_file_retry(('', ''), test_file_id, output_file_path, output_file_path,
-                                   expected_file_size, 'check_sum', 1, None, output_file_path, None,
+        pyega3.download_file_retry(pyega3.Credentials(), test_file_id, output_file_path, output_file_path,
+                                   expected_file_size, 'check_sum', 1, output_file_path, None,
                                    number_of_retries, 0.1, mock_server_config)
 
     exception_message = str(context_manager.value)

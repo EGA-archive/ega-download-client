@@ -28,8 +28,8 @@ def test_failed_download_retries_from_where_it_stopped(temporary_output_file, mo
                       status=200)
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file_id}', body=rest_of_the_input_file, status=200)
 
-    pyega3.download_file_retry(('', ''), file_id, temporary_output_file, temporary_output_file,
-                               file_size_with_iv, 'check_sum', 1, None, temporary_output_file, None, 2, 0.1, mock_server_config)
+    pyega3.download_file_retry(pyega3.Credentials(), file_id, temporary_output_file, temporary_output_file,
+                               file_size_with_iv, 'check_sum', 1, temporary_output_file, None, 2, 0.1, mock_server_config)
 
     assert mock_requests.calls[1].request.headers.get('Range') == 'bytes=0-92699'
     assert mock_requests.calls[2].request.headers.get('Range') == 'bytes=92577-92699'
