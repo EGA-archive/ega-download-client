@@ -11,6 +11,7 @@ import responses
 from psutil import virtual_memory
 
 import pyega3.pyega3 as pyega3
+from pyega3.server_config import ServerConfig
 from test.mock_data_server import MockDataServer
 
 
@@ -27,10 +28,10 @@ def reset_pyega_global_variables():
 
 @pytest.fixture
 def mock_server_config():
-    return pyega3.ServerConfig(url_api='https://test.data.server',
-                               url_auth='https://test.auth.server/ega-openid-connect-server/token',
-                               url_api_ticket='https://test.ticket.server',
-                               client_secret='test-client-secret')
+    return ServerConfig(url_api='https://test.data.server',
+                        url_auth='https://test.auth.server/ega-openid-connect-server/token',
+                        url_api_ticket='https://test.ticket.server',
+                        client_secret='test-client-secret')
 
 
 @pytest.fixture

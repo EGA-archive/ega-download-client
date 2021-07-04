@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+from pyega3.credentials import Credentials
 import pyega3.pyega3 as pyega3
 
 
@@ -54,7 +55,7 @@ def test_download_file(mock_data_server, random_binary_file, mock_writing_files,
     with mock.patch("pyega3.pyega3.get_token", return_value=mock_data_server.token):
         pyega3.download_file_retry(
             # add 16 bytes to file size ( IV adjustment )
-            pyega3.Credentials(), file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
+            Credentials(), file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
             file_md5, 1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, config=mock_server_config)
         assert random_binary_file == mock_writing_files[file_name]
 
@@ -72,7 +73,7 @@ def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_serve
     with mock.patch("pyega3.pyega3.get_token", return_value=mock_data_server.token):
         # add 16 bytes to file size ( IV adjustment )
         pyega3.download_file_retry(
-            pyega3.Credentials(), file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
+            Credentials(), file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
             file_md5, 1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, config=mock_server_config)
 
 
@@ -87,7 +88,7 @@ def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_bina
         with mock.patch('os.remove') as mocked_remove:
             with pytest.raises(Exception):
                 pyega3.download_file_retry(
-                    None, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
+                    Credentials(), file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
                     wrong_md5, 1,
                     output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, config=mock_server_config)
 
@@ -107,7 +108,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
     with mock.patch('htsget.get') as mocked_htsget:
         with mock.patch("pyega3.pyega3.get_token", return_value=mock_data_server.token):
             pyega3.download_file_retry(
-                None, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
+                Credentials(), file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
                 file_md5, 1, output_file=None, genomic_range_args=("chr1", None, 1, 100, None),
                 max_retries=5,
                 retry_wait=0,
@@ -126,11 +127,11 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
 def test_encrypted_files_not_supported(mock_server_config):
     with mock.patch("pyega3.pyega3.get_token", return_value="ok"):
         with pytest.raises(ValueError):
-            pyega3.download_file_retry(pyega3.Credentials(key="key"), "", "", "", 0, 0, 1, output_file=None, genomic_range_args=None,
+            pyega3.download_file_retry(Credentials(key="key"), "", "", "", 0, 0, 1, output_file=None, genomic_range_args=None,
                                        max_retries=5, retry_wait=0, config=mock_server_config)
 
 
 def test_gpg_files_not_supported(mock_server_config):
     with mock.patch("pyega3.pyega3.get_token", return_value="ok"):
-        pyega3.download_file_retry(pyega3.Credentials(), "", "test.gz", "test.gz.gpg", 0, 0, 1, output_file=None,
+        pyega3.download_file_retry(Credentials(), "", "test.gz", "test.gz.gpg", 0, 0, 1, output_file=None,
                                    genomic_range_args=None, max_retries=5, retry_wait=5, config=mock_server_config)

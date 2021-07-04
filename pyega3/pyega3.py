@@ -2,7 +2,6 @@
 
 import argparse
 import concurrent.futures
-import getpass
 import hashlib
 import json
 import logging
@@ -18,6 +17,9 @@ import htsget
 import psutil
 import requests
 from tqdm import tqdm
+
+from pyega3.credentials import Credentials
+from pyega3.server_config import ServerConfig
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
@@ -58,95 +60,6 @@ CLIENT_IP = get_client_ip()
 
 def get_standart_headers():
     return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': CLIENT_IP}
-
-
-class Credentials:
-    def __init__(self, username=None, password=None, key=None):
-        self.username = username
-        self.password = password
-        self.key = key
-
-    @staticmethod
-    def from_file(filepath):
-        """Load credentials for EMBL/EBI EGA from specified file"""
-        result = Credentials()
-        filepath = os.path.expanduser(filepath)
-        if not os.path.exists(filepath):
-            logging.error(f"{filepath} does not exist")
-        else:
-            try:
-                with open(filepath) as f:
-                    cfg = json.load(f)
-
-                if 'username' in cfg:
-                    result.username = cfg['username']
-                if 'password' in cfg:
-                    result.password = cfg['password']
-                if 'key' in cfg:
-                    result.key = cfg['key']
-
-            except ValueError:
-                logging.error("Invalid credential config JSON file")
-                sys.exit()
-
-        result.prompt_for_missing_values()
-
-        return result
-
-    def prompt_for_missing_values(self):
-        if self.username is None:
-            self.username = input("Enter Username :")
-        if self.password is None:
-            self.password = getpass.getpass(f"Password for '{self.username}':")
-
-
-class ServerConfig:
-    url_api = None
-    url_auth = None
-    url_api_ticket = None
-    client_secret = None
-
-    def __init__(self, url_api, url_auth, url_api_ticket, client_secret):
-        self.url_api = url_api
-        self.url_auth = url_auth
-        self.url_api_ticket = url_api_ticket
-        self.client_secret = client_secret
-
-    @staticmethod
-    def default_config_path():
-        root_dir = os.path.split(os.path.realpath(__file__))[0]
-        return os.path.join(root_dir, "config", "default_server_file.json")
-
-    @staticmethod
-    def from_file(filepath):
-        """Load server config for EMBL/EBI EGA from specified file"""
-        filepath = os.path.expanduser(filepath)
-        if not os.path.exists(filepath):
-            logging.error(f"{filepath} does not exist")
-            sys.exit()
-
-        try:
-            with open(filepath) as f:
-                custom_server_config = json.load(f)
-
-            def check_key(key):
-                if key not in custom_server_config:
-                    logging.error(f"{filepath} does not contain '{key}' field")
-                sys.exit()
-
-            check_key('url_auth')
-            check_key('url_api')
-            check_key('url_api_ticket')
-            check_key('client_secret')
-
-            return ServerConfig(custom_server_config['url_api'],
-                                custom_server_config['url_auth'],
-                                custom_server_config['url_api_ticket'],
-                                custom_server_config['client_secret'])
-
-        except ValueError:
-            logging.error("Invalid server config JSON file")
-            sys.exit()
 
 
 def get_token(credentials, config):
