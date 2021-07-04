@@ -1,7 +1,5 @@
 import json
-import random
 import re
-import string
 import urllib
 
 import responses
@@ -9,14 +7,15 @@ import responses
 
 class MockDataServer:
     url = None
-    token = ''.join(random.choices(string.ascii_letters, k=64))
+    token = None
 
     dataset_files = {}
     files = {}
     file_content = {}
 
-    def __init__(self, mock_requests, url):
+    def __init__(self, mock_requests, url, token):
         self.url = url
+        self.token = token
 
         mock_requests.add_callback(
             responses.GET,

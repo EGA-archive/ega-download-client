@@ -4,7 +4,6 @@ import re
 import pytest
 import responses
 
-from pyega3.credentials import Credentials
 from pyega3 import pyega3 as pyega3
 
 test_file_id = 'test_file_id1'
@@ -20,7 +19,7 @@ def test_deleting_non_existent_file_does_not_raise_exception():
 
 
 def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_server_config,
-                                                                         user_has_authenticated_successfully,
+                                                                         mock_auth_client,
                                                                          temporary_output_file,
                                                                          mock_requests):
     """
@@ -36,7 +35,7 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     input_file = bytearray(os.urandom(file_size_without_iv))
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=input_file, status=200)
 
-    pyega3.download_file_retry(Credentials(), test_file_id, temporary_output_file, temporary_output_file,
+    pyega3.download_file_retry(mock_auth_client, test_file_id, temporary_output_file, temporary_output_file,
                                file_size_with_iv, 'check_sum', 1, temporary_output_file, None, 2, 0.1,
                                mock_server_config)
 
@@ -51,7 +50,7 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     os.remove(temporary_output_file)
 
 
-def download_with_exception(mock_requests, output_file_path, mock_server_config):
+def download_with_exception(mock_requests, output_file_path, mock_server_config, mock_auth_server):
     """
     Simulates downloading a file of the given size: "true_file_size".
     During the transfer, an exception happens and the temporary file is either deleted
@@ -69,7 +68,7 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config)
         mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=content, status=200)
 
     with pytest.raises(Exception) as context_manager:
-        pyega3.download_file_retry(Credentials(), test_file_id, output_file_path, output_file_path,
+        pyega3.download_file_retry(mock_auth_server, test_file_id, output_file_path, output_file_path,
                                    expected_file_size, 'check_sum', 1, output_file_path, None,
                                    number_of_retries, 0.1, mock_server_config)
 
@@ -80,12 +79,12 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config)
 
 
 def test_temporary_files_are_deleted_if_the_user_says_so(mock_server_config,
-                                                         user_has_authenticated_successfully,
+                                                         mock_auth_client,
                                                          temporary_output_file,
                                                          mock_requests):
     pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
-    download_with_exception(mock_requests, temporary_output_file, mock_server_config)
+    download_with_exception(mock_requests, temporary_output_file, mock_server_config, mock_auth_client)
 
     # The temporary file should not exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
     # variable was set to True previously:
@@ -93,13 +92,13 @@ def test_temporary_files_are_deleted_if_the_user_says_so(mock_server_config,
 
 
 def test_temporary_files_are_not_deleted_if_the_user_says_so(mock_server_config,
-                                                             user_has_authenticated_successfully,
+                                                             mock_auth_client,
                                                              temporary_output_file,
                                                              mock_requests):
     # The user asks for keeping the temporary files:
     pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
-    download_with_exception(mock_requests, temporary_output_file, mock_server_config)
+    download_with_exception(mock_requests, temporary_output_file, mock_server_config, mock_auth_client)
 
     temp_file = pyega3.TEMPORARY_FILES.pop()
 

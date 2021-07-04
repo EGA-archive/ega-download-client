@@ -4,9 +4,9 @@ from urllib import parse
 import pytest
 import responses
 
-from pyega3.credentials import Credentials
-import pyega3.pyega3 as pyega3
 import test.conftest as common
+from pyega3.auth_client import AuthClient
+from pyega3.credentials import Credentials
 
 
 @pytest.fixture
@@ -39,11 +39,14 @@ def mock_openid_server(mock_requests, mock_server_config):
 
 def test_get_token_from_openid_server(mock_openid_server, mock_server_config):
     good_credentials = Credentials(username=mock_openid_server.username, password=mock_openid_server.password)
-    resp_token = pyega3.get_token(good_credentials, mock_server_config)
-    assert resp_token == mock_openid_server.access_token
+    auth_server = AuthClient(mock_openid_server.url, mock_server_config.client_secret, {})
+    auth_server.credentials = good_credentials
+    assert auth_server.token == mock_openid_server.access_token
 
 
 def test_bad_openid_credentials_exits(mock_openid_server, mock_server_config):
     bad_credentials = Credentials(username=common.rand_str(), password=common.rand_str())
+    auth_server = AuthClient(mock_openid_server.url, mock_server_config.client_secret, {})
+    auth_server.credentials = bad_credentials
     with pytest.raises(SystemExit):
-        pyega3.get_token(bad_credentials, mock_server_config)
+        token = auth_server.token

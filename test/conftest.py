@@ -40,6 +40,15 @@ def user_has_authenticated_successfully(mock_requests, mock_server_config):
 
 
 @pytest.fixture
+def mock_auth_client():
+    class MockAuthClient:
+        token = ''.join(random.choices(string.ascii_letters, k=64))
+        credentials = None
+
+    return MockAuthClient()
+
+
+@pytest.fixture
 def mock_requests():
     with responses.RequestsMock() as rsps:
         yield rsps
@@ -61,8 +70,8 @@ def temporary_output_file():
 
 
 @pytest.fixture
-def mock_data_server(mock_requests, mock_server_config):
-    return MockDataServer(mock_requests, mock_server_config.url_api)
+def mock_data_server(mock_requests, mock_server_config, mock_auth_client):
+    return MockDataServer(mock_requests, mock_server_config.url_api, mock_auth_client.token)
 
 
 @pytest.fixture

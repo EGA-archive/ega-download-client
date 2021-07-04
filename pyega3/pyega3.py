@@ -18,6 +18,7 @@ import psutil
 import requests
 from tqdm import tqdm
 
+from pyega3.auth_client import AuthClient
 from pyega3.credentials import Credentials
 from pyega3.server_config import ServerConfig
 
@@ -60,34 +61,6 @@ CLIENT_IP = get_client_ip()
 
 def get_standart_headers():
     return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': CLIENT_IP}
-
-
-def get_token(credentials, config):
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    headers.update(get_standart_headers())
-
-    data = {"grant_type": "password",
-            "client_id": "f20cd2d3-682a-4568-a53e-4262ef54c8f4",
-            "scope": "openid",
-            "client_secret": config.client_secret,
-            "username": credentials.username,
-            "password": credentials.password
-            }
-
-    r = requests.post(config.url_auth, headers=headers, data=data)
-
-    try:
-        logging.info('')
-        reply = r.json()
-        r.raise_for_status()
-        oauth_token = reply['access_token']
-        logging.info(f"Authentication success for user '{credentials.username}'")
-    except Exception:
-        logging.exception(
-            "Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
-        sys.exit()
-
-    return oauth_token
 
 
 def api_list_authorized_datasets(token, config):
@@ -396,12 +369,9 @@ def download_file(token, file_id, file_size, check_sum, num_connections, key, ou
 
 
 def download_file_retry(
-        credentials, file_id, display_file_name, file_name, file_size, check_sum, num_connections, output_file,
+        auth_server, file_id, display_file_name, file_name, file_size, check_sum, num_connections, output_file,
         genomic_range_args,
-        max_retries, retry_wait, config):
-    time0 = time.time()
-    token = get_token(credentials, config)
-
+        max_retries, retry_wait, config, key=None):
     if file_name.endswith(".gpg"):
         logging.info(
             "GPG files are not supported, please use the Java client - https://ega-archive.org/download/using-ega-download-client")
@@ -430,7 +400,7 @@ def download_file_retry(
                 data_format=genomic_range_args[4],
                 max_retries=sys.maxsize if max_retries < 0 else max_retries,
                 retry_wait=retry_wait,
-                bearer_token=token)
+                bearer_token=auth_server.token)
         print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)
         return
 
@@ -438,10 +408,7 @@ def download_file_retry(
     num_retries = 0
     while not done:
         try:
-            if time.time() - time0 > 1 * 60 * 60:  # token expires in 1 hour
-                time0 = time.time()
-                token = get_token(credentials, config)
-            download_file(token, file_id, file_size, check_sum, num_connections, credentials.key, output_file, config)
+            download_file(auth_server.token, file_id, file_size, check_sum, num_connections, key, output_file, config)
             done = True
         except Exception as e:
             logging.exception(e)
@@ -456,13 +423,13 @@ def download_file_retry(
 
 
 def download_dataset(
-        config, credentials, dataset_id, num_connections, output_dir, genomic_range_args, max_retries=5,
-        retry_wait=5):
+        config, auth_server, dataset_id, num_connections, output_dir, genomic_range_args, max_retries=5,
+        retry_wait=5, credentials=None):
     if dataset_id in LEGACY_DATASETS:
         logging.error(f"This is a legacy dataset {dataset_id}. Please contact the EGA helpdesk for more information.")
         sys.exit()
 
-    token = get_token(credentials, config)
+    token = auth_server.token
 
     if dataset_id not in api_list_authorized_datasets(token, config):
         logging.info(f"Dataset '{dataset_id}' is not in the list of your authorized datasets.")
@@ -476,9 +443,9 @@ def download_dataset(
                                                                                          res['displayFileName'],
                                                                                          genomic_range_args)
                 download_file_retry(
-                    credentials, res['fileId'], res['displayFileName'], res['fileName'], res['fileSize'],
+                    auth_server, res['fileId'], res['displayFileName'], res['fileName'], res['fileSize'],
                     res['unencryptedChecksum'],
-                    num_connections, output_file, genomic_range_args, max_retries, retry_wait, config)
+                    num_connections, output_file, genomic_range_args, max_retries, retry_wait, config, credentials.key)
         except Exception as e:
             logging.exception(e)
 
@@ -599,8 +566,11 @@ def main():
     logging.info(f"Server URL: {server_config.url_api}")
     logging.info(f"Session-Id: {session_id}")
 
+    auth_server = AuthClient(server_config.url_auth, server_config.client_secret, get_standart_headers())
+    auth_server.credentials = credentials
+
     if args.subcommand == "datasets":
-        token = get_token(credentials, server_config)
+        token = auth_server.token
         reply = api_list_authorized_datasets(token, server_config)
         pretty_print_authorized_datasets(reply)
 
@@ -608,7 +578,7 @@ def main():
         if args.identifier[3] != 'D':
             logging.error("Unrecognized identifier - please use EGAD accession for dataset requests")
             sys.exit()
-        token = get_token(credentials, server_config)
+        token = auth_server.token
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
 
@@ -620,15 +590,16 @@ def main():
             TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
         if args.identifier[3] == 'D':
-            download_dataset(server_config, credentials, args.identifier, args.connections, args.saveto,
+            download_dataset(server_config, auth_server, args.identifier, args.connections, args.saveto,
                              genomic_range_args,
-                             args.max_retries, args.retry_wait)
+                             args.max_retries, args.retry_wait, credentials)
         elif args.identifier[3] == 'F':
-            token = get_token(credentials, server_config)
+            token = auth_server.token
             display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier,
                                                                                         server_config)
-            download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum,
-                                args.connections, args.saveto, genomic_range_args, args.max_retries, args.retry_wait, server_config)
+            download_file_retry(auth_server, args.identifier, display_file_name, file_name, file_size, check_sum,
+                                args.connections, args.saveto, genomic_range_args, args.max_retries, args.retry_wait,
+                                server_config, credentials.key)
         else:
             logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")
