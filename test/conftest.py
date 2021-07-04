@@ -26,11 +26,31 @@ def reset_pyega_api_url():
 
 @pytest.fixture(autouse=True)
 def reset_pyega_global_variables():
-    pyega3.URL_AUTH = ''
     pyega3.URL_API_TICKET = ''
     pyega3.CLIENT_SECRET = ''
     pyega3.TEMPORARY_FILES = set()
     pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
+
+@pytest.fixture
+def mock_server_config(reset_pyega_api_url):
+    config = pyega3.ServerConfig()
+
+    config.url_api = 'https://test.data.server'
+    config.url_auth = 'https://test.auth.server/ega-openid-connect-server/token'
+    config.url_api_ticket = 'https://test.ticket.server'
+    config.client_secret = 'test-client-secret'
+
+    pyega3.URL_API = config.url_api
+    pyega3.URL_API_TICKET = config.url_api_ticket
+    pyega3.CLIENT_SECRET = config.client_secret
+
+    return config
+
+
+@pytest.fixture
+def user_has_authenticated_successfully(mock_requests, mock_server_config):
+    mock_requests.add(responses.POST, mock_server_config.url_auth, json={'access_token': 'ok'}, status=200)
 
 
 @pytest.fixture
@@ -55,10 +75,8 @@ def temporary_output_file():
 
 
 @pytest.fixture
-def mock_data_server(mock_requests, reset_pyega_api_url):
-    server = MockDataServer(mock_requests)
-    pyega3.URL_API = server.url
-    return server
+def mock_data_server(mock_requests, mock_server_config):
+    return MockDataServer(mock_requests, mock_server_config.url_api)
 
 
 @pytest.fixture

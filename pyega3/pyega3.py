@@ -23,13 +23,20 @@ version = "3.4.1"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
-URL_AUTH = ""
 URL_API = ""
 URL_API_TICKET = ""
 CLIENT_SECRET = ""
 DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
 TEMPORARY_FILES = set()
 TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
+
+class ServerConfig:
+    url_api = None
+    url_auth = None
+    url_api_ticket = None
+    client_secret = None
+
 
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
                    "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
@@ -40,11 +47,12 @@ LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGA
                    "EGAD00010000158", "EGAD00010000160", "EGAD00010000162", "EGAD00010000164", "EGAD00010000246",
                    "EGAD00010000248", "EGAD00010000250", "EGAD00010000256", "EGAD00010000444"]
 
+
 def get_client_ip():
     endpoint = 'https://ipinfo.io/json'
     unknown_status = 'Unknown'
     try:
-        response = requests.get(endpoint, verify = True)
+        response = requests.get(endpoint, verify=True)
         if response.status_code != 200:
             print('Status:', response.status_code, 'Problem with the request.')
             return unknown_status
@@ -55,16 +63,18 @@ def get_client_ip():
         logging.error("Failed to obtain IP address")
         return unknown_status
 
+
 CLIENT_IP = get_client_ip()
 
+
 def get_standart_headers():
-    return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip' : CLIENT_IP}
+    return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': CLIENT_IP}
 
 
 def get_credential():
     cfg = {}
     cfg['username'] = input("Enter Username :")
-    cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
+    cfg['password'] = getpass.getpass(f"Password for '{cfg['username']}':")
     return (cfg['username'], cfg['password'], None)
 
 
@@ -72,7 +82,7 @@ def load_credential(filepath):
     """Load credentials for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
     if not os.path.exists(filepath):
-        logging.error("{} does not exist".format(filepath))
+        logging.error(f"{filepath} does not exist")
         return get_credential()
 
     try:
@@ -81,7 +91,7 @@ def load_credential(filepath):
         if 'username' not in cfg:
             cfg['username'] = input("Enter Username :")
         if 'password' not in cfg:
-            cfg['password'] = getpass.getpass("Password for '{}':".format(cfg['username']))
+            cfg['password'] = getpass.getpass(f"Password for '{cfg['username']}':")
     except ValueError:
         logging.error("Invalid credential config JSON file")
         sys.exit()
@@ -93,38 +103,37 @@ def load_default_server_config():
     """Load default server config for EMBL/EBI EGA from specified file"""
     root_dir = os.path.split(os.path.realpath(__file__))[0]
     server_file_path = os.path.join(root_dir, "config", "default_server_file.json")
-    load_server_config(server_file_path)
+    return load_server_config(server_file_path)
 
 
 def load_server_config(filepath):
     """Load custom server config for EMBL/EBI EGA from specified file"""
     filepath = os.path.expanduser(filepath)
-    if not os.path.exists(filepath): 
-    	logging.error("{} does not exist".format(filepath))
-    	sys.exit()
+    if not os.path.exists(filepath):
+        logging.error(f"{filepath} does not exist")
+        sys.exit()
 
     try:
         with open(filepath) as f:
             custom_server_config = json.load(f)
         if 'url_auth' not in custom_server_config or 'url_api' not in custom_server_config or 'url_api_ticket' not in custom_server_config or 'client_secret' not in custom_server_config:
             logging.error(
-                "{} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields".format(
-                    filepath))
+                f"{filepath} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields")
             sys.exit()
 
-        global URL_AUTH
-        URL_AUTH = custom_server_config['url_auth']
-        global URL_API
-        URL_API = custom_server_config['url_api']
-        global URL_API_TICKET
-        URL_API_TICKET = custom_server_config['url_api_ticket']
-        global CLIENT_SECRET
-        CLIENT_SECRET = custom_server_config['client_secret']
+        server_config = ServerConfig()
+        server_config.url_api = custom_server_config['url_api']
+        server_config.url_auth = custom_server_config['url_auth']
+        server_config.url_api_ticket = custom_server_config['url_api_ticket']
+        server_config.client_secret = custom_server_config['client_secret']
+        return server_config
+
     except ValueError:
         logging.error("Invalid server config JSON file")
         sys.exit()
 
-def get_token(credentials):
+
+def get_token(credentials, config):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     headers.update(get_standart_headers())
 
@@ -132,21 +141,22 @@ def get_token(credentials):
     data = {"grant_type": "password",
             "client_id": "f20cd2d3-682a-4568-a53e-4262ef54c8f4",
             "scope": "openid",
-            "client_secret": CLIENT_SECRET,
+            "client_secret": config.client_secret,
             "username": username,
             "password": password
             }
 
-    r = requests.post(URL_AUTH, headers=headers, data=data)
+    r = requests.post(config.url_auth, headers=headers, data=data)
 
     try:
         logging.info('')
         reply = r.json()
         r.raise_for_status()
         oauth_token = reply['access_token']
-        logging.info("Authentication success for user '{}'".format(username))
-    except Exception as expectedException:
-        logging.exception("Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
+        logging.info(f"Authentication success for user '{username}'")
+    except Exception:
+        logging.exception(
+            "Invalid username, password or secret key - please check and retry. If problem persists contact helpdesk on helpdesk@ega-archive.org")
         sys.exit()
 
     return oauth_token
@@ -155,10 +165,10 @@ def get_token(credentials):
 def api_list_authorized_datasets(token):
     """List datasets to which the credentialed user has authorized access"""
 
-    headers = {'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(token)}
+    headers = {'Accept': 'application/json', 'Authorization': f'Bearer {token}'}
     headers.update(get_standart_headers())
 
-    url = URL_API + "/metadata/datasets"
+    url = f"{URL_API}/metadata/datasets"
     r = requests.get(url, headers=headers)
     r.raise_for_status()
 
@@ -167,7 +177,8 @@ def api_list_authorized_datasets(token):
     print_debug_info(url, reply)
 
     if reply is None:
-        logging.error("You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
+        logging.error(
+            "You do not currently have access to any datasets at EGA according to our databases. If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
         sys.exit()
 
     return reply
@@ -182,15 +193,15 @@ def pretty_print_authorized_datasets(reply):
 
 def api_list_files_in_dataset(token, dataset):
     if (dataset in LEGACY_DATASETS):
-        logging.error("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset))
+        logging.error(f"This is a legacy dataset {dataset}. Please contact the EGA helpdesk for more information.")
         sys.exit()
 
-    headers = {'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(token)}
+    headers = {'Accept': 'application/json', 'Authorization': f'Bearer {token}'}
     headers.update(get_standart_headers())
-    url = URL_API + "/metadata/datasets/{}/files".format(dataset)
+    url = f"{URL_API}/metadata/datasets/{dataset}/files"
 
     if (not dataset in api_list_authorized_datasets(token)):
-        logging.error("Dataset '{}' is not in the list of your authorized datasets.".format(dataset))
+        logging.error(f"Dataset '{dataset}' is not in the list of your authorized datasets.")
         sys.exit()
 
     r = requests.get(url, headers=headers)
@@ -201,14 +212,14 @@ def api_list_files_in_dataset(token, dataset):
     print_debug_info(url, reply)
 
     if reply is None:
-        logging.error("List files in dataset {} failed".format(dataset))
+        logging.error(f"List files in dataset {dataset} failed")
         sys.exit()
 
     return reply
 
 
 def status_ok(status_string):
-    if (status_string == "available"):
+    if status_string == "available":
         return True
     else:
         return False
@@ -235,16 +246,16 @@ def pretty_print_files_in_dataset(reply, dataset):
     logging.info(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
     for res in reply:
         logging.info(format_string.format(res['fileId'], status_ok(res['fileStatus']), str(res['fileSize']),
-                                   res['unencryptedChecksum'], res['displayFileName']))
+                                          res['unencryptedChecksum'], res['displayFileName']))
 
     logging.info('-' * 80)
     logging.info("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
 
 
 def get_file_name_size_md5(token, file_id):
-    headers = {'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(token)}
+    headers = {'Accept': 'application/json', 'Authorization': f'Bearer {token}'}
     headers.update(get_standart_headers())
-    url = URL_API + "/metadata/files/{}".format(file_id)
+    url = f"{URL_API}/metadata/files/{file_id}"
 
     r = requests.get(url, headers=headers)
     r.raise_for_status()
@@ -253,7 +264,7 @@ def get_file_name_size_md5(token, file_id):
     print_debug_info(url, res)
 
     if (res['displayFileName'] is None or res['unencryptedChecksum'] is None):
-        raise RuntimeError("Metadata for file id '{}' could not be retrieved".format(file_id))
+        raise RuntimeError(f"Metadata for file id '{file_id}' could not be retrieved")
 
     return (res['displayFileName'], res['fileName'], res['fileSize'], res['unencryptedChecksum'])
 
@@ -264,30 +275,34 @@ def download_file_slice(url, token, file_name, start_pos, length, pbar=None):
     if length <= 0:
         raise ValueError("length : must be positive")
 
-    file_name += '-from-' + str(start_pos) + '-len-' + str(length) + '.slice'
+    file_name += f'-from-{str(start_pos)}-len-{str(length)}.slice'
     TEMPORARY_FILES.add(file_name)
 
     existing_size = os.stat(file_name).st_size if os.path.exists(file_name) else 0
-    if (existing_size > length): os.remove(file_name)
-    if pbar: pbar.update(existing_size)
+    if existing_size > length:
+        os.remove(file_name)
+    if pbar:
+        pbar.update(existing_size)
 
-    if (existing_size == length): return file_name
+    if existing_size == length:
+        return file_name
 
     headers = get_standart_headers()
-    headers['Authorization'] = 'Bearer {}'.format(token)
-    headers['Range'] = 'bytes={}-{}'.format(start_pos + existing_size, start_pos + length - 1)
+    headers['Authorization'] = f'Bearer {token}'
+    headers['Range'] = f'bytes={start_pos + existing_size}-{start_pos + length - 1}'
 
     with requests.get(url, headers=headers, stream=True) as r:
-        print_debug_info(url, None, "Response headers: {}".format(r.headers))
+        print_debug_info(url, None, f"Response headers: {r.headers}")
         r.raise_for_status()
         with open(file_name, 'ba') as file_out:
             for chunk in r.iter_content(DOWNLOAD_FILE_SLICE_CHUNK_SIZE):
                 file_out.write(chunk)
-                if pbar: pbar.update(len(chunk))
+                if pbar:
+                    pbar.update(len(chunk))
 
     total_received = os.path.getsize(file_name)
     if total_received != length:
-        raise Exception("Slice error: received={}, requested={}, file='{}'".format(total_received, length, file_name))
+        raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
     return file_name
 
@@ -303,7 +318,8 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge, downloaded_file_to
     with tqdm(total=int(downloaded_file_total_size), unit='B', unit_scale=True) as pbar:
         os.rename(files_to_merge[0], target_file_name)
         logging.debug(files_to_merge[0])
-        if pbar: pbar.update(os.path.getsize(target_file_name))
+        if pbar:
+            pbar.update(os.path.getsize(target_file_name))
 
         with open(target_file_name, 'ab') as target_file:
             for file_name in files_to_merge[1:]:
@@ -311,10 +327,10 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge, downloaded_file_to
                     logging.debug(file_name)
                     copyfileobj(f, target_file, 65536, pbar)
                 os.remove(file_name)
-        pbar.close();
+        pbar.close()
 
     end = time.time()
-    logging.debug('Merged in {} sec'.format(end - start))
+    logging.debug(f'Merged in {end - start} sec')
 
 
 def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None):
@@ -327,14 +343,15 @@ def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None):
 
 
 def calculate_md5(fname, file_size):
-    if not os.path.exists(fname): raise Exception("Local file '{}' does not exist".format(fname))
+    if not os.path.exists(fname): raise Exception(f"Local file '{fname}' does not exist")
     hash_md5 = hashlib.md5()
 
     with tqdm(total=int(file_size), unit='B', unit_scale=True) as pbar:
         with open(fname, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
-                if pbar: pbar.update(len(chunk))
+                if pbar:
+                    pbar.update(len(chunk))
         pbar.close()
     return hash_md5.hexdigest()
 
@@ -347,28 +364,27 @@ def md5(fname, file_size):
     fname_md5 = get_fname_md5(fname)
     # check if md5 has been previously stored in aux file
     if os.path.exists(fname_md5) and os.path.getsize(fname_md5) == 32:
-        logging.info("Reusing pre-calculated md5: '{}'".format(fname_md5))
-        with open(fname_md5, 'rb') as f: return f.read().decode()
+        logging.info(f"Reusing pre-calculated md5: '{fname_md5}'")
+        with open(fname_md5, 'rb') as f:
+            return f.read().decode()
     # now do the real calculation
     result = calculate_md5(fname, file_size)
     return result
 
 
 def print_local_file_info(prefix_str, file, md5):
-    logging.info("{}'{}'({} bytes, md5={})".format(prefix_str, os.path.abspath(file), os.path.getsize(file), md5))
+    logging.info(f"{prefix_str}'{os.path.abspath(file)}'({os.path.getsize(file)} bytes, md5={md5})")
 
 
 def print_local_file_info_genomic_range(prefix_str, file, gr_args):
     logging.info(
-        "{}'{}'({} bytes, referenceName={}, referenceMD5={}, start={}, end={}, format={})".format(
-            prefix_str,
-            os.path.abspath(file), os.path.getsize(file),
-            gr_args[0], gr_args[1], gr_args[2], gr_args[3], gr_args[4])
+        f"{prefix_str}'{os.path.abspath(file)}'({os.path.getsize(file)} bytes, referenceName={gr_args[0]}, referenceMD5={gr_args[1]}, start={gr_args[2]}, end={gr_args[3]}, format={gr_args[4]})"
     )
 
 
 def is_genomic_range(genomic_range_args):
-    if not genomic_range_args: return False
+    if not genomic_range_args:
+        return False
     return genomic_range_args[0] is not None or genomic_range_args[1] is not None
 
 
@@ -386,7 +402,7 @@ def generate_output_filename(folder, file_id, file_name, genomic_range_args):
         if formatExt != ext and len(formatExt) > 1: ext += formatExt
 
     ret_val = os.path.join(folder, file_id, name + genomic_range + ext)
-    logging.debug("Output file:'{}'".format(ret_val))
+    logging.debug(f"Output file:'{ret_val}'")
     return ret_val
 
 
@@ -396,20 +412,23 @@ def download_file(token, file_id, file_size, check_sum, num_connections, key, ou
     if key is not None:
         raise ValueError('key parameter: encrypted downloads are not supported yet')
 
-    url = URL_API + "/files/{}".format(file_id)
+    url = f"{URL_API}/files/{file_id}"
 
-    if (key is None): url += "?destinationFormat=plain"; file_size -= 16  # 16 bytes IV not necesary in plain mode
+    if key is None:
+        url += "?destinationFormat=plain"
+        file_size -= 16  # 16 bytes IV not necesary in plain mode
 
-    if (os.path.exists(output_file) and md5(output_file, file_size) == check_sum):
+    if os.path.exists(output_file) and md5(output_file, file_size) == check_sum:
         print_local_file_info('Local file exists:', output_file, check_sum)
         return
 
     num_connections = max(num_connections, 1)
     num_connections = min(num_connections, 128)
 
-    if (file_size < 100 * 1024 * 1024): num_connections = 1
+    if file_size < 100 * 1024 * 1024:
+        num_connections = 1
 
-    logging.info("Download starting [using {} connection(s)]...".format(num_connections))
+    logging.info(f"Download starting [using {num_connections} connection(s)]...")
 
     chunk_len = math.ceil(file_size / num_connections)
 
@@ -425,7 +444,7 @@ def download_file(token, file_id, file_size, check_sum, num_connections, key, ou
         pbar.close()
 
         downloaded_file_total_size = sum(os.path.getsize(f) for f in results)
-        if (downloaded_file_total_size == file_size):
+        if downloaded_file_total_size == file_size:
             merge_bin_files_on_disk(output_file, results, downloaded_file_total_size)
 
     not_valid_server_md5 = len(str(check_sum or '')) != 32
@@ -436,44 +455,47 @@ def download_file(token, file_id, file_size, check_sum, num_connections, key, ou
 
     logging.info("Verifying file checksum")
 
-    if (received_file_md5 == check_sum or not_valid_server_md5):
+    if received_file_md5 == check_sum or not_valid_server_md5:
         print_local_file_info('Saved to : ', output_file, check_sum)
-        if not_valid_server_md5: logging.info(
-            "WARNING: Unable to obtain valid MD5 from the server(recived:{}). Can't validate download. Contact EGA helpdesk".format(
-                check_sum))
+        if not_valid_server_md5:
+            logging.info(
+                f"WARNING: Unable to obtain valid MD5 from the server(recived:{check_sum}). Can't validate download. Contact EGA helpdesk")
         with open(get_fname_md5(output_file), 'wb') as f:  # save good md5 in aux file for future re-use
             f.write(received_file_md5.encode())
     else:
         os.remove(output_file)
-        raise Exception("Download process expected md5 value '{}' but got '{}'".format(check_sum, received_file_md5))
+        raise Exception(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
 
 
 def download_file_retry(
-        creds, file_id, display_file_name, file_name, file_size, check_sum, num_connections, key, output_file, genomic_range_args,
-        max_retries, retry_wait):
+        creds, file_id, display_file_name, file_name, file_size, check_sum, num_connections, key, output_file,
+        genomic_range_args,
+        max_retries, retry_wait, config):
     time0 = time.time()
-    token = get_token(creds)
+    token = get_token(creds, config)
 
     if file_name.endswith(".gpg"):
-        logging.info("GPG files are not supported, please use the Java client - https://ega-archive.org/download/using-ega-download-client")
+        logging.info(
+            "GPG files are not supported, please use the Java client - https://ega-archive.org/download/using-ega-download-client")
         return
 
-    logging.info("File Id: '{}'({} bytes).".format(file_id, file_size))
+    logging.info(f"File Id: '{file_id}'({file_size} bytes).")
 
     if output_file is None:
         output_file = generate_output_filename(os.getcwd(), file_id, display_file_name, genomic_range_args)
     dir = os.path.dirname(output_file)
-    if not os.path.exists(dir) and len(dir) > 0: os.makedirs(dir)
+    if not os.path.exists(dir) and len(dir) > 0:
+        os.makedirs(dir)
 
     hdd = psutil.disk_usage(os.getcwd())
-    logging.info("Total space : {:.2f} GiB".format(hdd.total / (2 ** 30)))
-    logging.info("Used space : {:.2f} GiB".format(hdd.used / (2 ** 30)))
-    logging.info("Free space : {:.2f} GiB".format(hdd.free / (2 ** 30)))
-    
+    logging.info(f"Total space : {hdd.total / (2 ** 30):.2f} GiB")
+    logging.info(f"Used space : {hdd.used / (2 ** 30):.2f} GiB")
+    logging.info(f"Free space : {hdd.free / (2 ** 30):.2f} GiB")
+
     if is_genomic_range(genomic_range_args):
         with open(output_file, 'wb') as output:
             htsget.get(
-                URL_API_TICKET + "/files/{}".format(file_id),
+                f"{URL_API_TICKET}/files/{file_id}",
                 output,
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],
@@ -490,7 +512,7 @@ def download_file_retry(
         try:
             if time.time() - time0 > 1 * 60 * 60:  # token expires in 1 hour
                 time0 = time.time()
-                token = get_token(creds)
+                token = get_token(creds, config)
             download_file(token, file_id, file_size, check_sum, num_connections, key, output_file)
             done = True
         except Exception as e:
@@ -502,52 +524,52 @@ def download_file_retry(
                 raise e
             time.sleep(retry_wait)
             num_retries += 1
-            logging.info("retry attempt {}".format(num_retries))
+            logging.info(f"retry attempt {num_retries}")
 
 
 def download_dataset(
-        credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
-    if (dataset_id in LEGACY_DATASETS):
-        logging.error("This is a legacy dataset {}. Please contact the EGA helpdesk for more information.".format(dataset_id))
+        config, credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
+    if dataset_id in LEGACY_DATASETS:
+        logging.error(f"This is a legacy dataset {dataset_id}. Please contact the EGA helpdesk for more information.")
         sys.exit()
 
-    token = get_token(credentials)
+    token = get_token(credentials, config)
 
-    if (not dataset_id in api_list_authorized_datasets(token)):
-        logging.info("Dataset '{}' is not in the list of your authorized datasets.".format(dataset_id))
+    if dataset_id not in api_list_authorized_datasets(token):
+        logging.info(f"Dataset '{dataset_id}' is not in the list of your authorized datasets.")
         return
 
     reply = api_list_files_in_dataset(token, dataset_id)
     for res in reply:
         try:
-            if (status_ok(res['fileStatus'])):
+            if status_ok(res['fileStatus']):
                 output_file = None if (output_dir is None) else generate_output_filename(output_dir, res['fileId'],
                                                                                          res['displayFileName'],
                                                                                          genomic_range_args)
                 download_file_retry(
-                    credentials, res['fileId'], res['displayFileName'], res['fileName'], res['fileSize'], res['unencryptedChecksum'],
-                    num_connections, key, output_file, genomic_range_args, max_retries, retry_wait)
+                    credentials, res['fileId'], res['displayFileName'], res['fileName'], res['fileSize'],
+                    res['unencryptedChecksum'],
+                    num_connections, key, output_file, genomic_range_args, max_retries, retry_wait, config)
         except Exception as e:
             logging.exception(e)
 
 
 def print_debug_info(url, reply_json, *args):
-    logging.debug("Request URL : {}".format(url))
-    if reply_json is not None: logging.debug("Response    :\n %.1200s" % json.dumps(reply_json, indent=4))
+    logging.debug(f"Request URL : {url}")
+    if reply_json is not None:
+        logging.debug("Response    :\n %.1200s" % json.dumps(reply_json, indent=4))
 
-    for a in args: logging.debug(a)
-
-
-load_default_server_config()
+    for a in args:
+        logging.debug(a)
 
 
 def delete_temporary_files(temporary_files):
     try:
         for temporary_file in temporary_files:
-            logging.debug('Deleting the {} temporary file...'.format(temporary_file))
+            logging.debug(f'Deleting the {temporary_file} temporary file...')
             os.remove(temporary_file)
     except FileNotFoundError as ex:
-        logging.error('Could not delete the temporary file: {}'.format(ex))
+        logging.error(f'Could not delete the temporary file: {ex}')
 
 
 def main():
@@ -614,17 +636,21 @@ def main():
         global logging_level
         logging_level = logging.DEBUG
 
-    logging.basicConfig(level=logging_level, format='%(asctime)s %(message)s', datefmt='[%Y-%m-%d %H:%M:%S %z]',  
-    					handlers=[
-            logging.handlers.RotatingFileHandler("pyega3_output.log", maxBytes=5*1024*1024, backupCount=1),
-            logging.StreamHandler()
-        ])
+    logging.basicConfig(level=logging_level,
+                        format='%(asctime)s %(message)s',
+                        datefmt='[%Y-%m-%d %H:%M:%S %z]',
+                        handlers=[
+                            logging.handlers.RotatingFileHandler("pyega3_output.log",
+                                                                 maxBytes=5 * 1024 * 1024,
+                                                                 backupCount=1),
+                            logging.StreamHandler()
+                        ])
 
     logging.info("")
-    logging.info("pyEGA3 - EGA python client version {} (https://github.com/EGA-archive/ega-download-client)".format(version))
+    logging.info(f"pyEGA3 - EGA python client version {version} (https://github.com/EGA-archive/ega-download-client)")
     logging.info("Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
-    logging.info("Python version : {}".format(platform.python_version()))
-    logging.info("OS version : {} {}".format(platform.system(), platform.version()))
+    logging.info(f"Python version : {platform.python_version()}")
+    logging.info(f"OS version : {platform.system()} {platform.version()}")
 
     root_dir = os.path.split(os.path.realpath(__file__))[0]
     config_file_path = os.path.join(root_dir, "config", "default_credential_file.json")
@@ -636,22 +662,24 @@ def main():
     else:
         *credentials, key = load_credential(args.config_file)
 
-    if args.server_file is not None:
-        load_server_config(args.server_file)
+    server_config = load_default_server_config()
 
-    logging.info("Server URL: {}".format(URL_API))
-    logging.info("Session-Id: {}".format(session_id))
+    if args.server_file is not None:
+        server_config = load_server_config(args.server_file)
+
+    logging.info(f"Server URL: {URL_API}")
+    logging.info(f"Session-Id: {session_id}")
 
     if args.subcommand == "datasets":
-        token = get_token(credentials)
+        token = get_token(credentials, server_config)
         reply = api_list_authorized_datasets(token)
         pretty_print_authorized_datasets(reply)
 
     if args.subcommand == "files":
-        if (args.identifier[3] != 'D'):
+        if args.identifier[3] != 'D':
             logging.error("Unrecognized identifier - please use EGAD accession for dataset requests")
             sys.exit()
-        token = get_token(credentials)
+        token = get_token(credentials, server_config)
         reply = api_list_files_in_dataset(token, args.identifier)
         pretty_print_files_in_dataset(reply, args.identifier)
 
@@ -662,14 +690,15 @@ def main():
             global TEMPORARY_FILES_SHOULD_BE_DELETED
             TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
-        if (args.identifier[3] == 'D'):
-            download_dataset(credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args,
+        if args.identifier[3] == 'D':
+            download_dataset(server_config, credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args,
                              args.max_retries, args.retry_wait)
-        elif (args.identifier[3] == 'F'):
-            token = get_token(credentials)
+        elif args.identifier[3] == 'F':
+            token = get_token(credentials, server_config)
             display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier)
-            download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum, args.connections, key,
-                                args.saveto, genomic_range_args, args.max_retries, args.retry_wait)
+            download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum,
+                                args.connections, key,
+                                args.saveto, genomic_range_args, args.max_retries, args.retry_wait, server_config)
         else:
             logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request or EGAF accession for individual file requests")

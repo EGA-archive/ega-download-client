@@ -8,14 +8,16 @@ import responses
 
 
 class MockDataServer:
-    url = "https://mock.metadata.server"
+    url = None
     token = ''.join(random.choices(string.ascii_letters, k=64))
 
     dataset_files = {}
     files = {}
     file_content = {}
 
-    def __init__(self, mock_requests):
+    def __init__(self, mock_requests, url):
+        self.url = url
+
         mock_requests.add_callback(
             responses.GET,
             self.url + "/metadata/datasets",

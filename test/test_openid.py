@@ -9,9 +9,9 @@ import test.conftest as common
 
 
 @pytest.fixture
-def mock_openid_server(mock_requests):
+def mock_openid_server(mock_requests, mock_server_config):
     class MockOpenIDServer:
-        url = "https://mock.openid.server"
+        url = mock_server_config.url_auth
         id_token = common.rand_str()
         access_token = common.rand_str()
         username = common.rand_str()
@@ -36,17 +36,13 @@ def mock_openid_server(mock_requests):
     return MockOpenIDServer()
 
 
-def test_get_token_from_openid_server(mock_openid_server):
-    pyega3.URL_AUTH = mock_openid_server.url
-
+def test_get_token_from_openid_server(mock_openid_server, mock_server_config):
     good_credentials = (mock_openid_server.username, mock_openid_server.password)
-    resp_token = pyega3.get_token(good_credentials)
+    resp_token = pyega3.get_token(good_credentials, mock_server_config)
     assert resp_token == mock_openid_server.access_token
 
 
-def test_bad_openid_credentials_exits(mock_openid_server):
-    pyega3.URL_AUTH = mock_openid_server.url
-
+def test_bad_openid_credentials_exits(mock_openid_server, mock_server_config):
     bad_credentials = (common.rand_str(), common.rand_str())
     with pytest.raises(SystemExit):
-        pyega3.get_token(bad_credentials)
+        pyega3.get_token(bad_credentials, mock_server_config)
