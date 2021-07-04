@@ -24,7 +24,6 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 URL_API = ""
-URL_API_TICKET = ""
 DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
 TEMPORARY_FILES = set()
 TEMPORARY_FILES_SHOULD_BE_DELETED = False
@@ -494,7 +493,7 @@ def download_file_retry(
     if is_genomic_range(genomic_range_args):
         with open(output_file, 'wb') as output:
             htsget.get(
-                f"{URL_API_TICKET}/files/{file_id}",
+                f"{config.url_api_ticket}/files/{file_id}",
                 output,
                 reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                 start=genomic_range_args[2], end=genomic_range_args[3],

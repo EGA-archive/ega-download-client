@@ -26,7 +26,6 @@ def reset_pyega_api_url():
 
 @pytest.fixture(autouse=True)
 def reset_pyega_global_variables():
-    pyega3.URL_API_TICKET = ''
     pyega3.TEMPORARY_FILES = set()
     pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
@@ -41,7 +40,6 @@ def mock_server_config(reset_pyega_api_url):
     config.client_secret = 'test-client-secret'
 
     pyega3.URL_API = config.url_api
-    pyega3.URL_API_TICKET = config.url_api_ticket
 
     return config
 
