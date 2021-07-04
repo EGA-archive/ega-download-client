@@ -27,14 +27,6 @@ DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
 TEMPORARY_FILES = set()
 TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
-
-class ServerConfig:
-    url_api = None
-    url_auth = None
-    url_api_ticket = None
-    client_secret = None
-
-
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
                    "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
                    "EGAD00000000048", "EGAD00000000049", "EGAD00000000051", "EGAD00000000052", "EGAD00000000053",
@@ -96,38 +88,53 @@ def load_credential(filepath):
     return (cfg['username'], cfg['password'], cfg.get('key'))
 
 
-def load_default_server_config():
-    """Load default server config for EMBL/EBI EGA from specified file"""
-    root_dir = os.path.split(os.path.realpath(__file__))[0]
-    server_file_path = os.path.join(root_dir, "config", "default_server_file.json")
-    return load_server_config(server_file_path)
+class ServerConfig:
+    url_api = None
+    url_auth = None
+    url_api_ticket = None
+    client_secret = None
 
+    def __init__(self, url_api, url_auth, url_api_ticket, client_secret):
+        self.url_api = url_api
+        self.url_auth = url_auth
+        self.url_api_ticket = url_api_ticket
+        self.client_secret = client_secret
 
-def load_server_config(filepath):
-    """Load custom server config for EMBL/EBI EGA from specified file"""
-    filepath = os.path.expanduser(filepath)
-    if not os.path.exists(filepath):
-        logging.error(f"{filepath} does not exist")
-        sys.exit()
+    @staticmethod
+    def default_config_path():
+        root_dir = os.path.split(os.path.realpath(__file__))[0]
+        return os.path.join(root_dir, "config", "default_server_file.json")
 
-    try:
-        with open(filepath) as f:
-            custom_server_config = json.load(f)
-        if 'url_auth' not in custom_server_config or 'url_api' not in custom_server_config or 'url_api_ticket' not in custom_server_config or 'client_secret' not in custom_server_config:
-            logging.error(
-                f"{filepath} does not contain either 'url_auth' or 'url_api' or 'url_api_ticket' or 'client_secret' fields")
+    @staticmethod
+    def from_file(filepath):
+        """Load server config for EMBL/EBI EGA from specified file"""
+        filepath = os.path.expanduser(filepath)
+        if not os.path.exists(filepath):
+            logging.error(f"{filepath} does not exist")
             sys.exit()
 
-        server_config = ServerConfig()
-        server_config.url_api = custom_server_config['url_api']
-        server_config.url_auth = custom_server_config['url_auth']
-        server_config.url_api_ticket = custom_server_config['url_api_ticket']
-        server_config.client_secret = custom_server_config['client_secret']
-        return server_config
+        try:
+            with open(filepath) as f:
+                custom_server_config = json.load(f)
 
-    except ValueError:
-        logging.error("Invalid server config JSON file")
-        sys.exit()
+            def check_key(key):
+                if key not in custom_server_config:
+                    logging.error(f"{filepath} does not contain '{key}' field")
+                sys.exit()
+
+            check_key('url_auth')
+            check_key('url_api')
+            check_key('url_api_ticket')
+            check_key('client_secret')
+
+            return ServerConfig(custom_server_config['url_api'],
+                                custom_server_config['url_auth'],
+                                custom_server_config['url_api_ticket'],
+                                custom_server_config['client_secret'])
+
+        except ValueError:
+            logging.error("Invalid server config JSON file")
+            sys.exit()
 
 
 def get_token(credentials, config):
@@ -525,7 +532,8 @@ def download_file_retry(
 
 
 def download_dataset(
-        config, credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
+        config, credentials, dataset_id, num_connections, key, output_dir, genomic_range_args, max_retries=5,
+        retry_wait=5):
     if dataset_id in LEGACY_DATASETS:
         logging.error(f"This is a legacy dataset {dataset_id}. Please contact the EGA helpdesk for more information.")
         sys.exit()
@@ -659,10 +667,10 @@ def main():
     else:
         *credentials, key = load_credential(args.config_file)
 
-    server_config = load_default_server_config()
-
     if args.server_file is not None:
-        server_config = load_server_config(args.server_file)
+        server_config = ServerConfig.from_file(args.server_file)
+    else:
+        server_config = ServerConfig.from_file(ServerConfig.default_config_path())
 
     logging.info(f"Server URL: {server_config.url_api}")
     logging.info(f"Session-Id: {session_id}")
@@ -688,11 +696,13 @@ def main():
             TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
         if args.identifier[3] == 'D':
-            download_dataset(server_config, credentials, args.identifier, args.connections, key, args.saveto, genomic_range_args,
+            download_dataset(server_config, credentials, args.identifier, args.connections, key, args.saveto,
+                             genomic_range_args,
                              args.max_retries, args.retry_wait)
         elif args.identifier[3] == 'F':
             token = get_token(credentials, server_config)
-            display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier, server_config)
+            display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier,
+                                                                                        server_config)
             download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum,
                                 args.connections, key,
                                 args.saveto, genomic_range_args, args.max_retries, args.retry_wait, server_config)

@@ -27,14 +27,10 @@ def reset_pyega_global_variables():
 
 @pytest.fixture
 def mock_server_config():
-    config = pyega3.ServerConfig()
-
-    config.url_api = 'https://test.data.server'
-    config.url_auth = 'https://test.auth.server/ega-openid-connect-server/token'
-    config.url_api_ticket = 'https://test.ticket.server'
-    config.client_secret = 'test-client-secret'
-
-    return config
+    return pyega3.ServerConfig(url_api='https://test.data.server',
+                               url_auth='https://test.auth.server/ega-openid-connect-server/token',
+                               url_api_ticket='https://test.ticket.server',
+                               client_secret='test-client-secret')
 
 
 @pytest.fixture

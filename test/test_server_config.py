@@ -8,13 +8,13 @@ import test.conftest as common
 
 def test_load_server_config_invalid_path():
     with pytest.raises(SystemExit):
-        pyega3.load_server_config("/invalidpath");
+        pyega3.ServerConfig.from_file("/invalidpath");
 
 
 def test_load_server_config_invalid_json(mock_input_file):
     with mock_input_file("bad json") as server_config_file:
         with pytest.raises(SystemExit):
-            pyega3.load_server_config(server_config_file)
+            pyega3.ServerConfig.from_file(server_config_file)
 
 
 def test_load_server_config_missing_attributes_in_json_file(mock_input_file):
@@ -22,4 +22,4 @@ def test_load_server_config_missing_attributes_in_json_file(mock_input_file):
 
     with mock_input_file(json.dumps(config)) as server_config_file:
         with pytest.raises(SystemExit):
-            pyega3.load_server_config(server_config_file)
+            pyega3.ServerConfig.from_file(server_config_file)
