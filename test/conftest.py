@@ -20,26 +20,19 @@ def rand_str():
 
 
 @pytest.fixture(autouse=True)
-def reset_pyega_api_url():
-    pyega3.URL_API = ''
-
-
-@pytest.fixture(autouse=True)
 def reset_pyega_global_variables():
     pyega3.TEMPORARY_FILES = set()
     pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
 
 @pytest.fixture
-def mock_server_config(reset_pyega_api_url):
+def mock_server_config():
     config = pyega3.ServerConfig()
 
     config.url_api = 'https://test.data.server'
     config.url_auth = 'https://test.auth.server/ega-openid-connect-server/token'
     config.url_api_ticket = 'https://test.ticket.server'
     config.client_secret = 'test-client-secret'
-
-    pyega3.URL_API = config.url_api
 
     return config
 

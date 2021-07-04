@@ -23,7 +23,6 @@ version = "3.4.1"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
-URL_API = ""
 DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
 TEMPORARY_FILES = set()
 TEMPORARY_FILES_SHOULD_BE_DELETED = False
@@ -160,13 +159,13 @@ def get_token(credentials, config):
     return oauth_token
 
 
-def api_list_authorized_datasets(token):
+def api_list_authorized_datasets(token, config):
     """List datasets to which the credentialed user has authorized access"""
 
     headers = {'Accept': 'application/json', 'Authorization': f'Bearer {token}'}
     headers.update(get_standart_headers())
 
-    url = f"{URL_API}/metadata/datasets"
+    url = f"{config.url_api}/metadata/datasets"
     r = requests.get(url, headers=headers)
     r.raise_for_status()
 
@@ -189,16 +188,16 @@ def pretty_print_authorized_datasets(reply):
         logging.info(datasetid)
 
 
-def api_list_files_in_dataset(token, dataset):
+def api_list_files_in_dataset(token, dataset, config):
     if (dataset in LEGACY_DATASETS):
         logging.error(f"This is a legacy dataset {dataset}. Please contact the EGA helpdesk for more information.")
         sys.exit()
 
     headers = {'Accept': 'application/json', 'Authorization': f'Bearer {token}'}
     headers.update(get_standart_headers())
-    url = f"{URL_API}/metadata/datasets/{dataset}/files"
+    url = f"{config.url_api}/metadata/datasets/{dataset}/files"
 
-    if (not dataset in api_list_authorized_datasets(token)):
+    if (not dataset in api_list_authorized_datasets(token, config)):
         logging.error(f"Dataset '{dataset}' is not in the list of your authorized datasets.")
         sys.exit()
 
@@ -250,10 +249,10 @@ def pretty_print_files_in_dataset(reply, dataset):
     logging.info("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
 
 
-def get_file_name_size_md5(token, file_id):
+def get_file_name_size_md5(token, file_id, config):
     headers = {'Accept': 'application/json', 'Authorization': f'Bearer {token}'}
     headers.update(get_standart_headers())
-    url = f"{URL_API}/metadata/files/{file_id}"
+    url = f"{config.url_api}/metadata/files/{file_id}"
 
     r = requests.get(url, headers=headers)
     r.raise_for_status()
@@ -404,13 +403,13 @@ def generate_output_filename(folder, file_id, file_name, genomic_range_args):
     return ret_val
 
 
-def download_file(token, file_id, file_size, check_sum, num_connections, key, output_file=None):
+def download_file(token, file_id, file_size, check_sum, num_connections, key, output_file, config):
     """Download an individual file"""
 
     if key is not None:
         raise ValueError('key parameter: encrypted downloads are not supported yet')
 
-    url = f"{URL_API}/files/{file_id}"
+    url = f"{config.url_api}/files/{file_id}"
 
     if key is None:
         url += "?destinationFormat=plain"
@@ -511,7 +510,7 @@ def download_file_retry(
             if time.time() - time0 > 1 * 60 * 60:  # token expires in 1 hour
                 time0 = time.time()
                 token = get_token(creds, config)
-            download_file(token, file_id, file_size, check_sum, num_connections, key, output_file)
+            download_file(token, file_id, file_size, check_sum, num_connections, key, output_file, config)
             done = True
         except Exception as e:
             logging.exception(e)
@@ -533,11 +532,11 @@ def download_dataset(
 
     token = get_token(credentials, config)
 
-    if dataset_id not in api_list_authorized_datasets(token):
+    if dataset_id not in api_list_authorized_datasets(token, config):
         logging.info(f"Dataset '{dataset_id}' is not in the list of your authorized datasets.")
         return
 
-    reply = api_list_files_in_dataset(token, dataset_id)
+    reply = api_list_files_in_dataset(token, dataset_id, config)
     for res in reply:
         try:
             if status_ok(res['fileStatus']):
@@ -665,12 +664,12 @@ def main():
     if args.server_file is not None:
         server_config = load_server_config(args.server_file)
 
-    logging.info(f"Server URL: {URL_API}")
+    logging.info(f"Server URL: {server_config.url_api}")
     logging.info(f"Session-Id: {session_id}")
 
     if args.subcommand == "datasets":
         token = get_token(credentials, server_config)
-        reply = api_list_authorized_datasets(token)
+        reply = api_list_authorized_datasets(token, server_config)
         pretty_print_authorized_datasets(reply)
 
     if args.subcommand == "files":
@@ -693,7 +692,7 @@ def main():
                              args.max_retries, args.retry_wait)
         elif args.identifier[3] == 'F':
             token = get_token(credentials, server_config)
-            display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier)
+            display_file_name, file_name, file_size, check_sum = get_file_name_size_md5(token, args.identifier, server_config)
             download_file_retry(credentials, args.identifier, display_file_name, file_name, file_size, check_sum,
                                 args.connections, key,
                                 args.saveto, genomic_range_args, args.max_retries, args.retry_wait, server_config)
