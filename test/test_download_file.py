@@ -44,24 +44,22 @@ def mock_writing_files():
                         yield files
 
 
-def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_auth_client):
+def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_data_client):
     file_id = "EGAF00000000001"
     file_name = "resulting.file"
     file_md5 = hashlib.md5(random_binary_file).hexdigest()
 
     mock_data_server.file_content[file_id] = random_binary_file
 
-    pyega3.download_file_retry(
-        # add 16 bytes to file size ( IV adjustment )
-        mock_auth_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
-        file_md5, 1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, config=mock_server_config,
-        key=None)
+    pyega3.download_file_retry(mock_data_client, file_id, 1, output_file=None,
+                               genomic_range_args=None, max_retries=5, retry_wait=0, display_file_name=file_name, file_name=file_name + ".cip",
+                               file_size=len(random_binary_file) + 16, check_sum=file_md5, key=None)
     assert random_binary_file == mock_writing_files[file_name]
 
 
 def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_server, random_binary_file,
                                                                  mock_writing_files, mock_server_config,
-                                                                 mock_auth_client):
+                                                                 mock_data_client):
     file_id = "EGAF00000000001"
     file_name = "resulting.file"
     file_md5 = hashlib.md5(random_binary_file).hexdigest()
@@ -71,10 +69,12 @@ def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_serve
     mock_writing_files[file_name] = random_binary_file
 
     # add 16 bytes to file size ( IV adjustment )
-    pyega3.download_file_retry(
-        mock_auth_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
-        file_md5, 1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, config=mock_server_config,
-        key=None)
+    pyega3.download_file_retry(mock_data_client, file_id, 1,
+                               output_file=None,
+                               genomic_range_args=None, max_retries=5, retry_wait=0,
+                               display_file_name=file_name, file_name=file_name + ".cip",
+                               file_size=len(random_binary_file) + 16, check_sum=file_md5,
+                               key=None)
 
 
 def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_binary_file, mock_writing_files,
@@ -89,10 +89,9 @@ def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_bina
     with mock.patch('os.remove') as mocked_remove:
         with pytest.raises(Exception):
             pyega3.download_file_retry(
-                mock_auth_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
+                mock_auth_client, file_name, file_name + ".cip", len(random_binary_file) + 16,
                 wrong_md5, 1,
-                output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, config=mock_server_config,
-                key=None)
+                output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, key=None)
 
     mocked_remove.assert_has_calls(
         [mock.call(os.path.join(os.getcwd(), file_id, os.path.basename(f))) for f in
@@ -101,7 +100,7 @@ def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_bina
 
 
 def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_writing_files, mock_server_config,
-                                    mock_auth_client):
+                                    mock_data_client):
     file_id = "EGAF00000000001"
     file_name = "resulting.file"
     file_md5 = hashlib.md5(random_binary_file).hexdigest()
@@ -110,11 +109,11 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
 
     with mock.patch('htsget.get') as mocked_htsget:
         pyega3.download_file_retry(
-            mock_auth_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16,
-            file_md5, 1, output_file=None, genomic_range_args=("chr1", None, 1, 100, None),
+            mock_data_client, file_id, 1, output_file=None, genomic_range_args=("chr1", None, 1, 100, None),
             max_retries=5,
             retry_wait=0,
-            config=mock_server_config,
+            display_file_name=file_name, file_name=file_name + ".cip", file_size=len(random_binary_file) + 16,
+            check_sum=file_md5,
             key=None)
 
     args, kwargs = mocked_htsget.call_args
@@ -127,13 +126,14 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
     assert kwargs.get('data_format') is None
 
 
-def test_encrypted_files_not_supported(mock_server_config, mock_auth_client):
+def test_encrypted_files_not_supported(mock_data_client):
     with pytest.raises(ValueError):
-        pyega3.download_file_retry(mock_auth_client, "", "", "", 0, 0, 1, output_file=None, genomic_range_args=None,
-                                   max_retries=5, retry_wait=0, config=mock_server_config, key="key")
+        pyega3.download_file_retry(mock_data_client, "", 1, output_file=None, genomic_range_args=None,
+                                   max_retries=5, retry_wait=0,
+                                   display_file_name="", file_name="", file_size=0, check_sum="", key="key")
 
 
-def test_gpg_files_not_supported(mock_server_config, mock_auth_client):
-    pyega3.download_file_retry(mock_auth_client, "", "test.gz", "test.gz.gpg", 0, 0, 1, output_file=None,
-                               genomic_range_args=None, max_retries=5, retry_wait=5, config=mock_server_config,
-                               key=None)
+def test_gpg_files_not_supported(mock_data_client):
+    pyega3.download_file_retry(mock_data_client, "", 1, output_file=None,
+                               genomic_range_args=None, max_retries=5, retry_wait=5,
+                               display_file_name="test.gz", file_name="test.gz.gpg", file_size=0, check_sum="", key=None)

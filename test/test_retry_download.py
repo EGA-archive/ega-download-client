@@ -6,7 +6,7 @@ from pyega3 import pyega3 as pyega3
 
 
 def test_failed_download_retries_from_where_it_stopped(temporary_output_file, mock_requests, mock_server_config,
-                                                       mock_auth_client):
+                                                       mock_data_client):
     """
     It was not possible to download the whole file on the first download attempt,
     so the script retries for a second time and continues from where it stopped
@@ -29,9 +29,12 @@ def test_failed_download_retries_from_where_it_stopped(temporary_output_file, mo
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file_id}', body=rest_of_the_input_file,
                       status=200)
 
-    pyega3.download_file_retry(mock_auth_client, file_id, temporary_output_file, temporary_output_file,
-                               file_size_with_iv, 'check_sum', 1, temporary_output_file, None, 2, 0.1,
-                               mock_server_config, key=None)
+    pyega3.download_file_retry(mock_data_client, file_id, 1, temporary_output_file, None, 2, 0.1,
+                               display_file_name=temporary_output_file,
+                               file_name=temporary_output_file,
+                               file_size=file_size_with_iv,
+                               check_sum='check_sum',
+                               key=None)
 
     assert mock_requests.calls[0].request.headers.get('Range') == 'bytes=0-92699'
     assert mock_requests.calls[1].request.headers.get('Range') == 'bytes=92577-92699'

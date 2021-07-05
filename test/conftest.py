@@ -11,6 +11,7 @@ import responses
 from psutil import virtual_memory
 
 import pyega3.pyega3 as pyega3
+from pyega3.data_client import DataClient
 from pyega3.server_config import ServerConfig
 from test.mock_data_server import MockDataServer
 
@@ -39,13 +40,23 @@ def user_has_authenticated_successfully(mock_requests, mock_server_config):
     mock_requests.add(responses.POST, mock_server_config.url_auth, json={'access_token': 'ok'}, status=200)
 
 
+class MockAuthClient:
+    credentials = None
+
+    def __init__(self, token=None):
+        if token is None:
+            token = ''.join(random.choices(string.ascii_letters, k=64))
+        self.token = token
+
+
 @pytest.fixture
 def mock_auth_client():
-    class MockAuthClient:
-        token = ''.join(random.choices(string.ascii_letters, k=64))
-        credentials = None
-
     return MockAuthClient()
+
+
+@pytest.fixture
+def mock_data_client(mock_server_config, mock_auth_client):
+    return DataClient(mock_server_config.url_api, mock_server_config.url_api_ticket, mock_auth_client, {})
 
 
 @pytest.fixture

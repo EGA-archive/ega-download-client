@@ -10,4 +10,4 @@ def test_pretty_print_files_in_dataset():
                    "fileName": "EGAZ00001314035.bam.bai.cip", "displayFileName": "EGAZ00001314035.bam.bai.cip",
                    "fileStatus": "available",
                    "fileSize": 0, "datasetId": "EGAD00001003338", "fileId": "EGAF00001753747"}]
-    pyega3.pretty_print_files_in_dataset(test_reply, ['EGAD0123'])
+    pyega3.pretty_print_files_in_dataset(test_reply)
