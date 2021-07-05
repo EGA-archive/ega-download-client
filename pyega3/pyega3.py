@@ -1,113 +1,34 @@
 #!/usr/bin/env python3
 
 import argparse
-import concurrent.futures
-import hashlib
-import json
 import logging
 import logging.handlers
-import math
 import os
 import platform
 import random
 import sys
-import time
 
-import htsget
-import psutil
-import requests
-from tqdm import tqdm
-
-from pyega3.auth_client import AuthClient
-from pyega3.data_client import DataClient
-from pyega3.credentials import Credentials
 from pyega3 import data_file
+from pyega3.auth_client import AuthClient
+from pyega3.credentials import Credentials
+from pyega3.data_client import DataClient
+from pyega3.data_set import DataSet
 from pyega3.server_config import ServerConfig
+from pyega3.utils import status_ok, get_client_ip
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
-LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
-                   "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
-                   "EGAD00000000048", "EGAD00000000049", "EGAD00000000051", "EGAD00000000052", "EGAD00000000053",
-                   "EGAD00000000054", "EGAD00000000055", "EGAD00000000056", "EGAD00000000057", "EGAD00000000060",
-                   "EGAD00000000114", "EGAD00000000119", "EGAD00000000120", "EGAD00000000121", "EGAD00000000122",
-                   "EGAD00001000132", "EGAD00010000124", "EGAD00010000144", "EGAD00010000148", "EGAD00010000150",
-                   "EGAD00010000158", "EGAD00010000160", "EGAD00010000162", "EGAD00010000164", "EGAD00010000246",
-                   "EGAD00010000248", "EGAD00010000250", "EGAD00010000256", "EGAD00010000444"]
 
-
-def get_client_ip():
-    endpoint = 'https://ipinfo.io/json'
-    unknown_status = 'Unknown'
-    try:
-        response = requests.get(endpoint, verify=True)
-        if response.status_code != 200:
-            print('Status:', response.status_code, 'Problem with the request.')
-            return unknown_status
-
-        data = response.json()
-        return data['ip']
-    except Exception:
-        logging.error("Failed to obtain IP address")
-        return unknown_status
-
-
-CLIENT_IP = get_client_ip()
-
-
-def get_standart_headers():
-    return {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': CLIENT_IP}
-
-
-def api_list_authorized_datasets(data_client):
-    """List datasets to which the credentialed user has authorized access"""
-
-    reply = data_client.get_json("/metadata/datasets")
-
-    if reply is None:
-        logging.error(
-            "You do not currently have access to any datasets at EGA according to our databases."
-            " If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
-        sys.exit()
-
-    return reply
-
-
-def pretty_print_authorized_datasets(reply):
+def pretty_print_authorized_datasets(datasets):
     logging.info("Dataset ID")
     logging.info("-----------------")
-    for datasetid in reply:
-        logging.info(datasetid)
+    for dataset in datasets:
+        logging.info(dataset.id)
 
 
-def api_list_files_in_dataset(data_client, dataset):
-    if dataset in LEGACY_DATASETS:
-        logging.error(f"This is a legacy dataset {dataset}. Please contact the EGA helpdesk for more information.")
-        sys.exit()
-
-    if dataset not in api_list_authorized_datasets(data_client):
-        logging.error(f"Dataset '{dataset}' is not in the list of your authorized datasets.")
-        sys.exit()
-
-    reply = data_client.get_json(f"/metadata/datasets/{dataset}/files")
-
-    if reply is None:
-        logging.error(f"List files in dataset {dataset} failed")
-        sys.exit()
-
-    return reply
-
-
-def status_ok(status_string):
-    if status_string == "available":
-        return True
-    else:
-        return False
-
-
-def pretty_print_files_in_dataset(reply):
+def pretty_print_files_in_dataset(files):
     """
     Print a table of files in authorized dataset from api call api_list_files_in_dataset
 
@@ -126,50 +47,12 @@ def pretty_print_files_in_dataset(reply):
     format_string = "{:15} {:6} {:12} {:36} {}"
 
     logging.info(format_string.format("File ID", "Status", "Bytes", "Check sum", "File name"))
-    for res in reply:
-        logging.info(format_string.format(res['fileId'], status_ok(res['fileStatus']), str(res['fileSize']),
-                                          res['unencryptedChecksum'], res['displayFileName']))
+    for file in files:
+        logging.info(format_string.format(file.id, status_ok(file.status), str(file.size),
+                                          file.unencrypted_checksum, file.display_name))
 
     logging.info('-' * 80)
-    logging.info("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
-
-
-def download_dataset(
-        data_client, dataset_id, num_connections, output_dir, genomic_range_args, max_retries=5,
-        retry_wait=5, key=None):
-    if dataset_id in LEGACY_DATASETS:
-        logging.error(f"This is a legacy dataset {dataset_id}. Please contact the EGA helpdesk for more information.")
-        sys.exit()
-
-    if dataset_id not in api_list_authorized_datasets(data_client):
-        logging.info(f"Dataset '{dataset_id}' is not in the list of your authorized datasets.")
-        return
-
-    reply = api_list_files_in_dataset(data_client, dataset_id)
-    for res in reply:
-        try:
-            if status_ok(res['fileStatus']):
-                file = data_file.DataFile(data_client,
-                                          res['fileId'],
-                                          res['displayFileName'],
-                                          res['fileName'],
-                                          res['fileSize'],
-                                          res['unencryptedChecksum'])
-
-                output_file = None if (output_dir is None) else file.generate_output_filename(output_dir,
-                                                                                              genomic_range_args)
-                file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait, key)
-        except Exception as e:
-            logging.exception(e)
-
-
-def print_debug_info(url, reply_json, *args):
-    logging.debug(f"Request URL : {url}")
-    if reply_json is not None:
-        logging.debug("Response    :\n %.1200s" % json.dumps(reply_json, indent=4))
-
-    for a in args:
-        logging.debug(a)
+    logging.info("Total dataset size = %.2f GB " % (sum(file.size for file in files) / (1024 * 1024 * 1024.0)))
 
 
 def main():
@@ -270,32 +153,34 @@ def main():
     logging.info(f"Server URL: {server_config.url_api}")
     logging.info(f"Session-Id: {session_id}")
 
-    auth_client = AuthClient(server_config.url_auth, server_config.client_secret, get_standart_headers())
+    standard_headers = {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': get_client_ip()}
+
+    auth_client = AuthClient(server_config.url_auth, server_config.client_secret, standard_headers)
     auth_client.credentials = credentials
 
-    data_client = DataClient(server_config.url_api, server_config.url_api_ticket, auth_client, get_standart_headers())
+    data_client = DataClient(server_config.url_api, server_config.url_api_ticket, auth_client, standard_headers)
 
     if args.subcommand == "datasets":
-        reply = api_list_authorized_datasets(data_client)
-        pretty_print_authorized_datasets(reply)
+        datasets = DataSet.list_authorized_datasets(data_client)
+        pretty_print_authorized_datasets(datasets)
 
     if args.subcommand == "files":
         if args.identifier[3] != 'D':
             logging.error("Unrecognized identifier - please use EGAD accession for dataset requests")
             sys.exit()
-        token = auth_client.token
-        reply = api_list_files_in_dataset(token, args.identifier)
-        pretty_print_files_in_dataset(reply)
+        dataset = DataSet(data_client, args.identifier)
+        files = dataset.list_files()
+        pretty_print_files_in_dataset(files)
 
     elif args.subcommand == "fetch":
         genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
 
         if args.delete_temp_files:
-            DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = True
+            data_file.DataFile.temporary_files_should_be_deleted = True
 
         if args.identifier[3] == 'D':
-            download_dataset(data_client, args.identifier, args.connections, args.saveto,
-                             genomic_range_args,
+            dataset = DataSet(data_client, args.identifier)
+            dataset.download(args.connections, args.saveto, genomic_range_args,
                              args.max_retries, args.retry_wait, credentials.key)
         elif args.identifier[3] == 'F':
             file = data_file.DataFile(data_client, args.identifier)

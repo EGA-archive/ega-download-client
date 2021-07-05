@@ -20,7 +20,8 @@ def dummy_file(mock_data_server):
             "displayFileName": display_file_name,
             "fileName": file_name,
             "fileSize": file_size,
-            "unencryptedChecksum": check_sum}
+            "unencryptedChecksum": check_sum,
+            "fileStatus": "available"}
 
     mock_data_server.files[file_id] = file
 

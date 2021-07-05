@@ -17,13 +17,14 @@ DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
 
 
 class DataFile:
-    TEMPORARY_FILES_SHOULD_BE_DELETED = False
+    temporary_files_should_be_deleted = False
 
     def __init__(self, data_client, file_id,
                  display_file_name=None,
                  file_name=None,
                  size=None,
-                 unencrypted_checksum=None):
+                 unencrypted_checksum=None,
+                 status=None):
         self.data_client = data_client
         self.id = file_id
 
@@ -33,6 +34,7 @@ class DataFile:
         self._file_name = file_name
         self._file_size = size
         self._unencrypted_checksum = unencrypted_checksum
+        self._file_status = status
 
     def load_metadata(self):
         res = self.data_client.get_json(f"/metadata/files/{self.id}")
@@ -44,6 +46,7 @@ class DataFile:
         self._file_name = res['fileName']
         self._file_size = res['fileSize']
         self._unencrypted_checksum = res['unencryptedChecksum']
+        self._file_status = res['fileStatus']
 
     @property
     def display_name(self):
@@ -68,6 +71,12 @@ class DataFile:
         if self._unencrypted_checksum is None:
             self.load_metadata()
         return self._unencrypted_checksum
+
+    @property
+    def status(self):
+        if self._file_status is None:
+            self.load_metadata()
+        return self._file_status
 
     @staticmethod
     def print_local_file_info(prefix_str, file, md5):
@@ -252,7 +261,7 @@ class DataFile:
             except Exception as e:
                 logging.exception(e)
                 if num_retries == max_retries:
-                    if DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED:
+                    if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_files()
 
                     raise e

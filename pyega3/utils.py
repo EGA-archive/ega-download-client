@@ -4,6 +4,7 @@ import logging.handlers
 import os
 import time
 
+import requests
 from tqdm import tqdm
 
 
@@ -67,3 +68,26 @@ def md5(fname, file_size):
     # now do the real calculation
     result = calculate_md5(fname, file_size)
     return result
+
+
+def status_ok(status_string):
+    if status_string == "available":
+        return True
+    else:
+        return False
+
+
+def get_client_ip():
+    endpoint = 'https://ipinfo.io/json'
+    unknown_status = 'Unknown'
+    try:
+        response = requests.get(endpoint, verify=True)
+        if response.status_code != 200:
+            print('Status:', response.status_code, 'Problem with the request.')
+            return unknown_status
+
+        data = response.json()
+        return data['ip']
+    except Exception:
+        logging.error("Failed to obtain IP address")
+        return unknown_status

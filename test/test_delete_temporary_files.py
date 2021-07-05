@@ -33,7 +33,7 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     when the temporary files are assembled into the final, big file.
     There's no need for extra deleting-mechanism.
     """
-    DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+    DataFile.temporary_files_should_be_deleted = False
 
     file_size_without_iv = 92700
     file_size_with_iv = file_size_without_iv + 16
@@ -86,7 +86,7 @@ def test_temporary_files_are_deleted_if_the_user_says_so(mock_server_config,
                                                          mock_data_client,
                                                          temporary_output_file,
                                                          mock_requests):
-    DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = True
+    DataFile.temporary_files_should_be_deleted = True
 
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size, 'check_sum')
 
@@ -102,7 +102,7 @@ def test_temporary_files_are_not_deleted_if_the_user_says_so(mock_server_config,
                                                              temporary_output_file,
                                                              mock_requests):
     # The user asks for keeping the temporary files:
-    DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+    DataFile.temporary_files_should_be_deleted = False
 
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
                     'check_sum')
