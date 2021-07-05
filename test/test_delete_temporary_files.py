@@ -12,11 +12,15 @@ expected_file_size = DOWNLOAD_FILE_SLICE_CHUNK_SIZE * 3
 
 
 def test_deleting_non_existent_file_does_not_raise_exception():
+
+    dummy_file = DataFile(None, None)
+
     non_existent_file = '/tmp/non/existent/file'
     assert not os.path.exists(non_existent_file)
+    dummy_file.temporary_files.add(non_existent_file)
 
     # No exception is raised:
-    pyega3.delete_temporary_files([non_existent_file])
+    dummy_file.delete_temporary_files()
 
 
 def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_server_config,
@@ -29,7 +33,7 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     when the temporary files are assembled into the final, big file.
     There's no need for extra deleting-mechanism.
     """
-    pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+    DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
     file_size_without_iv = 92700
     file_size_with_iv = file_size_without_iv + 16
@@ -37,10 +41,11 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     input_file = bytearray(os.urandom(file_size_without_iv))
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=input_file, status=200)
 
-    pyega3.download_file_retry(mock_data_client, test_file_id, 1, temporary_output_file, None, 2, 0.1,
-                               temporary_output_file, temporary_output_file, file_size_with_iv, 'check_sum')
+    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, file_size_with_iv, 'check_sum')
 
-    temp_file = DataFile.TEMPORARY_FILES.pop()
+    file.download_file_retry(1, temporary_output_file, None, 2, 0.1)
+
+    temp_file = file.temporary_files.pop()
     # The temporary file should not exist because everything went fine,
     # and it was deleted automatically:
     assert not os.path.exists(temp_file)
@@ -51,7 +56,7 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     os.remove(temporary_output_file)
 
 
-def download_with_exception(mock_requests, output_file_path, mock_server_config, mock_data_client):
+def download_with_exception(mock_requests, output_file_path, mock_server_config, file):
     """
     Simulates downloading a file of the given size: "true_file_size".
     During the transfer, an exception happens and the temporary file is either deleted
@@ -63,14 +68,13 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
     content = bytearray(os.urandom(not_enough_bytes))
 
     # First, normal GET request:
-    mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=content, status=200)
+    mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
     # Then all the retry attempt:
     for _ in range(number_of_retries):
-        mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=content, status=200)
+        mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
 
     with pytest.raises(Exception) as context_manager:
-        pyega3.download_file_retry(mock_data_client, test_file_id, 1, output_file_path, None, number_of_retries, 0.1,
-                                   output_file_path, output_file_path, expected_file_size, 'check_sum')
+        file.download_file_retry(1, output_file_path, None, number_of_retries, 0.1)
 
     exception_message = str(context_manager.value)
     assert re.compile(r'Slice error: received=\d+, requested=\d+').search(exception_message)
@@ -82,13 +86,15 @@ def test_temporary_files_are_deleted_if_the_user_says_so(mock_server_config,
                                                          mock_data_client,
                                                          temporary_output_file,
                                                          mock_requests):
-    pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = True
+    DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
-    download_with_exception(mock_requests, temporary_output_file, mock_server_config, mock_data_client)
+    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size, 'check_sum')
+
+    download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
 
     # The temporary file should not exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
     # variable was set to True previously:
-    assert not os.path.exists(DataFile.TEMPORARY_FILES.pop())
+    assert not os.path.exists(file.temporary_files.pop())
 
 
 def test_temporary_files_are_not_deleted_if_the_user_says_so(mock_server_config,
@@ -96,11 +102,14 @@ def test_temporary_files_are_not_deleted_if_the_user_says_so(mock_server_config,
                                                              temporary_output_file,
                                                              mock_requests):
     # The user asks for keeping the temporary files:
-    pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+    DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
-    download_with_exception(mock_requests, temporary_output_file, mock_server_config, mock_data_client)
+    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
+                    'check_sum')
 
-    temp_file = DataFile.TEMPORARY_FILES.pop()
+    download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
+
+    temp_file = file.temporary_files.pop()
 
     # The temporary file should exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
     # variable was set to False previously:

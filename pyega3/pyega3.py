@@ -21,15 +21,12 @@ from tqdm import tqdm
 from pyega3.auth_client import AuthClient
 from pyega3.data_client import DataClient
 from pyega3.credentials import Credentials
-from pyega3.data_file import DataFile
+from pyega3 import data_file
 from pyega3.server_config import ServerConfig
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
-
-
-TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
                    "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
@@ -137,96 +134,6 @@ def pretty_print_files_in_dataset(reply):
     logging.info("Total dataset size = %.2f GB " % (sum(r['fileSize'] for r in reply) / (1024 * 1024 * 1024.0)))
 
 
-def print_local_file_info_genomic_range(prefix_str, file, gr_args):
-    logging.info(
-        f"{prefix_str}'{os.path.abspath(file)}'({os.path.getsize(file)} bytes, referenceName={gr_args[0]},"
-        f" referenceMD5={gr_args[1]}, start={gr_args[2]}, end={gr_args[3]}, format={gr_args[4]})"
-    )
-
-
-def is_genomic_range(genomic_range_args):
-    if not genomic_range_args:
-        return False
-    return genomic_range_args[0] is not None or genomic_range_args[1] is not None
-
-
-def generate_output_filename(folder, file_id, file_name, genomic_range_args):
-    ext_to_remove = ".cip"
-    if file_name.endswith(ext_to_remove):
-        file_name = file_name[:-len(ext_to_remove)]
-    name, ext = os.path.splitext(os.path.basename(file_name))
-
-    genomic_range = ''
-    if is_genomic_range(genomic_range_args):
-        genomic_range = "_genomic_range_" + (genomic_range_args[0] or genomic_range_args[1])
-        genomic_range += '_' + (str(genomic_range_args[2]) or '0')
-        genomic_range += '_' + (str(genomic_range_args[3]) or '')
-        format_ext = '.' + (genomic_range_args[4] or '').strip().lower()
-        if format_ext != ext and len(format_ext) > 1:
-            ext += format_ext
-
-    ret_val = os.path.join(folder, file_id, name + genomic_range + ext)
-    logging.debug(f"Output file:'{ret_val}'")
-    return ret_val
-
-
-def download_file_retry(
-        data_client, file_id, num_connections, output_file,
-        genomic_range_args,
-        max_retries, retry_wait, display_file_name, file_name, file_size, check_sum, key=None):
-    if file_name.endswith(".gpg"):
-        logging.info(
-            "GPG files are not supported, please use the Java client"
-            " - https://ega-archive.org/download/using-ega-download-client")
-        return
-
-    file = DataFile(data_client, file_id, size=file_size, unencrypted_checksum=check_sum)
-
-    logging.info(f"File Id: '{file_id}'({file_size} bytes).")
-
-    if output_file is None:
-        output_file = generate_output_filename(os.getcwd(), file_id, display_file_name, genomic_range_args)
-    dir = os.path.dirname(output_file)
-    if not os.path.exists(dir) and len(dir) > 0:
-        os.makedirs(dir)
-
-    hdd = psutil.disk_usage(os.getcwd())
-    logging.info(f"Total space : {hdd.total / (2 ** 30):.2f} GiB")
-    logging.info(f"Used space : {hdd.used / (2 ** 30):.2f} GiB")
-    logging.info(f"Free space : {hdd.free / (2 ** 30):.2f} GiB")
-
-    if is_genomic_range(genomic_range_args):
-        with open(output_file, 'wb') as output:
-            htsget.get(
-                f"{data_client.htsget_url}/files/{file_id}",
-                output,
-                reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
-                start=genomic_range_args[2], end=genomic_range_args[3],
-                data_format=genomic_range_args[4],
-                max_retries=sys.maxsize if max_retries < 0 else max_retries,
-                retry_wait=retry_wait,
-                bearer_token=data_client.auth_client.token)
-        print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)
-        return
-
-    done = False
-    num_retries = 0
-    while not done:
-        try:
-            file.download_file(num_connections, key, output_file)
-            done = True
-        except Exception as e:
-            logging.exception(e)
-            if num_retries == max_retries:
-                if TEMPORARY_FILES_SHOULD_BE_DELETED:
-                    delete_temporary_files(DataFile.TEMPORARY_FILES)
-
-                raise e
-            time.sleep(retry_wait)
-            num_retries += 1
-            logging.info(f"retry attempt {num_retries}")
-
-
 def download_dataset(
         data_client, dataset_id, num_connections, output_dir, genomic_range_args, max_retries=5,
         retry_wait=5, key=None):
@@ -242,12 +149,16 @@ def download_dataset(
     for res in reply:
         try:
             if status_ok(res['fileStatus']):
-                output_file = None if (output_dir is None) else generate_output_filename(output_dir, res['fileId'],
-                                                                                         res['displayFileName'],
-                                                                                         genomic_range_args)
-                download_file_retry(data_client, res['fileId'], num_connections, output_file, genomic_range_args,
-                                    max_retries, retry_wait, res['displayFileName'], res['fileName'], res['fileSize'],
-                                    res['unencryptedChecksum'], key)
+                file = data_file.DataFile(data_client,
+                                          res['fileId'],
+                                          res['displayFileName'],
+                                          res['fileName'],
+                                          res['fileSize'],
+                                          res['unencryptedChecksum'])
+
+                output_file = None if (output_dir is None) else file.generate_output_filename(output_dir,
+                                                                                              genomic_range_args)
+                file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait, key)
         except Exception as e:
             logging.exception(e)
 
@@ -259,15 +170,6 @@ def print_debug_info(url, reply_json, *args):
 
     for a in args:
         logging.debug(a)
-
-
-def delete_temporary_files(temporary_files):
-    try:
-        for temporary_file in temporary_files:
-            logging.debug(f'Deleting the {temporary_file} temporary file...')
-            os.remove(temporary_file)
-    except FileNotFoundError as ex:
-        logging.error(f'Could not delete the temporary file: {ex}')
 
 
 def main():
@@ -389,18 +291,20 @@ def main():
         genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
 
         if args.delete_temp_files:
-            global TEMPORARY_FILES_SHOULD_BE_DELETED
-            TEMPORARY_FILES_SHOULD_BE_DELETED = True
+            DataFile.TEMPORARY_FILES_SHOULD_BE_DELETED = True
 
         if args.identifier[3] == 'D':
             download_dataset(data_client, args.identifier, args.connections, args.saveto,
                              genomic_range_args,
                              args.max_retries, args.retry_wait, credentials.key)
         elif args.identifier[3] == 'F':
-            file = DataFile(data_client, args.identifier)
-            download_file_retry(data_client, args.identifier, args.connections, args.saveto, genomic_range_args,
-                                args.retry_wait, file.display_name, file.name, file.size, file.unencrypted_checksum,
-                                args.max_retries, credentials.key)
+            file = data_file.DataFile(data_client, args.identifier)
+            file.download_file_retry(num_connections=args.connections,
+                                     output_file=args.saveto,
+                                     genomic_range_args=genomic_range_args,
+                                     max_retries=args.max_retries,
+                                     retry_wait=args.retry_wait,
+                                     key=credentials.key)
         else:
             logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request"
