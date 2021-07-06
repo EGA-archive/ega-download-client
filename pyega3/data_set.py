@@ -35,7 +35,9 @@ class DataSet:
 
     def list_files(self):
         if self.id in LEGACY_DATASETS:
-            logging.error(f"This is a legacy dataset {self.id}. Please contact the EGA helpdesk for more information.")
+            logging.error(f"This is a legacy dataset {self.id}. "
+                          f"Please contact the EGA helpdesk for more information "
+                          f"on helpdesk@ega-archive.org")
             sys.exit()
 
         authorized_datasets = DataSet.list_authorized_datasets(self.data_client)
@@ -67,7 +69,9 @@ class DataSet:
     def download(self, num_connections, output_dir, genomic_range_args, max_retries=5, retry_wait=5, key=None):
         if self.id in LEGACY_DATASETS:
             logging.error(
-                f"This is a legacy dataset {self.id}. Please contact the EGA helpdesk for more information.")
+                f"This is a legacy dataset {self.id}. "
+                f"Please contact the EGA helpdesk for more information "
+                f"on helpdesk@ega-archive.org")
             sys.exit()
 
         authorized_datasets = DataSet.list_authorized_datasets(self.data_client)

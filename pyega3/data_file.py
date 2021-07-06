@@ -138,8 +138,8 @@ class DataFile:
             DataFile.print_local_file_info('Saved to : ', output_file, check_sum)
             if not_valid_server_md5:
                 logging.info(
-                    f"WARNING: Unable to obtain valid MD5 from the server(recived:{check_sum})."
-                    f" Can't validate download. Contact EGA helpdesk")
+                    f"WARNING: Unable to obtain valid MD5 from the server (received: {check_sum})."
+                    f" Can't validate download. Please contact EGA helpdesk on ega-helpdesk@ebi.ac.uk")
             with open(get_fname_md5(output_file), 'wb') as f:  # save good md5 in aux file for future re-use
                 f.write(received_file_md5.encode())
         else:
