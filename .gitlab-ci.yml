@@ -9,10 +9,6 @@ stages:
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  # TODO bjuhasz: put these into GitLab as env. vars.
-  # TODO bjuhasz: increase these numbers to 90 and "9.0", respectively.
-  COVERAGE_FAIL_UNDER: 10
-  PYLINT_FAIL_UNDER: "1.0"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
@@ -34,6 +30,10 @@ test:
     # TODO bjuhasz: use tox because "setup.py test" is deprecated:
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#test-build-package-and-run-a-unittest-suite
     - coverage run --branch --source=pyega3 -m pytest
+    # The $COVERAGE_FAIL_UNDER and $PYLINT_FAIL_UNDER variables are defined in GitLab:
+    # https://gitlab.ebi.ac.uk/EGA/ega-download-client/-/settings/ci_cd , under Variables.
+    # TODO bjuhasz: increase the values of $COVERAGE_FAIL_UNDER and $PYLINT_FAIL_UNDER
+    # to 90 and 9.0, respectively.
     - coverage report --fail-under=$COVERAGE_FAIL_UNDER
     - pylint --ignore=test/support --fail-under=$PYLINT_FAIL_UNDER pyega3/ test/
     - pycodestyle --show-source --show-pep8 --statistics --count --max-line-length=120 --exclude=test/support,.git,__pycache__
