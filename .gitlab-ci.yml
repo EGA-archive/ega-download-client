@@ -26,14 +26,14 @@ cache:
 
 before_script:
   - python -V  # Print out python version for debugging
-  - pip install -r requirements.txt python-coveralls pylint pycodestyle py.test
+  - pip install -r requirements.txt python-coveralls pylint pycodestyle
 
 test:
   stage: test
   script:
     # TODO bjuhasz: use tox because "setup.py test" is deprecated:
     # https://setuptools.readthedocs.io/en/latest/setuptools.html#test-build-package-and-run-a-unittest-suite
-    - coverage run --branch --source=pyega3 -m py.test
+    - coverage run --branch --source=pyega3 -m pytest
     - coverage report --fail-under=$COVERAGE_FAIL_UNDER
     - pylint --ignore=test/support --fail-under=$PYLINT_FAIL_UNDER pyega3/ test/
     - pycodestyle --show-source --show-pep8 --statistics --count --max-line-length=120 --exclude=test/support,.git,__pycache__
