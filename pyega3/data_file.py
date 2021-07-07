@@ -222,7 +222,7 @@ class DataFile:
         if self.name.endswith(".gpg"):
             logging.info(
                 "GPG files are not supported, please use the Java client"
-                " - https://ega-archive.org/download/using-ega-download-client")
+                " Please email EGA Helpdesk at helpdesk@ega-archive.org")
             return
 
         logging.info(f"File Id: '{self.id}'({self.size} bytes).")
