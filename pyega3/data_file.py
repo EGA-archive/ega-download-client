@@ -221,7 +221,7 @@ class DataFile:
     def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait, key=None):
         if self.name.endswith(".gpg"):
             logging.info(
-                "GPG files are not supported, please use the Java client"
+                "GPG files are currently not supported."
                 " Please email EGA Helpdesk at helpdesk@ega-archive.org")
             return
 
