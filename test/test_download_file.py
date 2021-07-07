@@ -53,7 +53,7 @@ def test_download_file(mock_data_server, random_binary_file, mock_writing_files,
 
     file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
                     size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
-    file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, key=None)
+    file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0)
     assert random_binary_file == mock_writing_files[file_name]
 
 
@@ -73,8 +73,7 @@ def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_serve
                     size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
     file.download_file_retry(1,
                              output_file=None,
-                             genomic_range_args=None, max_retries=5, retry_wait=0,
-                             key=None)
+                             genomic_range_args=None, max_retries=5, retry_wait=0)
 
 
 def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_binary_file, mock_writing_files,
@@ -90,7 +89,7 @@ def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_bina
 
     with mock.patch('os.remove') as mocked_remove:
         with pytest.raises(Exception):
-            file.download_file_retry(1, None, genomic_range_args=None, max_retries=5, retry_wait=0, key=None)
+            file.download_file_retry(1, None, genomic_range_args=None, max_retries=5, retry_wait=0)
 
     mocked_remove.assert_has_calls(
         [mock.call(os.path.join(os.getcwd(), file_id, os.path.basename(f))) for f in
@@ -112,8 +111,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
         file.download_file_retry(
             1, output_file=None, genomic_range_args=("chr1", None, 1, 100, None),
             max_retries=5,
-            retry_wait=0,
-            key=None)
+            retry_wait=0)
 
     args, kwargs = mocked_htsget.call_args
     assert args[0] == f'{mock_server_config.url_api_ticket}/files/EGAF00000000001'
@@ -125,13 +123,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
     assert kwargs.get('data_format') is None
 
 
-def test_encrypted_files_not_supported(mock_data_client):
-    file = DataFile(mock_data_client, "", "", "", 0, "")
-    with pytest.raises(ValueError):
-        file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0, key="key")
-
-
 def test_gpg_files_not_supported(mock_data_client):
     file = DataFile(mock_data_client, "", "test.gz", "test.gz.gpg", 0, "")
 
-    file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5, key=None)
+    file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5)

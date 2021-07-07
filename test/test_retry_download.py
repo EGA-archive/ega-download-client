@@ -34,7 +34,7 @@ def test_failed_download_retries_from_where_it_stopped(temporary_output_file, mo
                     size=file_size_with_iv,
                     unencrypted_checksum='check_sum')
 
-    file.download_file_retry(1, temporary_output_file, None, 2, 0.1, key=None)
+    file.download_file_retry(1, temporary_output_file, None, 2, 0.1)
 
     assert mock_requests.calls[0].request.headers.get('Range') == 'bytes=0-92699'
     assert mock_requests.calls[1].request.headers.get('Range') == 'bytes=92577-92699'

@@ -33,7 +33,7 @@ def test_calls_download_for_every_file_in_dataset(mocked_datafile, mock_data_ser
 
     for mock_file in mock_files:
         assert len(mock_file.method_calls) == 1
-        assert mock_file.method_calls[0] == ('download_file_retry', (num_connections, None, None, 5, 5, None))
+        assert mock_file.method_calls[0] == ('download_file_retry', (num_connections, None, None, 5, 5))
 
 
 @mock.patch("pyega3.data_file.DataFile")
@@ -70,7 +70,7 @@ def test_only_download_available_files(mocked_datafile, mock_server_config, mock
     # The other files should all have been downloaded
     for mock_file in mock_files[1:]:
         assert len(mock_file.method_calls) == 1
-        assert mock_file.method_calls[0] == ('download_file_retry', (num_connections, None, None, 5, 5, None))
+        assert mock_file.method_calls[0] == ('download_file_retry', (num_connections, None, None, 5, 5))
 
 
 def test_no_error_if_md5_mismatch(mock_server_config, mock_data_server, dataset_with_files, mock_auth_client,

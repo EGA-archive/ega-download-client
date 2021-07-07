@@ -82,19 +82,14 @@ class DataFile:
     def print_local_file_info(prefix_str, file, md5):
         logging.info(f"{prefix_str}'{os.path.abspath(file)}'({os.path.getsize(file)} bytes, md5={md5})")
 
-    def download_file(self, output_file, num_connections=1, key=None):
+    def download_file(self, output_file, num_connections=1):
         """Download an individual file"""
-
-        if key is not None:
-            raise ValueError('key parameter: encrypted downloads are not supported yet')
 
         file_size = self.size
         check_sum = self.unencrypted_checksum
-        options = {}
+        options = {"destinationFormat": "plain"}
 
-        if key is None:
-            options["destinationFormat"] = "plain"
-            file_size -= 16  # 16 bytes IV not necesary in plain mode
+        file_size -= 16  # 16 bytes IV not necesary in plain mode
 
         if os.path.exists(output_file) and md5(output_file, file_size) == check_sum:
             DataFile.print_local_file_info('Local file exists:', output_file, check_sum)
@@ -218,7 +213,7 @@ class DataFile:
             f" referenceMD5={gr_args[1]}, start={gr_args[2]}, end={gr_args[3]}, format={gr_args[4]})"
         )
 
-    def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait, key=None):
+    def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait):
         if self.name.endswith(".gpg"):
             logging.info(
                 "GPG files are currently not supported."
@@ -256,7 +251,7 @@ class DataFile:
         num_retries = 0
         while not done:
             try:
-                self.download_file(output_file, num_connections, key)
+                self.download_file(output_file, num_connections)
                 done = True
             except Exception as e:
                 logging.exception(e)

@@ -64,7 +64,7 @@ class DataSet:
 
         return [make_data_file(res) for res in reply]
 
-    def download(self, num_connections, output_dir, genomic_range_args, max_retries=5, retry_wait=5, key=None):
+    def download(self, num_connections, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
         if self.id in LEGACY_DATASETS:
             logging.error(
                 f"This is a legacy dataset {self.id}. Please contact the EGA helpdesk at helpdesk@ega-archive.org for more information.")
@@ -82,7 +82,6 @@ class DataSet:
                 if status_ok(file.status):
                     output_file = None if (output_dir is None) else file.generate_output_filename(output_dir,
                                                                                                   genomic_range_args)
-                    file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait,
-                                             key)
+                    file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait)
             except Exception as e:
                 logging.exception(e)

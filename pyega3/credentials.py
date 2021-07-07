@@ -6,10 +6,9 @@ import sys
 
 
 class Credentials:
-    def __init__(self, username=None, password=None, key=None):
+    def __init__(self, username=None, password=None):
         self.username = username
         self.password = password
-        self.key = key
 
     @staticmethod
     def from_file(filepath):
@@ -27,8 +26,6 @@ class Credentials:
                     result.username = cfg['username']
                 if 'password' in cfg:
                     result.password = cfg['password']
-                if 'key' in cfg:
-                    result.key = cfg['key']
 
             except ValueError:
                 logging.error("Invalid credential config JSON file")

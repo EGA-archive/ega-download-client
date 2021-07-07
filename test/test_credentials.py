@@ -15,7 +15,6 @@ def test_load_username_and_password_from_credentials_file(mock_input_file):
         result = Credentials.from_file(credentials_file)
         assert result.username == username
         assert result.password == password
-        assert result.key is None
 
 
 def test_when_credentials_file_has_no_password_ask_user_for_it(mock_input_file):
@@ -27,7 +26,6 @@ def test_when_credentials_file_has_no_password_ask_user_for_it(mock_input_file):
         result = Credentials.from_file(credentials_file)
         assert result.username == username
         assert result.password == password
-        assert result.key is None
 
 
 def test_error_when_credentials_file_is_bad_json(mock_input_file):
@@ -46,7 +44,6 @@ def test_get_credential_prompts_user_for_username_and_password():
             credentials.prompt_for_missing_values()
             assert credentials.username == username
             assert credentials.password == password
-            assert credentials.key is None
 
 
 def test_load_credential_prompts_user_for_credentials_if_credentials_file_does_not_exist():
@@ -59,4 +56,3 @@ def test_load_credential_prompts_user_for_credentials_if_credentials_file_does_n
                 credentials = Credentials.from_file("unknownfile.txt")
                 assert credentials.username == username
                 assert credentials.password == password
-                assert credentials.key is None
