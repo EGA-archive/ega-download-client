@@ -4,7 +4,7 @@ from unittest import mock
 
 from psutil import virtual_memory
 
-import pyega3.pyega3 as pyega3
+from pyega3 import utils
 
 
 @mock.patch('os.remove')
@@ -41,7 +41,7 @@ def test_merge_bin_files_on_disk(mocked_remove):
 
     with mock.patch('builtins.open', new=open_wrapper):
         with mock.patch('os.rename', lambda s, d: merged_bytes.extend(files_to_merge[os.path.basename(s)])):
-            pyega3.merge_bin_files_on_disk(target_file_name, list(files_to_merge.keys()),
+            utils.merge_bin_files_on_disk(target_file_name, list(files_to_merge.keys()),
                                            0)  # this value can be changed from 0 to other/actual value
 
     mocked_remove.assert_has_calls([mock.call(f) for f in list(files_to_merge.keys())[1:]])

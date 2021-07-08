@@ -1,21 +1,22 @@
 import json
-import random
 import re
-import string
 import urllib
 
 import responses
 
 
 class MockDataServer:
-    url = "https://mock.metadata.server"
-    token = ''.join(random.choices(string.ascii_letters, k=64))
+    url = None
+    token = None
 
     dataset_files = {}
     files = {}
     file_content = {}
 
-    def __init__(self, mock_requests):
+    def __init__(self, mock_requests, url, token):
+        self.url = url
+        self.token = token
+
         mock_requests.add_callback(
             responses.GET,
             self.url + "/metadata/datasets",

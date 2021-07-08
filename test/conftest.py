@@ -11,6 +11,8 @@ import responses
 from psutil import virtual_memory
 
 import pyega3.pyega3 as pyega3
+from pyega3.data_client import DataClient
+from pyega3.server_config import ServerConfig
 from test.mock_data_server import MockDataServer
 
 
@@ -20,17 +22,41 @@ def rand_str():
 
 
 @pytest.fixture(autouse=True)
-def reset_pyega_api_url():
-    pyega3.URL_API = ''
-
-
-@pytest.fixture(autouse=True)
 def reset_pyega_global_variables():
-    pyega3.URL_AUTH = ''
-    pyega3.URL_API_TICKET = ''
-    pyega3.CLIENT_SECRET = ''
     pyega3.TEMPORARY_FILES = set()
     pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
+
+
+@pytest.fixture
+def mock_server_config():
+    return ServerConfig(url_api='https://test.data.server',
+                        url_auth='https://test.auth.server/ega-openid-connect-server/token',
+                        url_api_ticket='https://test.ticket.server',
+                        client_secret='test-client-secret')
+
+
+@pytest.fixture
+def user_has_authenticated_successfully(mock_requests, mock_server_config):
+    mock_requests.add(responses.POST, mock_server_config.url_auth, json={'access_token': 'ok'}, status=200)
+
+
+class MockAuthClient:
+    credentials = None
+
+    def __init__(self, token=None):
+        if token is None:
+            token = ''.join(random.choices(string.ascii_letters, k=64))
+        self.token = token
+
+
+@pytest.fixture
+def mock_auth_client():
+    return MockAuthClient()
+
+
+@pytest.fixture
+def mock_data_client(mock_server_config, mock_auth_client):
+    return DataClient(mock_server_config.url_api, mock_server_config.url_api_ticket, mock_auth_client, {})
 
 
 @pytest.fixture
@@ -55,10 +81,8 @@ def temporary_output_file():
 
 
 @pytest.fixture
-def mock_data_server(mock_requests, reset_pyega_api_url):
-    server = MockDataServer(mock_requests)
-    pyega3.URL_API = server.url
-    return server
+def mock_data_server(mock_requests, mock_server_config, mock_auth_client):
+    return MockDataServer(mock_requests, mock_server_config.url_api, mock_auth_client.token)
 
 
 @pytest.fixture

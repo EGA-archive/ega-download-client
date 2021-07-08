@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-import pyega3.pyega3 as pyega3
+from pyega3 import utils
 
 
 @pytest.mark.parametrize("md5,data", [
@@ -17,7 +17,7 @@ import pyega3.pyega3 as pyega3
 ])
 def test_md5(md5, data, mock_input_file):
     with mock_input_file(data) as input_file:
-        assert pyega3.md5(input_file, len(data)) == md5
+        assert utils.md5(input_file, len(data)) == md5
 
 
 def test_calculating_md5_of_non_existent_file_raises_exception():
@@ -25,4 +25,4 @@ def test_calculating_md5_of_non_existent_file_raises_exception():
     assert not os.path.exists(non_existent_file)
 
     with pytest.raises(Exception):
-        pyega3.calculate_md5(non_existent_file, -1)
+        utils.calculate_md5(non_existent_file, -1)

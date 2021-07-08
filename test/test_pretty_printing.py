@@ -1,13 +1,17 @@
 import pyega3.pyega3 as pyega3
+from pyega3.data_file import DataFile
+from pyega3.data_set import DataSet
 
 
-def test_pretty_print_authorized_datasets():
-    pyega3.pretty_print_authorized_datasets(['EGAD0123'])
+def test_pretty_print_authorized_datasets(mock_data_client):
+    pyega3.pretty_print_authorized_datasets([DataSet(mock_data_client, 'EGAD0123')])
 
 
-def test_pretty_print_files_in_dataset():
-    test_reply = [{"checksumType": "MD5", "unencryptedChecksum": "MD5SUM678901234567890123456789012",
-                   "fileName": "EGAZ00001314035.bam.bai.cip", "displayFileName": "EGAZ00001314035.bam.bai.cip",
-                   "fileStatus": "available",
-                   "fileSize": 0, "datasetId": "EGAD00001003338", "fileId": "EGAF00001753747"}]
-    pyega3.pretty_print_files_in_dataset(test_reply, ['EGAD0123'])
+def test_pretty_print_files_in_dataset(mock_data_client):
+    test_reply = [DataFile(mock_data_client, "EGAF00001753747",
+                           display_file_name="EGAZ00001314035.bam.bai.cip",
+                           file_name="EGAZ00001314035.bam.bai.cip",
+                           size=0,
+                           unencrypted_checksum="MD5SUM678901234567890123456789012",
+                           status="available")]
+    pyega3.pretty_print_files_in_dataset(test_reply)

@@ -3,8 +3,8 @@ from collections import namedtuple
 import pytest
 import requests
 
-import pyega3.pyega3 as pyega3
 import test.conftest as common
+from pyega3.data_file import DataFile
 
 
 @pytest.fixture
@@ -20,7 +20,8 @@ def dummy_file(mock_data_server):
             "displayFileName": display_file_name,
             "fileName": file_name,
             "fileSize": file_size,
-            "unencryptedChecksum": check_sum}
+            "unencryptedChecksum": check_sum,
+            "fileStatus": "available"}
 
     mock_data_server.files[file_id] = file
 
@@ -28,29 +29,32 @@ def dummy_file(mock_data_server):
     return DummyFile(file_id, file_size, file_name, display_file_name, check_sum)
 
 
-def test_get_file_name_size_md5(mock_data_server, dummy_file):
-    rv = pyega3.get_file_name_size_md5(mock_data_server.token, dummy_file.id)
-    assert len(rv) == 4
-    assert rv[0] == dummy_file.display_file_name
-    assert rv[1] == dummy_file.file_name
-    assert rv[2] == dummy_file.file_size
-    assert rv[3] == dummy_file.check_sum
+def test_get_file_name_size_md5(mock_data_server, dummy_file, mock_data_client):
+    file = DataFile(mock_data_client, dummy_file.id)
+    assert file.display_name == dummy_file.display_file_name
+    assert file.name == dummy_file.file_name
+    assert file.size == dummy_file.file_size
+    assert file.unencrypted_checksum == dummy_file.check_sum
 
 
-def test_error_with_bad_token(mock_data_server, dummy_file):
+def test_error_with_bad_token(mock_data_server, dummy_file, mock_data_client):
     bad_token = common.rand_str()
+    mock_data_client.auth_client = common.MockAuthClient(bad_token)
     with pytest.raises(requests.exceptions.HTTPError):
-        pyega3.get_file_name_size_md5(bad_token, dummy_file.id)
+        file = DataFile(mock_data_client, dummy_file.id)
+        file.load_metadata()
 
 
-def test_error_with_unknown_file(mock_data_server):
+def test_error_with_unknown_file(mock_data_server, mock_data_client):
     bad_file_id = "EGAF00000000000"
     with pytest.raises(requests.exceptions.HTTPError):
-        pyega3.get_file_name_size_md5(mock_data_server.token, bad_file_id)
+        file = DataFile(mock_data_client, bad_file_id)
+        file.load_metadata()
 
 
-def test_error_with_file_with_bad_metadata(mock_data_server):
+def test_error_with_file_with_bad_metadata(mock_data_server, mock_data_client):
     bad_file_id = "EGAF00000000666"
     mock_data_server.files[bad_file_id] = {"fileName": None, "displayFileName": None, "unencryptedChecksum": None}
     with pytest.raises(RuntimeError):
-        pyega3.get_file_name_size_md5(mock_data_server.token, bad_file_id)
+        file = DataFile(mock_data_client, bad_file_id)
+        file.load_metadata()
