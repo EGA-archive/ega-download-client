@@ -11,18 +11,6 @@ test_file_id = 'test_file_id1'
 expected_file_size = DOWNLOAD_FILE_SLICE_CHUNK_SIZE * 3
 
 
-def test_deleting_non_existent_file_does_not_raise_exception():
-
-    dummy_file = DataFile(None, None)
-
-    non_existent_file = '/tmp/non/existent/file'
-    assert not os.path.exists(non_existent_file)
-    dummy_file.temporary_files.add(non_existent_file)
-
-    # No exception is raised:
-    dummy_file.delete_temporary_files()
-
-
 def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_server_config,
                                                                          mock_auth_client,
                                                                          temporary_output_file,
@@ -41,7 +29,8 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     input_file = bytearray(os.urandom(file_size_without_iv))
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=input_file, status=200)
 
-    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, file_size_with_iv, 'check_sum')
+    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, file_size_with_iv,
+                    'check_sum')
 
     file.download_file_retry(1, temporary_output_file, None, 2, 0.1)
 
@@ -82,40 +71,40 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
     assert not os.path.exists(output_file_path)
 
 
-def test_temporary_files_are_deleted_if_the_user_says_so(mock_server_config,
+def test_temporary_folder_is_deleted_if_the_user_says_so(mock_server_config,
                                                          mock_data_client,
                                                          temporary_output_file,
                                                          mock_requests):
+    # Given: a file that exist in EGA object store and the user has permissions to access to it
     DataFile.temporary_files_should_be_deleted = True
 
-    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size, 'check_sum')
+    file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
+                    'check_sum')
 
+    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), '.tmp_download')
+
+    # When: the user completes downloading a file
     download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
 
-    # The temporary file should not exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
-    # variable was set to True previously:
-    assert not os.path.exists(file.temporary_files.pop())
+    # Then: the temporary folder and the temporary files are deleted
+    assert not os.path.exists(temporary_folder_name)
 
 
-def test_temporary_files_are_not_deleted_if_the_user_says_so(mock_server_config,
+def test_temporary_folder_is_not_deleted_if_the_user_says_so(mock_server_config,
                                                              mock_data_client,
                                                              temporary_output_file,
                                                              mock_requests):
-    # The user asks for keeping the temporary files:
+
+    # Given: a file that exist in EGA object store and the user has permissions to access to it
     DataFile.temporary_files_should_be_deleted = False
 
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
                     'check_sum')
 
+    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), '.tmp_download')
+
+    # When: he user completes downloading a file
     download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
 
-    temp_file = file.temporary_files.pop()
-
-    # The temporary file should exist because the pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED
-    # variable was set to False previously:
-    assert os.path.exists(temp_file)
-
-    # The download client should have been able to download the whole file:
-    assert os.stat(temp_file).st_size == expected_file_size - 3 * 1000
-
-    os.remove(temp_file)
+    # Then: the temporary folder and the temporary files are NOT deleted
+    assert os.path.exists(temporary_folder_name)
