@@ -157,7 +157,7 @@ class DataFile:
         if options is not None:
             path += '?' + urllib.parse.urlencode(options)
 
-        final_file_name = file_name + f'-from-{str(start_pos)}-len-{str(length)}.slice'
+        final_file_name = f'{file_name}-from-{str(start_pos)}-len-{str(length)}.slice'
         file_name = final_file_name + '.tmp'
 
         self.temporary_files.add(file_name)
