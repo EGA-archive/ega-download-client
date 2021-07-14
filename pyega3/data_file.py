@@ -3,6 +3,7 @@ import logging
 import logging.handlers
 import math
 import os
+import shutil
 import sys
 import time
 import urllib
@@ -105,9 +106,11 @@ class DataFile:
 
         chunk_len = math.ceil(file_size / num_connections)
 
+        temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
+
         with tqdm(total=int(file_size), unit='B', unit_scale=True) as pbar:
             params = [
-                (output_file, chunk_start_pos, min(chunk_len, file_size - chunk_start_pos), options, pbar)
+                (temporary_directory, chunk_start_pos, min(chunk_len, file_size - chunk_start_pos), options, pbar)
                 for chunk_start_pos in range(0, file_size, chunk_len)]
 
             results = []
@@ -154,7 +157,9 @@ class DataFile:
         if options is not None:
             path += '?' + urllib.parse.urlencode(options)
 
-        file_name += f'-from-{str(start_pos)}-len-{str(length)}.slice'
+        final_file_name = f'{file_name}-from-{str(start_pos)}-len-{str(length)}.slice'
+        file_name = final_file_name + '.tmp'
+
         self.temporary_files.add(file_name)
 
         existing_size = os.stat(file_name).st_size if os.path.exists(file_name) else 0
@@ -166,19 +171,28 @@ class DataFile:
         if existing_size == length:
             return file_name
 
-        with self.data_client.get_stream(path,
-                                         {'Range': f'bytes={start_pos + existing_size}-{start_pos + length - 1}'}) as r:
-            with open(file_name, 'ba') as file_out:
-                for chunk in r.iter_content(DOWNLOAD_FILE_SLICE_CHUNK_SIZE):
-                    file_out.write(chunk)
-                    if pbar:
-                        pbar.update(len(chunk))
+        try:
+            with self.data_client.get_stream(path,
+                                             {
+                                                 'Range': f'bytes={start_pos + existing_size}-{start_pos + length - 1}'}) as r:
+                with open(file_name, 'ba') as file_out:
+                    for chunk in r.iter_content(DOWNLOAD_FILE_SLICE_CHUNK_SIZE):
+                        file_out.write(chunk)
+                        if pbar:
+                            pbar.update(len(chunk))
 
-        total_received = os.path.getsize(file_name)
-        if total_received != length:
-            raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
+            total_received = os.path.getsize(file_name)
+            if total_received != length:
+                raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
-        return file_name
+        except Exception:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+            raise
+
+        os.rename(file_name, final_file_name)
+
+        return final_file_name
 
     @staticmethod
     def is_genomic_range(genomic_range_args):
@@ -228,6 +242,10 @@ class DataFile:
         if not os.path.exists(dir) and len(dir) > 0:
             os.makedirs(dir)
 
+        temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
+        if not os.path.exists(temporary_directory):
+            os.makedirs(temporary_directory)
+
         hdd = psutil.disk_usage(os.getcwd())
         logging.info(f"Total space : {hdd.total / (2 ** 30):.2f} GiB")
         logging.info(f"Used space : {hdd.used / (2 ** 30):.2f} GiB")
@@ -257,17 +275,15 @@ class DataFile:
                 logging.exception(e)
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
-                        self.delete_temporary_files()
+                        self.delete_temporary_folder(temporary_directory)
 
                     raise e
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
 
-    def delete_temporary_files(self):
+    def delete_temporary_folder(self, temporary_directory):
         try:
-            for temporary_file in self.temporary_files:
-                logging.debug(f'Deleting the {temporary_file} temporary file...')
-                os.remove(temporary_file)
+            shutil.rmtree(temporary_directory)
         except FileNotFoundError as ex:
-            logging.error(f'Could not delete the temporary file: {ex}')
+            logging.error(f'Could not delete the temporary folder: {ex}')

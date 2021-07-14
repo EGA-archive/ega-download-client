@@ -1,5 +1,6 @@
 import hashlib
 import os
+import tempfile
 from collections import namedtuple
 from unittest import mock
 
@@ -41,7 +42,8 @@ def mock_writing_files():
             with mock.patch('os.path.exists', lambda path: os.path.basename(path) in files):
                 with mock.patch('os.stat', os_stat_mock):
                     with mock.patch('os.rename', os_rename_mock):
-                        yield files
+                        with mock.patch('shutil.rmtree'):
+                            yield files
 
 
 def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_data_client):
@@ -127,3 +129,38 @@ def test_gpg_files_not_supported(mock_data_client):
     file = DataFile(mock_data_client, "", "test.gz", "test.gz.gpg", 0, "")
 
     file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5)
+
+
+def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_server, random_binary_file,
+                                                                     mock_server_config,
+                                                                     mock_data_client):
+    # Given: a file that exist in EGA object store and the user has permissions to access to it
+    file_id = "EGAF00000000001"
+    file_name = "resulting.file"
+    file_md5 = hashlib.md5(random_binary_file).hexdigest()
+
+    mock_data_server.file_content[file_id] = random_binary_file
+
+    file = DataFile(mock_data_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16, file_md5)
+
+    # When: the user starts to download a file
+    output_file = os.path.join(tempfile.gettempdir(), "pyega-download-test", "output_file")
+    md5_file = output_file + ".md5"
+    if os.path.exists(output_file):
+        os.remove(output_file)
+    if os.path.exists(md5_file):
+        os.remove(md5_file)
+
+    with mock.patch('builtins.open', wraps=open) as wrapped_open:
+        file.download_file_retry(1, output_file=output_file, genomic_range_args=None, max_retries=5, retry_wait=0)
+
+    # Then: The temporary files for the chunks are in the temporary folder and has .tmp as a suffix
+    temporary_folder = os.path.join(tempfile.gettempdir(), "pyega-download-test", ".tmp_download")
+    slices_opened = set([call.args[0] for call in wrapped_open.mock_calls if len(call.args) == 2])
+    slices_opened.remove(output_file)
+    slices_opened.remove(md5_file)
+
+    for slice_file in slices_opened:
+        assert slice_file.startswith(temporary_folder)
+        assert slice_file.endswith(".tmp")
+
