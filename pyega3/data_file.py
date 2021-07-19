@@ -2,6 +2,7 @@ import concurrent.futures
 import logging
 import logging.handlers
 import os
+import re
 import shutil
 import sys
 import time
@@ -110,8 +111,24 @@ class DataFile:
 
         with tqdm(total=int(file_size), unit='B', unit_scale=True) as pbar:
             params = [
-                (temporary_directory, chunk_start_pos, min(chunk_len, file_size - chunk_start_pos), options, pbar)
+                (os.path.join(temporary_directory, self.id), chunk_start_pos,
+                 min(chunk_len, file_size - chunk_start_pos), options, pbar)
                 for chunk_start_pos in range(0, file_size, chunk_len)]
+
+            for file in os.listdir(temporary_directory):
+                match = re.match(r"(.*)-from-(.*)-len-(.*).*", file)
+                file_id = match.group(1)
+                file_from = match.group(2)
+                file_length = match.group(3)
+
+                if file_id != self.id:
+                    continue
+
+                if (file_from, file_length) in [(param[1], param[2]) for param in params]:
+                    continue
+
+                logging.warning(f'Deleting leftover file {file} because the slices sizes is different')
+                os.remove(os.path.join(temporary_directory, file))
 
             results = []
             with concurrent.futures.ThreadPoolExecutor(max_workers=num_connections) as executor:

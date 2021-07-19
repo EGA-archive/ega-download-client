@@ -197,12 +197,16 @@ def test_the_user_does_not_specifies_a_slice_size(mock_data_client):
     assert mock_download_slice.call_count == math.ceil(file.size / DataFile.DEFAULT_SLICE_SIZE)
 
 
-def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_client, mock_data_server,random_binary_file):
+def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_client, mock_data_server, random_binary_file, caplog):
     # Given: a file that the user has permissions to download and a custom slice size and some slices that were already downloaded with different size.
     mock_data_server.file_content["EGAF123456"] = random_binary_file
     file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")
     slice_size = 1000
-    file.download_file_slice("output_file", 0, 1234)
+    if not os.path.exists(".tmp_download"):
+        os.mkdir(".tmp_download")
+
+    extra_slice = file.download_file_slice(f'.tmp_download/{file.id}', 0, 1234)
+    assert os.path.exists(extra_slice)
 
     # When: when the user downloads the file
     with mock.patch("pyega3.data_file.DataFile.download_file_slice") as mock_download_slice:
@@ -212,3 +216,6 @@ def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_cl
 
     # Then: the file is downloaded in multiple slices where each slice is at most the custom slice size and delete the old slices with the warning.
     assert mock_download_slice.call_count == 13
+    assert not os.path.exists(extra_slice)
+    assert "Deleting leftover file" in caplog.text
+
