@@ -108,6 +108,7 @@ class DataFile:
         chunk_len = max_slice_size
 
         temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
+        os.makedirs(temporary_directory, exist_ok=True)
 
         with tqdm(total=int(file_size), unit='B', unit_scale=True) as pbar:
             params = [
@@ -244,7 +245,8 @@ class DataFile:
             f" referenceMD5={gr_args[1]}, start={gr_args[2]}, end={gr_args[3]}, format={gr_args[4]})"
         )
 
-    def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait):
+    def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait,
+                            max_slice_size=DEFAULT_SLICE_SIZE):
         if self.name.endswith(".gpg"):
             logging.info(
                 "GPG files are currently not supported."
@@ -286,7 +288,7 @@ class DataFile:
         num_retries = 0
         while not done:
             try:
-                self.download_file(output_file, num_connections)
+                self.download_file(output_file, num_connections, max_slice_size)
                 done = True
             except Exception as e:
                 logging.exception(e)

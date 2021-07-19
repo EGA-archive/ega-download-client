@@ -65,6 +65,7 @@ def main():
     parser.add_argument("-c", "--connections", type=int, default=1,
                         help="Download using specified number of connections")
     parser.add_argument("-t", "--test", action="store_true", help="Test user activated")
+    parser.add_argument("-ms", "--max-slice-size", type=int, default=None, help="Set maximum sizes for each slice")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommands")
 
@@ -181,14 +182,15 @@ def main():
         if args.identifier[3] == 'D':
             dataset = DataSet(data_client, args.identifier)
             dataset.download(args.connections, args.saveto, genomic_range_args,
-                             args.max_retries, args.retry_wait)
+                             args.max_retries, args.retry_wait, args.max_slice_size)
         elif args.identifier[3] == 'F':
             file = data_file.DataFile(data_client, args.identifier)
             file.download_file_retry(num_connections=args.connections,
                                      output_file=args.saveto,
                                      genomic_range_args=genomic_range_args,
                                      max_retries=args.max_retries,
-                                     retry_wait=args.retry_wait)
+                                     retry_wait=args.retry_wait,
+                                     max_slice_size=args.max_slice_size)
         else:
             logging.error(
                 "Unrecognized identifier - please use EGAD accession for dataset request"

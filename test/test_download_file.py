@@ -39,12 +39,13 @@ def mock_writing_files():
         files.__setitem__(os.path.basename(d), files.pop(os.path.basename(s)))
 
     with mock.patch('builtins.open', new=open_wrapper):
-        with mock.patch('os.makedirs', lambda _: None):
+        with mock.patch('os.makedirs', return_value=None):
             with mock.patch('os.path.exists', lambda path: os.path.basename(path) in files):
                 with mock.patch('os.stat', os_stat_mock):
                     with mock.patch('os.rename', os_rename_mock):
                         with mock.patch('shutil.rmtree'):
-                            yield files
+                            with mock.patch('os.listdir', return_value=[]):
+                                yield files
 
 
 def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_data_client):
@@ -202,8 +203,7 @@ def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_cl
     mock_data_server.file_content["EGAF123456"] = random_binary_file
     file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")
     slice_size = 1000
-    if not os.path.exists(".tmp_download"):
-        os.mkdir(".tmp_download")
+    os.makedirs(".tmp_download", exist_ok=True)
 
     extra_slice = file.download_file_slice(f'.tmp_download/{file.id}', 0, 1234)
     assert os.path.exists(extra_slice)
