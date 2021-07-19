@@ -1,6 +1,6 @@
 import responses
 
-from pyega3.utils import get_client_ip
+from pyega3.libs.utils import get_client_ip
 
 
 def test_when_ipinfo_is_blocked_return_unknown(mock_requests):

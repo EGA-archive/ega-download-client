@@ -6,7 +6,7 @@ import requests
 import os
 
 import test.conftest as common
-from pyega3.data_file import DataFile
+from pyega3.libs.data_file import DataFile
 
 
 def test_download_file_slice_downloads_correct_bytes_to_file(mock_data_server, random_binary_file, mock_data_client):

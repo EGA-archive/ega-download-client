@@ -4,8 +4,7 @@ import re
 import pytest
 import responses
 
-from pyega3 import pyega3 as pyega3
-from pyega3.data_file import DOWNLOAD_FILE_MEMORY_BUFFER_SIZE, DataFile
+from pyega3.libs.data_file import DOWNLOAD_FILE_MEMORY_BUFFER_SIZE, DataFile
 
 test_file_id = 'test_file_id1'
 expected_file_size = DOWNLOAD_FILE_MEMORY_BUFFER_SIZE * 3

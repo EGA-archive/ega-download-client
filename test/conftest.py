@@ -10,21 +10,14 @@ import pytest
 import responses
 from psutil import virtual_memory
 
-import pyega3.pyega3 as pyega3
-from pyega3.data_client import DataClient
-from pyega3.server_config import ServerConfig
+from pyega3.libs.data_client import DataClient
+from pyega3.libs.server_config import ServerConfig
 from test.mock_data_server import MockDataServer
 
 
 def rand_str():
     length = random.randint(1, 127)
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
-
-@pytest.fixture(autouse=True)
-def reset_pyega_global_variables():
-    pyega3.TEMPORARY_FILES = set()
-    pyega3.TEMPORARY_FILES_SHOULD_BE_DELETED = False
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@ import pytest
 import requests
 
 import test.conftest as common
-from pyega3.data_set import DataSet
+from pyega3.libs.data_set import DataSet
 
 
 def test_list_all_files_in_dataset(dataset_with_files, mock_data_client):

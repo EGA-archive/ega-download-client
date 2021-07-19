@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from pyega3.credentials import Credentials
+from pyega3.libs.credentials import Credentials
 import test.conftest as common
 
 

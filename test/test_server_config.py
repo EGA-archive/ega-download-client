@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from pyega3.server_config import ServerConfig
+from pyega3.libs.server_config import ServerConfig
 
 
 def test_load_server_config_invalid_path():

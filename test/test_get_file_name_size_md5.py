@@ -4,7 +4,7 @@ import pytest
 import requests
 
 import test.conftest as common
-from pyega3.data_file import DataFile
+from pyega3.libs.data_file import DataFile
 
 
 @pytest.fixture

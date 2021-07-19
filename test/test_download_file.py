@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from pyega3.data_file import DataFile
+from pyega3.libs.data_file import DataFile
 
 
 @pytest.fixture
@@ -175,8 +175,8 @@ def test_the_user_specifies_a_slice_size(mock_data_client):
     slice_size = 1000
 
     # When: when the user downloads the file
-    with mock.patch("pyega3.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.utils.md5", return_value=file.unencrypted_checksum):
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
             with mock.patch("os.path.getsize", return_value=file.size):
                 file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
 
@@ -189,8 +189,8 @@ def test_the_user_does_not_specifies_a_slice_size(mock_data_client):
     file = DataFile(mock_data_client, file_id="EGAF123456", size=1234567890, unencrypted_checksum="testChecksum")
 
     # When: when the user downloads the file
-    with mock.patch("pyega3.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.utils.md5", return_value=file.unencrypted_checksum):
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
             with mock.patch("os.path.getsize", return_value=file.size):
                 file.download_file(output_file="output_file", num_connections=1)
 
@@ -209,8 +209,8 @@ def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_cl
     assert os.path.exists(extra_slice)
 
     # When: when the user downloads the file
-    with mock.patch("pyega3.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.utils.md5", return_value=file.unencrypted_checksum):
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
             with mock.patch("os.path.getsize", return_value=file.size):
                 file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
 
