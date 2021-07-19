@@ -5,10 +5,10 @@ import pytest
 import responses
 
 from pyega3 import pyega3 as pyega3
-from pyega3.data_file import DOWNLOAD_FILE_SLICE_CHUNK_SIZE, DataFile
+from pyega3.data_file import DOWNLOAD_FILE_MEMORY_BUFFER_SIZE, DataFile
 
 test_file_id = 'test_file_id1'
-expected_file_size = DOWNLOAD_FILE_SLICE_CHUNK_SIZE * 3
+expected_file_size = DOWNLOAD_FILE_MEMORY_BUFFER_SIZE * 3
 
 
 def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_server_config,

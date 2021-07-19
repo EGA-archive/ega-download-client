@@ -1,7 +1,6 @@
 import concurrent.futures
 import logging
 import logging.handlers
-import math
 import os
 import shutil
 import sys
@@ -12,12 +11,13 @@ import htsget
 import psutil
 from tqdm import tqdm
 
-from pyega3.utils import md5, get_fname_md5, merge_bin_files_on_disk
+from pyega3 import utils
 
-DOWNLOAD_FILE_SLICE_CHUNK_SIZE = 32 * 1024
+DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
 
 
 class DataFile:
+    DEFAULT_SLICE_SIZE = 100 * 1024 * 1024
     temporary_files_should_be_deleted = False
 
     def __init__(self, data_client, file_id,
@@ -83,7 +83,7 @@ class DataFile:
     def print_local_file_info(prefix_str, file, md5):
         logging.info(f"{prefix_str}'{os.path.abspath(file)}'({os.path.getsize(file)} bytes, md5={md5})")
 
-    def download_file(self, output_file, num_connections=1):
+    def download_file(self, output_file, num_connections=1, max_slice_size=DEFAULT_SLICE_SIZE):
         """Download an individual file"""
 
         file_size = self.size
@@ -92,7 +92,7 @@ class DataFile:
 
         file_size -= 16  # 16 bytes IV not necesary in plain mode
 
-        if os.path.exists(output_file) and md5(output_file, file_size) == check_sum:
+        if os.path.exists(output_file) and utils.md5(output_file, file_size) == check_sum:
             DataFile.print_local_file_info('Local file exists:', output_file, check_sum)
             return
 
@@ -104,7 +104,7 @@ class DataFile:
 
         logging.info(f"Download starting [using {num_connections} connection(s)]...")
 
-        chunk_len = math.ceil(file_size / num_connections)
+        chunk_len = max_slice_size
 
         temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
 
@@ -122,13 +122,13 @@ class DataFile:
 
             downloaded_file_total_size = sum(os.path.getsize(f) for f in results)
             if downloaded_file_total_size == file_size:
-                merge_bin_files_on_disk(output_file, results, downloaded_file_total_size)
+                utils.merge_bin_files_on_disk(output_file, results, downloaded_file_total_size)
 
         not_valid_server_md5 = len(str(check_sum or '')) != 32
 
         logging.info("Calculating md5 (this operation can take a long time depending on the file size)")
 
-        received_file_md5 = md5(output_file, file_size)
+        received_file_md5 = utils.md5(output_file, file_size)
 
         logging.info("Verifying file checksum")
 
@@ -138,7 +138,7 @@ class DataFile:
                 logging.info(
                     f"WARNING: Unable to obtain valid MD5 from the server (received: {check_sum})."
                     f" Can't validate download. Please contact EGA helpdesk on helpdesk@ega-archive.org")
-            with open(get_fname_md5(output_file), 'wb') as f:  # save good md5 in aux file for future re-use
+            with open(utils.get_fname_md5(output_file), 'wb') as f:  # save good md5 in aux file for future re-use
                 f.write(received_file_md5.encode())
         else:
             os.remove(output_file)
@@ -176,7 +176,7 @@ class DataFile:
                                              {
                                                  'Range': f'bytes={start_pos + existing_size}-{start_pos + length - 1}'}) as r:
                 with open(file_name, 'ba') as file_out:
-                    for chunk in r.iter_content(DOWNLOAD_FILE_SLICE_CHUNK_SIZE):
+                    for chunk in r.iter_content(DOWNLOAD_FILE_MEMORY_BUFFER_SIZE):
                         file_out.write(chunk)
                         if pbar:
                             pbar.update(len(chunk))
