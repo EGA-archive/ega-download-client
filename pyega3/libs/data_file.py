@@ -128,7 +128,7 @@ class DataFile:
                 if (file_from, file_length) in [(param[1], param[2]) for param in params]:
                     continue
 
-                logging.warning(f'Deleting leftover file {file} because the slices sizes is different')
+                logging.warning(f'Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter (and thus the slice sizes) have been modified since the last run.')
                 os.remove(os.path.join(temporary_directory, file))
 
             results = []

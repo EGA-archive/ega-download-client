@@ -21,20 +21,19 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 
-
-
-
 def main():
     parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf", "--config-file", dest='config_file',
                         help='JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}')
     parser.add_argument("-sf", "--server-file", dest='server_file',
-                        help='JSON file containing server config e.g.{"url_auth":"aai url","url_api":"api url", "url_api_ticket":"htsget url", "client_secret":"client secret"}')
+                        help='JSON file containing server config e.g.{"url_auth":"aai url","url_api":"api url", '
+                             '"url_api_ticket":"htsget url", "client_secret":"client secret"}')
     parser.add_argument("-c", "--connections", type=int, default=1,
-                        help="Download using specified number of connections")
+                        help="Download using specified number of connections (default: 1 connection)")
     parser.add_argument("-t", "--test", action="store_true", help="Test user activated")
-    parser.add_argument("-ms", "--max-slice-size", type=int, default=None, help="Set maximum sizes for each slice")
+    parser.add_argument("-ms", "--max-slice-size", type=int, default=None,
+                        help="Set maximum size for each slice in bytes (default: 100 MB)")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommands")
 
@@ -44,7 +43,8 @@ def main():
     parser_dsinfo.add_argument("identifier", help="Dataset ID (e.g. EGAD00000000001)")
 
     parser_fetch = subparsers.add_parser("fetch", help="Fetch a dataset or file")
-    parser_fetch.add_argument("identifier", help="Id for dataset (e.g. EGAD00000000001) or file (e.g. EGAF12345678901)")
+    parser_fetch.add_argument("identifier",
+                              help="Id for dataset (e.g. EGAD00000000001) or file (e.g. EGAF12345678901)")
 
     parser_fetch.add_argument(
         "--reference-name", "-r", type=str, default=None,
@@ -101,7 +101,8 @@ def main():
 
     logging.info("")
     logging.info(f"pyEGA3 - EGA python client version {version} (https://github.com/EGA-archive/ega-download-client)")
-    logging.info("Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
+    logging.info(
+        "Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
     logging.info(f"Python version : {platform.python_version()}")
     logging.info(f"OS version : {platform.system()} {platform.version()}")
 

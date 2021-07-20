@@ -217,5 +217,5 @@ def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_cl
     # Then: the file is downloaded in multiple slices where each slice is at most the custom slice size and delete the old slices with the warning.
     assert mock_download_slice.call_count == 13
     assert not os.path.exists(extra_slice)
-    assert "Deleting leftover file" in caplog.text
+    assert "Deleting the leftover" in caplog.text
 
