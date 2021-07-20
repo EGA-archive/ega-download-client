@@ -142,13 +142,13 @@ optional arguments:
   -cf CONFIG_FILE, --config-file CONFIG_FILE
                         JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}
   -sf SERVER_FILE, --server-file SERVER_FILE
-                        JSON file containing server config e.g.{"url_auth":"aai url","url_api":"api url", "url_api_ticket":"htsget url",
-                        "client_secret":"client secret"}
+                        JSON file containing server config e.g.{"url_auth":"aai url","url_api":"api url", "url_api_ticket":"htsget url", "client_secret":"client secret"}
   -c CONNECTIONS, --connections CONNECTIONS
-                        Download using specified number of connections
+                        Download using specified number of connections (default: 1 connection)
   -t, --test            Test user activated
   -ms MAX_SLICE_SIZE, --max-slice-size MAX_SLICE_SIZE
-                        Set maximum sizes for each slice
+                        Set maximum size for each slice in bytes (default: 100 MB)
+
 ```
 
 ### Testing pyEGA3 installation
