@@ -19,7 +19,7 @@ class ServerConfig:
     @staticmethod
     def default_config_path():
         root_dir = os.path.split(os.path.realpath(__file__))[0]
-        return os.path.join(root_dir, "config", "default_server_file.json")
+        return os.path.join(root_dir, "../config", "default_server_file.json")
 
     @staticmethod
     def from_file(filepath):

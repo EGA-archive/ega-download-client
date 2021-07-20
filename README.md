@@ -98,7 +98,7 @@ If the ports are open, both of the sites should load with no timeouts.
 1. Execute the script corresponding to the host operating system. For example, if using Red Hat Linux, run:
 
     ```bash
-    sh red_hat_dependency_install.sh  
+    sh red_hat_dependency_install.sh
     ```
 
 1. Test your GitHub installation by running pyEGA3.
@@ -109,7 +109,7 @@ If the ports are open, both of the sites should load with no timeouts.
 
 ### Using Docker
 
-There are Docker images built by Bioconda: https://bioconda.github.io/recipes/pyega3/README.html  
+There are Docker images built by Bioconda: https://bioconda.github.io/recipes/pyega3/README.html
 An example of running pyEGA3 in a Docker container:
 
 ```bash
@@ -125,9 +125,7 @@ on the above-mentioned Bioconda page.
 ## Usage - File download
 
 ```bash
-usage: pyega3 [-h] [-d] [-cf CONFIG_FILE] [-sf SERVER_FILE] [-c CONNECTIONS]
-              [-t]
-              {datasets,files,fetch} ...
+usage: pyega3.py [-h] [-d] [-cf CONFIG_FILE] [-sf SERVER_FILE] [-c CONNECTIONS] [-t] [-ms MAX_SLICE_SIZE] {datasets,files,fetch} ...
 
 Download from EMBL EBI's EGA (European Genome-phenome Archive)
 
@@ -142,16 +140,15 @@ optional arguments:
   -h, --help            show this help message and exit
   -d, --debug           Extra debugging messages
   -cf CONFIG_FILE, --config-file CONFIG_FILE
-                        JSON file containing credentials/config
-                        e.g.{"username":"user1","password":"toor"}
+                        JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}
   -sf SERVER_FILE, --server-file SERVER_FILE
-                        JSON file containing server config
-                        e.g.{"url_auth":"aai url","url_api":"api url",
-                        "url_api_ticket":"htsget url", "client_secret":"client
-                        secret"}
+                        JSON file containing server config e.g.{"url_auth":"aai url","url_api":"api url", "url_api_ticket":"htsget url",
+                        "client_secret":"client secret"}
   -c CONNECTIONS, --connections CONNECTIONS
                         Download using specified number of connections
   -t, --test            Test user activated
+  -ms MAX_SLICE_SIZE, --max-slice-size MAX_SLICE_SIZE
+                        Set maximum sizes for each slice
 ```
 
 ### Testing pyEGA3 installation
@@ -205,13 +202,13 @@ pyega3 -cf </Path/To/CREDENTIALS_FILE> files EGAD<NUM>
 #### Download a dataset
 
 ```bash
-pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --saveto </Path/To/Output> 
+pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --saveto </Path/To/Output>
 ```
 
 #### Download a single file
 
 ```bash
-pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAF<NUM> --saveto </Path/To/Output> 
+pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAF<NUM> --saveto </Path/To/Output>
 ```
 
 #### List unencrypted md5 checksums for all files in a dataset
@@ -289,7 +286,7 @@ pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --reference-name 1 --format BAM --s
 #### Download position 0-1000000 on chromosome 1 for a BAM file
 
 ```bash
-pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --start 0 --end 1000000 --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM> 
+pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --start 0 --end 1000000 --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM>
 ```
 
 ## Troubleshooting
@@ -298,11 +295,11 @@ First, please ensure you are using the most recent version of pyEGA3 by followin
 
 ### Failure to validate credentials
 
-Please ensure that your credentials are formatted correctly. Email addresses (usernames) are case-sensitive. If you have an EGA submission account, these credentials are different from your data access credentials. Please ensure you are using your data access credentials with pyEGA3. 
+Please ensure that your credentials are formatted correctly. Email addresses (usernames) are case-sensitive. If you have an EGA submission account, these credentials are different from your data access credentials. Please ensure you are using your data access credentials with pyEGA3.
 
 ### Slow download speeds
 
-Download speed can be optimized using the `--connections` parameter which will parallelize download at the file level. If the `--connections` parameter is provided, all files >100Mb will be downloaded using the specified number of parallel connections. 
+Download speed can be optimized using the `--connections` parameter which will parallelize download at the file level. If the `--connections` parameter is provided, all files >100Mb will be downloaded using the specified number of parallel connections.
 
 Using a very high number of connections will introduce overhead that can slow the download of the file. It is important to note that files are still downloaded sequentially, so using multiple connections does not mean downloading multiple files in parallel. We recommend trying with 30 connections initially and adjusting from there to get maximum throughput.
 

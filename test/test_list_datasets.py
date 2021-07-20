@@ -1,9 +1,8 @@
 import pytest
 import requests
 
-import pyega3.pyega3 as pyega3
 import test.conftest as common
-from pyega3.data_set import DataSet
+from pyega3.libs.data_set import DataSet
 
 
 def test_list_all_datasets(mock_data_server, mock_data_client):

@@ -1,4 +1,5 @@
 import hashlib
+import math
 import os
 import tempfile
 from collections import namedtuple
@@ -6,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from pyega3.data_file import DataFile
+from pyega3.libs.data_file import DataFile
 
 
 @pytest.fixture
@@ -38,12 +39,13 @@ def mock_writing_files():
         files.__setitem__(os.path.basename(d), files.pop(os.path.basename(s)))
 
     with mock.patch('builtins.open', new=open_wrapper):
-        with mock.patch('os.makedirs', lambda _: None):
+        with mock.patch('os.makedirs', return_value=None):
             with mock.patch('os.path.exists', lambda path: os.path.basename(path) in files):
                 with mock.patch('os.stat', os_stat_mock):
                     with mock.patch('os.rename', os_rename_mock):
                         with mock.patch('shutil.rmtree'):
-                            yield files
+                            with mock.patch('os.listdir', return_value=[]):
+                                yield files
 
 
 def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_data_client):
@@ -163,4 +165,57 @@ def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_s
     for slice_file in slices_opened:
         assert slice_file.startswith(temporary_folder)
         assert slice_file.endswith(".tmp")
+
+
+# Feature: The user can configure the slice sizes used when downloading a file.
+
+def test_the_user_specifies_a_slice_size(mock_data_client):
+    # Given: a file that the user has permissions to download and a custom slice size
+    file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")
+    slice_size = 1000
+
+    # When: when the user downloads the file
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
+            with mock.patch("os.path.getsize", return_value=file.size):
+                file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
+
+    # Then: the file is downloaded in multiple slices where each slice is at most the custom slice size
+    assert mock_download_slice.call_count == 13
+
+
+def test_the_user_does_not_specifies_a_slice_size(mock_data_client):
+    # Given: a file that the user has permissions to download
+    file = DataFile(mock_data_client, file_id="EGAF123456", size=1234567890, unencrypted_checksum="testChecksum")
+
+    # When: when the user downloads the file
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
+            with mock.patch("os.path.getsize", return_value=file.size):
+                file.download_file(output_file="output_file", num_connections=1)
+
+    # Then: The file is downloaded in multiple slices where each slice is at most the default slice size
+    assert mock_download_slice.call_count == math.ceil(file.size / DataFile.DEFAULT_SLICE_SIZE)
+
+
+def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_client, mock_data_server, random_binary_file, caplog):
+    # Given: a file that the user has permissions to download and a custom slice size and some slices that were already downloaded with different size.
+    mock_data_server.file_content["EGAF123456"] = random_binary_file
+    file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")
+    slice_size = 1000
+    os.makedirs(".tmp_download", exist_ok=True)
+
+    extra_slice = file.download_file_slice(f'.tmp_download/{file.id}', 0, 1234)
+    assert os.path.exists(extra_slice)
+
+    # When: when the user downloads the file
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
+            with mock.patch("os.path.getsize", return_value=file.size):
+                file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
+
+    # Then: the file is downloaded in multiple slices where each slice is at most the custom slice size and delete the old slices with the warning.
+    assert mock_download_slice.call_count == 13
+    assert not os.path.exists(extra_slice)
+    assert "Deleting leftover file" in caplog.text
 

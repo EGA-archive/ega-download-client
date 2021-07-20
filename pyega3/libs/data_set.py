@@ -1,8 +1,9 @@
 import logging
 import sys
 
-from pyega3 import data_file
-from pyega3.utils import status_ok
+from . import data_file
+from .data_file import DataFile
+from .utils import status_ok
 
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
                    "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
@@ -64,7 +65,8 @@ class DataSet:
 
         return [make_data_file(res) for res in reply]
 
-    def download(self, num_connections, output_dir, genomic_range_args, max_retries=5, retry_wait=5):
+    def download(self, num_connections, output_dir, genomic_range_args, max_retries=5, retry_wait=5,
+                 max_slice_size=DataFile.DEFAULT_SLICE_SIZE):
         if self.id in LEGACY_DATASETS:
             logging.error(
                 f"This is a legacy dataset {self.id}. Please contact the EGA helpdesk at helpdesk@ega-archive.org for more information.")
@@ -82,6 +84,6 @@ class DataSet:
                 if status_ok(file.status):
                     output_file = None if (output_dir is None) else file.generate_output_filename(output_dir,
                                                                                                   genomic_range_args)
-                    file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait)
+                    file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait, max_slice_size)
             except Exception as e:
                 logging.exception(e)

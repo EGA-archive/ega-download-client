@@ -1,10 +1,10 @@
-import pyega3.pyega3 as pyega3
-from pyega3.data_file import DataFile
-from pyega3.data_set import DataSet
+from pyega3.libs.data_file import DataFile
+from pyega3.libs.data_set import DataSet
+from pyega3.libs.pretty_printing import *
 
 
 def test_pretty_print_authorized_datasets(mock_data_client):
-    pyega3.pretty_print_authorized_datasets([DataSet(mock_data_client, 'EGAD0123')])
+    pretty_print_authorized_datasets([DataSet(mock_data_client, 'EGAD0123')])
 
 
 def test_pretty_print_files_in_dataset(mock_data_client):
@@ -14,4 +14,4 @@ def test_pretty_print_files_in_dataset(mock_data_client):
                            size=0,
                            unencrypted_checksum="MD5SUM678901234567890123456789012",
                            status="available")]
-    pyega3.pretty_print_files_in_dataset(test_reply)
+    pretty_print_files_in_dataset(test_reply)

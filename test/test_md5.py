@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from pyega3 import utils
+from pyega3.libs import utils
 
 
 @pytest.mark.parametrize("md5,data", [

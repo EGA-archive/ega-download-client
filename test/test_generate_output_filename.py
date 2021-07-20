@@ -1,6 +1,6 @@
 import os
 
-from pyega3.data_file import DataFile
+from pyega3.libs.data_file import DataFile
 
 
 def test_in_some_folder(mock_data_client):
