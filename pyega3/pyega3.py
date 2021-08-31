@@ -15,6 +15,7 @@ from libs.data_client import DataClient
 from libs.data_set import DataSet
 from libs.server_config import ServerConfig
 from libs.utils import get_client_ip
+from libs.data_file import DataFile
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
@@ -32,7 +33,7 @@ def main():
     parser.add_argument("-c", "--connections", type=int, default=1,
                         help="Download using specified number of connections (default: 1 connection)")
     parser.add_argument("-t", "--test", action="store_true", help="Test user activated")
-    parser.add_argument("-ms", "--max-slice-size", type=int, default=None,
+    parser.add_argument("-ms", "--max-slice-size", type=int, default=DataFile.DEFAULT_SLICE_SIZE,
                         help="Set maximum size for each slice in bytes (default: 100 MB)")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommands")
