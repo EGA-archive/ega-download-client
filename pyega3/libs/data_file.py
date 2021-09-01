@@ -103,7 +103,7 @@ class DataFile:
         if file_size < 100 * 1024 * 1024:
             num_connections = 1
 
-        logging.info(f"Download starting [using {num_connections} connection(s)]...")
+        logging.info(f"Download starting [using {num_connections} connection(s), file size {file_size} and chunk length {max_slice_size}]...")
 
         chunk_len = max_slice_size
 
