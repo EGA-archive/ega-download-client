@@ -291,6 +291,9 @@ class DataFile:
                 self.download_file(output_file, num_connections, max_slice_size)
                 done = True
             except Exception as e:
+                if e is ConnectionError:
+                    logging.info("Failed to connect to data service. Check that the necessary ports are open in your "
+                                 "firewall. See the documentation for more information.")
                 logging.exception(e)
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
