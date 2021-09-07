@@ -106,6 +106,8 @@ def main():
         "Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
     logging.info(f"Python version : {platform.python_version()}")
     logging.info(f"OS version : {platform.system()} {platform.version()}")
+    if platform.system() == "Darwin":
+        logging.info(f"MacOS version : {platform.mac_ver()[0]}")
 
     root_dir = os.path.split(os.path.realpath(__file__))[0]
     config_file_path = os.path.join(root_dir, "config", "default_credential_file.json")
