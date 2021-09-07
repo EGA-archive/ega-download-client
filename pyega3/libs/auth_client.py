@@ -31,14 +31,18 @@ class AuthClient:
                     "password": self.credentials.password
                     }
 
-            r = requests.post(self.url, headers=headers, data=data)
-
             try:
+                r = requests.post(self.url, headers=headers, data=data)
                 logging.info('')
                 reply = r.json()
                 r.raise_for_status()
                 oauth_token = reply['access_token']
                 logging.info(f"Authentication success for user '{self.credentials.username}'")
+            except ConnectionError:
+                logging.exception(f"Could not connect to the authentication service at {self.url}. "
+                                  f"Check that the necessary outbound ports are open in your firewall. "
+                                  f"See the documentation for more information.")
+                sys.exit()
             except Exception:
                 logging.exception(
                     "Invalid username, password or secret key - please check and retry."
