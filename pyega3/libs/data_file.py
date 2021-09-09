@@ -117,7 +117,7 @@ class DataFile:
                 for chunk_start_pos in range(0, file_size, chunk_len)]
 
             for file in os.listdir(temporary_directory):
-                match = re.match(r"(.*)-from-(.*)-len-(.*).*", file)
+                match = re.match(r"(.*)-from-(\d*)-len-(\d*).*", file)
                 file_id = match.group(1)
                 file_from = match.group(2)
                 file_length = match.group(3)
