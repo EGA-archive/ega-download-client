@@ -36,7 +36,8 @@ class DataSet:
 
     def list_files(self):
         if self.id in LEGACY_DATASETS:
-            logging.error(f"This is a legacy dataset {self.id}. Please contact the EGA helpdesk at helpdesk@ega-archive.org for more information.")
+            logging.error(f"This is a legacy dataset {self.id}. Please contact the EGA helpdesk at "
+                          f"helpdesk@ega-archive.org for more information.")
             sys.exit()
 
         authorized_datasets = DataSet.list_authorized_datasets(self.data_client)

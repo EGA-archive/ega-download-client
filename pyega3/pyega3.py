@@ -16,6 +16,7 @@ from libs.data_set import DataSet
 from libs.server_config import ServerConfig
 from libs.utils import get_client_ip
 from libs.data_file import DataFile
+from pyega3.libs.pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
