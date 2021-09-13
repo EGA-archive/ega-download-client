@@ -274,8 +274,8 @@ class DataFile:
 
         # If file is bigger than free space, warning
         if hdd.free < self.size:
-            logging.info(f"The size of the file that you want to download is bigger than your free space in this "
-                         f"location")
+            logging.warning(f"The size of the file that you want to download is bigger than your free space in this "
+                            f"location")
 
         if DataFile.is_genomic_range(genomic_range_args):
             with open(output_file, 'wb') as output:
