@@ -103,7 +103,8 @@ class DataFile:
         if file_size < 100 * 1024 * 1024:
             num_connections = 1
 
-        logging.info(f"Download starting [using {num_connections} connection(s), file size {file_size} and chunk length {max_slice_size}]...")
+        logging.info(f"Download starting [using {num_connections} connection(s), file size {file_size} and chunk "
+                     f"length {max_slice_size}]...")
 
         chunk_len = max_slice_size
 
@@ -128,7 +129,8 @@ class DataFile:
                 if (file_from, file_length) in [(param[1], param[2]) for param in params]:
                     continue
 
-                logging.warning(f'Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter (and thus the slice sizes) have been modified since the last run.')
+                logging.warning(f'Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter ('
+                                f'and thus the slice sizes) have been modified since the last run.')
                 os.remove(os.path.join(temporary_directory, file))
 
             results = []
@@ -269,6 +271,11 @@ class DataFile:
         logging.info(f"Total space : {hdd.total / (2 ** 30):.2f} GiB")
         logging.info(f"Used space : {hdd.used / (2 ** 30):.2f} GiB")
         logging.info(f"Free space : {hdd.free / (2 ** 30):.2f} GiB")
+
+        # If file is bigger than free space, warning
+        if hdd.free < self.size:
+            logging.warning(f"The size of the file that you want to download is bigger than your free space in this "
+                            f"location")
 
         if DataFile.is_genomic_range(genomic_range_args):
             with open(output_file, 'wb') as output:
