@@ -4,9 +4,10 @@ import sys
 
 from requests.exceptions import HTTPError
 
-from . import data_file
-from .data_set import DataSet
-from .pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
+from pyega3.libs import data_file
+from pyega3.libs.data_set import DataSet
+from pyega3.libs.pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
+from pyega3.libs.utils import verify_output_dir
 
 
 def execute_subcommand(args, data_client):
@@ -33,17 +34,18 @@ def execute_subcommand(args, data_client):
 
 
 def fetch_data(args, data_client):
+    output_dir = verify_output_dir(args.output_dir)
     genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
     if args.delete_temp_files:
         data_file.DataFile.temporary_files_should_be_deleted = True
     if args.identifier[3] == 'D':
         dataset = DataSet(data_client, args.identifier)
-        dataset.download(args.connections, args.saveto, genomic_range_args,
+        dataset.download(args.connections, output_dir, genomic_range_args,
                          args.max_retries, args.retry_wait, args.max_slice_size)
     elif args.identifier[3] == 'F':
         file = data_file.DataFile(data_client, args.identifier)
         file.download_file_retry(num_connections=args.connections,
-                                 output_file=args.saveto,
+                                 output_dir=output_dir,
                                  genomic_range_args=genomic_range_args,
                                  max_retries=args.max_retries,
                                  retry_wait=args.retry_wait,

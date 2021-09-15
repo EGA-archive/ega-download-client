@@ -5,13 +5,13 @@ labels: bug
 
 ---
 
-**Title of the bug** 
+**Title of the bug**
 
 *(e.g. Error with `--delete-temp-files`)*
 
 **Description of the bug**
 
-A clear and concise description of what the bug is. 
+A clear and concise description of what the bug is.
 
 *(e.g. Used option `--delete-temp-files` did not delete all temporary files after failed transfer)*
 
@@ -30,7 +30,7 @@ Steps to reproduce the behaviour that led you to the bug.
 *e.g.:*
 1. Trying to download BAM file `EGAF00001753754`.
 ```
-pyega3 fetch -cf ./CREDENTIALS_FILE.json --format BAM --delete-temp-files --saveto ./Output/ EGAF00001775036
+pyega3 fetch -cf ./CREDENTIALS_FILE.json --format BAM --delete-temp-files --output-dir ./OutputDirectory/ EGAF00001775036
 ```
 2. After 1 minute, interrupt transfer by exiting the terminal.
 3. Check for temporary files.

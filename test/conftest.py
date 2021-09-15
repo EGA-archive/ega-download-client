@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 import os
 import random
 import string
@@ -65,6 +66,9 @@ def random_binary_file():
     return os.urandom(file_length)
 
 
+another_random_binary_file = random_binary_file
+
+
 @pytest.fixture
 def temporary_output_file():
     """Returns a file-path to a random, temporary file-name."""
@@ -98,32 +102,43 @@ def empty_dataset(mock_data_server):
     return Dataset(file_id)
 
 
-@pytest.fixture
-def dataset_with_files(mock_data_server, empty_dataset):
-    files = [
-        {
-            "unencryptedChecksum": "3b89b96387db5199fef6ba613f70e27c",
-            "datasetId": empty_dataset.id,
-            "fileStatus": "available",
-            "fileId": "EGAF00000000001",
-            "checksumType": "MD5",
-            "fileSize": 4804928,
-            "fileName": "EGAZ00000000001/ENCFF000001.bam",
-            "displayFileName": "ENCFF000001.bam"
-        },
-        {
-            "unencryptedChecksum": "b8ae14d5d1f717ab17d45e8fc36946a0",
-            "datasetId": empty_dataset.id,
-            "fileStatus": "available",
-            "fileId": "EGAF00000000002",
-            "checksumType": "MD5",
-            "fileSize": 5991400,
-            "fileName": "EGAZ00000000002/ENCFF000002.bam",
-            "displayFileName": "ENCFF000002.bam"
-        }]
+def mock_dataset_file(dataset_id, file_id, file_name, display_file_name, file_content):
+    unencrypted_checksum = hashlib.md5(file_content).hexdigest()
+    return {
+        "unencryptedChecksum": unencrypted_checksum,
+        "datasetId": dataset_id,
+        "fileStatus": "available",
+        "fileId": file_id,
+        "checksumType": "MD5",
+        "fileSize": len(file_content) + 16,
+        "fileName": file_name,
+        "displayFileName": display_file_name,
+        "fileContent": file_content
+    }
 
+
+@pytest.fixture
+def mock_dataset_files(empty_dataset, random_binary_file, another_random_binary_file):
+    return [
+        mock_dataset_file(empty_dataset.id, "EGAF00000000001",
+                          "EGAZ00000000001/ENCFF000001.bam",
+                          "ENCFF000001.bam", random_binary_file),
+        mock_dataset_file(empty_dataset.id, "EGAF00000000002",
+                          "EGAZ00000000002/ENCFF000002.bam",
+                          "ENCFF000002.bam", another_random_binary_file)
+    ]
+
+
+@pytest.fixture
+def dataset_with_files(mock_data_server, empty_dataset, mock_dataset_files):
+    files = mock_dataset_files
     for file in files:
-        mock_data_server.files[file.get("fileId")] = file
+        # The file.pop("fileContent") call would change the original mock_dataset_file object,
+        # which I avoid now by using copy():
+        file = file.copy()
+        file_id = file.get("fileId")
+        mock_data_server.file_content[file_id] = file.pop("fileContent")
+        mock_data_server.files[file_id] = file
     mock_data_server.dataset_files = {empty_dataset.id: [file.get("fileId") for file in files]}
 
     Dataset = namedtuple("DatasetWithFiles", ["id", "files"])

@@ -78,7 +78,9 @@ def main():
         "--retry-wait", "-W", type=float, default=60,
         help="The number of seconds to wait before retrying a failed transfer.")
 
-    parser_fetch.add_argument("--saveto", nargs='?', help="Output file(for files)/output dir(for datasets)")
+    parser_fetch.add_argument("--output-dir", default=os.getcwd(),
+                              help="Output directory. The files will be saved into this directory. Must exist. "
+                                   "Default: the current working directory.")
 
     parser_fetch.add_argument("--delete-temp-files", action="store_true",
                               help="Do not keep those temporary, partial files "
