@@ -12,7 +12,7 @@ import htsget
 import psutil
 from tqdm import tqdm
 
-from . import utils
+from pyega3.libs import utils
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
 
@@ -247,7 +247,7 @@ class DataFile:
             f" referenceMD5={gr_args[1]}, start={gr_args[2]}, end={gr_args[3]}, format={gr_args[4]})"
         )
 
-    def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait,
+    def download_file_retry(self, num_connections, save_to, genomic_range_args, max_retries, retry_wait,
                             max_slice_size=DEFAULT_SLICE_SIZE):
         if self.name.endswith(".gpg"):
             logging.info(
@@ -257,11 +257,23 @@ class DataFile:
 
         logging.info(f"File Id: '{self.id}'({self.size} bytes).")
 
-        if output_file is None:
+        if save_to is None:
+            # No "--saveto" arg was supplied by the user. The file will be saved into the current directory
+            # and its name will be set to the value specified by displayFileName.
             output_file = self.generate_output_filename(os.getcwd(), genomic_range_args)
-        dir = os.path.dirname(output_file)
-        if not os.path.exists(dir) and len(dir) > 0:
-            os.makedirs(dir)
+        elif os.path.isdir(save_to):
+            # The user specified a "--saveto" arg, which points to an existing directory.
+            # The file will be saved into the specified, existing directory
+            # and its name will be set to the value specified by displayFileName.
+            output_file = self.generate_output_filename(save_to, genomic_range_args)
+        else:
+            # The user specified a "--saveto" arg, which points to a file, which either exists or not.
+            # The file will be saved into the file which was specified by the "--saveto" arg.
+            output_file = save_to
+
+        directory = os.path.dirname(output_file)
+        if not os.path.exists(directory) and len(directory) > 0:
+            os.makedirs(directory)
 
         temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
         if not os.path.exists(temporary_directory):
