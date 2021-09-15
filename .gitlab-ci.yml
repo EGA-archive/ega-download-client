@@ -33,6 +33,10 @@ test:
     - echo $TEST_SUITE > test.sh
     - bash test.sh
     - coverage report
+    # Test that it can be started using the checked-out source code:
+    - python -m pyega3.pyega3 --help
+    # Test that it can be started using the installed package:
+    - pip install -e . && pyega3 --help
   #  - coveralls
 
 deploy:

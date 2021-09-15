@@ -34,6 +34,7 @@ setup(
     author_email="ega-helpdesk@ebi.ac.uk",
     python_requires=">=3.6",
     install_requires=["requests", "tqdm", "htsget", "psutil"],
+    tests_require=["pytest~=6.0.1", "coverage==4.5.1", "responses==0.9.0", "pyfakefs~=4.5.1"],
     keywords=["EGA", "archive"],
     license="Apache License, Version 2.0",
     url="https://github.com/EGA-archive/ega-download-client",
