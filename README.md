@@ -269,7 +269,7 @@ optional arguments:
   --retry-wait RETRY_WAIT, -W RETRY_WAIT
                         The number of seconds to wait before retrying a failed
                         transfer.
-  --saveto [SAVETO]     Output file(for files)/output dir(for datasets)
+  --saveto [SAVETO]     Output file or directory.
   --delete-temp-files   Do not keep those temporary, partial files which were
                         left on the disk after a failed transfer.
 ```

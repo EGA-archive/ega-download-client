@@ -57,7 +57,7 @@ def test_download_file(mock_data_server, random_binary_file, mock_writing_files,
 
     file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
                     size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
-    file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=0)
+    file.download_file_retry(1, save_to=None, genomic_range_args=None, max_retries=5, retry_wait=0)
     assert random_binary_file == mock_writing_files[file_name]
 
 
@@ -76,7 +76,7 @@ def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_serve
     file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
                     size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
     file.download_file_retry(1,
-                             output_file=None,
+                             save_to=None,
                              genomic_range_args=None, max_retries=5, retry_wait=0)
 
 
@@ -113,7 +113,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
 
     with mock.patch('htsget.get') as mocked_htsget:
         file.download_file_retry(
-            1, output_file=None, genomic_range_args=("chr1", None, 1, 100, None),
+            1, save_to=None, genomic_range_args=("chr1", None, 1, 100, None),
             max_retries=5,
             retry_wait=0)
 
@@ -130,7 +130,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
 def test_gpg_files_not_supported(mock_data_client):
     file = DataFile(mock_data_client, "", "test.gz", "test.gz.gpg", 0, "")
 
-    file.download_file_retry(1, output_file=None, genomic_range_args=None, max_retries=5, retry_wait=5)
+    file.download_file_retry(1, save_to=None, genomic_range_args=None, max_retries=5, retry_wait=5)
 
 
 def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_server, random_binary_file,
@@ -154,7 +154,7 @@ def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_s
         os.remove(md5_file)
 
     with mock.patch('builtins.open', wraps=open) as wrapped_open:
-        file.download_file_retry(1, output_file=output_file, genomic_range_args=None, max_retries=5, retry_wait=0)
+        file.download_file_retry(1, save_to=output_file, genomic_range_args=None, max_retries=5, retry_wait=0)
 
     # Then: The temporary files for the chunks are in the temporary folder and has .tmp as a suffix
     temporary_folder = os.path.join(tempfile.gettempdir(), "pyega-download-test", ".tmp_download")

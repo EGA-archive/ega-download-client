@@ -8,15 +8,15 @@ import platform
 import random
 import sys
 
-from libs import data_file
-from libs.auth_client import AuthClient
-from libs.credentials import Credentials
-from libs.data_client import DataClient
-from libs.data_set import DataSet
-from libs.server_config import ServerConfig
-from libs.utils import get_client_ip
-from libs.data_file import DataFile
-from libs.pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
+from pyega3.libs import data_file
+from pyega3.libs.auth_client import AuthClient
+from pyega3.libs.credentials import Credentials
+from pyega3.libs.data_client import DataClient
+from pyega3.libs.data_set import DataSet
+from pyega3.libs.server_config import ServerConfig
+from pyega3.libs.utils import get_client_ip
+from pyega3.libs.data_file import DataFile
+from pyega3.libs.pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
@@ -81,7 +81,7 @@ def main():
         "--retry-wait", "-W", type=float, default=60,
         help="The number of seconds to wait before retrying a failed transfer.")
 
-    parser_fetch.add_argument("--saveto", nargs='?', help="Output file(for files)/output dir(for datasets)")
+    parser_fetch.add_argument("--saveto", nargs='?', help="Output file or directory.")
 
     parser_fetch.add_argument("--delete-temp-files", action="store_true",
                               help="Do not keep those temporary, partial files "
@@ -161,7 +161,7 @@ def main():
         elif args.identifier[3] == 'F':
             file = data_file.DataFile(data_client, args.identifier)
             file.download_file_retry(num_connections=args.connections,
-                                     output_file=args.saveto,
+                                     save_to=args.saveto,
                                      genomic_range_args=genomic_range_args,
                                      max_retries=args.max_retries,
                                      retry_wait=args.retry_wait,

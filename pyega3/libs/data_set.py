@@ -1,9 +1,9 @@
 import logging
 import sys
 
-from . import data_file
-from .data_file import DataFile
-from .utils import status_ok
+from pyega3.libs import data_file
+from pyega3.libs.data_file import DataFile
+from pyega3.libs.utils import status_ok
 
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
                    "EGAD00000000008", "EGAD00000000009", "EGAD00000000025", "EGAD00000000029", "EGAD00000000043",
