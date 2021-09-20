@@ -257,23 +257,11 @@ class DataFile:
 
         logging.info(f"File Id: '{self.id}'({self.size} bytes).")
 
-        if save_to is None:
-            # No "--saveto" arg was supplied by the user. The file will be saved into the current directory
-            # and its name will be set to the value specified by displayFileName.
-            output_file = self.generate_output_filename(os.getcwd(), genomic_range_args)
-        elif os.path.isdir(save_to):
-            # The user specified a "--saveto" arg, which points to an existing directory.
-            # The file will be saved into the specified, existing directory
-            # and its name will be set to the value specified by displayFileName.
-            output_file = self.generate_output_filename(save_to, genomic_range_args)
-        else:
-            # The user specified a "--saveto" arg, which points to a file, which either exists or not.
-            # The file will be saved into the file which was specified by the "--saveto" arg.
-            output_file = save_to
+        output_file = self.get_output_file_from_save_to(save_to, genomic_range_args)
 
-        directory = os.path.dirname(output_file)
-        if not os.path.exists(directory) and len(directory) > 0:
-            os.makedirs(directory)
+        dir = os.path.dirname(output_file)
+        if not os.path.exists(dir) and len(dir) > 0:
+            os.makedirs(dir)
 
         temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
         if not os.path.exists(temporary_directory):
@@ -328,3 +316,36 @@ class DataFile:
             shutil.rmtree(temporary_directory)
         except FileNotFoundError as ex:
             logging.error(f'Could not delete the temporary folder: {ex}')
+
+    def get_output_file_from_save_to(self, save_to, genomic_range_args):
+        if save_to is None:
+            # No "--saveto" arg was supplied by the user. The file will be saved into the current directory
+            # and its name will be set to the value specified by displayFileName.
+            return self.generate_output_filename(os.getcwd(), genomic_range_args)
+
+        elif save_to.endswith(os.sep):
+            # The user specified a directory as the place where they want to save the file into.
+            # The name of the file will be set to the value specified by displayFileName.
+
+            if os.path.isdir(save_to) or not os.path.exists(os.path.normpath(save_to)):
+                return self.generate_output_filename(save_to, genomic_range_args)
+            else:  # save_to points to an existing file:
+                raise NotADirectoryError(f'The "{save_to}" directory which was specified by the --saveto '
+                                         'command-line argument is, in fact, an existing file. '
+                                         'Please either remove the file or specify a different directory.')
+
+        else:  # The "--saveto" arg does not end with an os.sep (e.g. "/").
+            # TODO bjuhasz: done
+            if os.path.isdir(save_to):
+                # The user specified a "--saveto" arg, which points to an existing directory.
+                # The name of the file will be set to the value specified by displayFileName.
+                return self.generate_output_filename(save_to, genomic_range_args)
+            elif os.path.isfile(save_to):
+                # The user specified a "--saveto" arg, which points to an existing file.
+                # The file will be saved into the file which was specified by the "--saveto" arg.
+                return save_to
+            else:
+                # The user specified a "--saveto" arg, which does not end with an os.sep
+                # and which does not exist. We cannot be sure whether the user wanted to
+                # specify a directory or a file. Let's suppose they wanted to specify a file.
+                return save_to
