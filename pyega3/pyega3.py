@@ -36,6 +36,7 @@ def main():
     parser.add_argument("-t", "--test", action="store_true", help="Test user activated")
     parser.add_argument("-ms", "--max-slice-size", type=int, default=DataFile.DEFAULT_SLICE_SIZE,
                         help="Set maximum size for each slice in bytes (default: 100 MB)")
+    parser.add_argument("-j", "--json", action="store_true", help="Output data in JSON format instead of tables")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommands")
 
@@ -137,7 +138,7 @@ def main():
 
     if args.subcommand == "datasets":
         datasets = DataSet.list_authorized_datasets(data_client)
-        pretty_print_authorized_datasets(datasets)
+        pretty_print_authorized_datasets(datasets, args.json)
 
     if args.subcommand == "files":
         if args.identifier[3] != 'D':
@@ -145,7 +146,7 @@ def main():
             sys.exit()
         dataset = DataSet(data_client, args.identifier)
         files = dataset.list_files()
-        pretty_print_files_in_dataset(files)
+        pretty_print_files_in_dataset(files, args.json)
 
     elif args.subcommand == "fetch":
         genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
