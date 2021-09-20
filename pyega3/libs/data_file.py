@@ -335,7 +335,6 @@ class DataFile:
                                          'Please either remove the file or specify a different directory.')
 
         else:  # The "--saveto" arg does not end with an os.sep (e.g. "/").
-            # TODO bjuhasz: done
             if os.path.isdir(save_to):
                 # The user specified a "--saveto" arg, which points to an existing directory.
                 # The name of the file will be set to the value specified by displayFileName.
