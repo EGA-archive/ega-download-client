@@ -91,3 +91,20 @@ def get_client_ip():
     except Exception:
         logging.error("Failed to obtain IP address")
         return unknown_status
+
+
+def verify_output_dir(output_dir=os.getcwd()):
+    """
+    Checks whether the directory, specified by the "output_dir" parameter,
+    exists or not. If "output_dir" points to a non-existent directory,
+    then a NotADirectoryError exception is thrown, otherwise the absolute path
+    of that directory is returned.
+    """
+    absolut_path_of_output_dir = os.path.abspath(output_dir)
+
+    if os.path.isdir(absolut_path_of_output_dir):
+        return absolut_path_of_output_dir
+    else:
+        raise NotADirectoryError(f'The "{output_dir}" directory, which was specified by the --output-dir '
+                                 'command-line argument, is not an existing directory. '
+                                 'Please either create that directory or specify a different one.')

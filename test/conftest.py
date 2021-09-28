@@ -61,7 +61,7 @@ def mock_requests():
 @pytest.fixture
 def random_binary_file():
     mem = virtual_memory().available
-    file_length = random.randint(1, mem // 512)
+    file_length = random.randint(1, 123_345)# TODO bjuhasz: revert this: mem // 512)
     return os.urandom(file_length)
 
 

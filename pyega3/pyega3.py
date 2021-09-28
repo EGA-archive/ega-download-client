@@ -14,7 +14,7 @@ from pyega3.libs.credentials import Credentials
 from pyega3.libs.data_client import DataClient
 from pyega3.libs.data_set import DataSet
 from pyega3.libs.server_config import ServerConfig
-from pyega3.libs.utils import get_client_ip
+from pyega3.libs.utils import get_client_ip, verify_output_dir
 from pyega3.libs.data_file import DataFile
 from pyega3.libs.pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
 
@@ -81,7 +81,8 @@ def main():
         "--retry-wait", "-W", type=float, default=60,
         help="The number of seconds to wait before retrying a failed transfer.")
 
-    parser_fetch.add_argument("--saveto", nargs='?', help="Output file or directory.")
+    parser_fetch.add_argument("--output-dir", default=os.getcwd(),
+                              help="Output directory. The files will be saved into this directory. Must exist.")
 
     parser_fetch.add_argument("--delete-temp-files", action="store_true",
                               help="Do not keep those temporary, partial files "
@@ -149,6 +150,7 @@ def main():
         pretty_print_files_in_dataset(files, args.json)
 
     elif args.subcommand == "fetch":
+        output_dir = verify_output_dir(args.output_dir)
         genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
 
         if args.delete_temp_files:
@@ -156,12 +158,12 @@ def main():
 
         if args.identifier[3] == 'D':
             dataset = DataSet(data_client, args.identifier)
-            dataset.download(args.connections, args.saveto, genomic_range_args,
+            dataset.download(args.connections, output_dir, genomic_range_args,
                              args.max_retries, args.retry_wait, args.max_slice_size)
         elif args.identifier[3] == 'F':
             file = data_file.DataFile(data_client, args.identifier)
             file.download_file_retry(num_connections=args.connections,
-                                     save_to=args.saveto,
+                                     output_dir=output_dir,
                                      genomic_range_args=genomic_range_args,
                                      max_retries=args.max_retries,
                                      retry_wait=args.retry_wait,

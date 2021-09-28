@@ -83,8 +83,7 @@ class DataSet:
         for file in files:
             try:
                 if status_ok(file.status):
-                    output_file = None if (output_dir is None) else file.generate_output_filename(output_dir,
-                                                                                                  genomic_range_args)
+                    output_file = file.generate_output_filename(output_dir, genomic_range_args)
                     file.download_file_retry(num_connections, output_file, genomic_range_args, max_retries, retry_wait, max_slice_size)
             except Exception as e:
                 logging.exception(e)
