@@ -67,6 +67,12 @@ def md5(fname, file_size):
             return f.read().decode()
     # now do the real calculation
     result = calculate_md5(fname, file_size)
+
+    with open(fname, 'rb') as ff:
+        whole = ff.read()
+        whole_calc = hashlib.md5(whole).hexdigest()
+        print(f'md5 calculations: {fname} {result} {whole_calc} file_size: {os.stat(fname).st_size}')
+
     return result
 
 
