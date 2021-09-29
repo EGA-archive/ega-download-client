@@ -6,17 +6,14 @@ import logging.handlers
 import os
 import platform
 import random
-import sys
 
-from libs import data_file
 from libs.auth_client import AuthClient
 from libs.credentials import Credentials
 from libs.data_client import DataClient
-from libs.data_set import DataSet
 from libs.server_config import ServerConfig
 from libs.utils import get_client_ip
 from libs.data_file import DataFile
-from libs.pretty_printing import pretty_print_authorized_datasets, pretty_print_files_in_dataset
+from libs.commands import execute_subcommand
 
 version = "3.4.1"
 session_id = random.getrandbits(32)
@@ -136,43 +133,7 @@ def main():
 
     data_client = DataClient(server_config.url_api, server_config.url_api_ticket, auth_client, standard_headers)
 
-    if args.subcommand == "datasets":
-        datasets = DataSet.list_authorized_datasets(data_client)
-        pretty_print_authorized_datasets(datasets, args.json)
-
-    if args.subcommand == "files":
-        if args.identifier[3] != 'D':
-            logging.error("Unrecognized identifier - please use EGAD accession for dataset requests")
-            sys.exit()
-        dataset = DataSet(data_client, args.identifier)
-        files = dataset.list_files()
-        pretty_print_files_in_dataset(files, args.json)
-
-    elif args.subcommand == "fetch":
-        genomic_range_args = (args.reference_name, args.reference_md5, args.start, args.end, args.format)
-
-        if args.delete_temp_files:
-            data_file.DataFile.temporary_files_should_be_deleted = True
-
-        if args.identifier[3] == 'D':
-            dataset = DataSet(data_client, args.identifier)
-            dataset.download(args.connections, args.saveto, genomic_range_args,
-                             args.max_retries, args.retry_wait, args.max_slice_size)
-        elif args.identifier[3] == 'F':
-            file = data_file.DataFile(data_client, args.identifier)
-            file.download_file_retry(num_connections=args.connections,
-                                     output_file=args.saveto,
-                                     genomic_range_args=genomic_range_args,
-                                     max_retries=args.max_retries,
-                                     retry_wait=args.retry_wait,
-                                     max_slice_size=args.max_slice_size)
-        else:
-            logging.error(
-                "Unrecognized identifier - please use EGAD accession for dataset request"
-                " or EGAF accession for individual file requests")
-            sys.exit()
-
-        logging.info("Download complete")
+    execute_subcommand(args, data_client)
 
 
 if __name__ == "__main__":
