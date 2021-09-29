@@ -52,7 +52,7 @@ def test_file_is_saved_into_an_existing_directory_which_was_specified_by_the_use
     assert_that_expected_file_paths_exist()
 
 
-def test_file_in_directory_is_not_downloaded_again(file_in_fire, random_binary_file, fs):
+def test_file_in_directory_is_not_downloaded_again(dataset_in_fire, fs):
     """
     When the file has correctly been downloaded already into the specified directory,
     then it is not downloaded again.
