@@ -41,8 +41,11 @@ class DataFile:
     def load_metadata(self):
         res = self.data_client.get_json(f"/metadata/files/{self.id}")
 
+        # If the user does not have access to the file then the server returns HTTP code 200 but the JSON payload has
+        # all the fields empty
         if res['displayFileName'] is None or res['unencryptedChecksum'] is None:
-            raise RuntimeError(f"Metadata for file id '{self.id}' could not be retrieved")
+            raise RuntimeError(f"Metadata for file id '{self.id}' could not be retrieved. " +
+                               "This is probably because your account does not have access to this file.")
 
         self._display_file_name = res['displayFileName']
         self._file_name = res['fileName']
