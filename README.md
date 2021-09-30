@@ -104,7 +104,7 @@ If the ports are open, both of the sites should load with no timeouts.
 1. Test your GitHub installation by running pyEGA3.
 
     ```bash
-    pyega3/pyega3.py --help
+    python -m pyega3.pyega3 --help
     ```
 
 ### Using Docker
@@ -202,13 +202,13 @@ pyega3 -cf </Path/To/CREDENTIALS_FILE> files EGAD<NUM>
 #### Download a dataset
 
 ```bash
-pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --saveto </Path/To/Output>
+pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --output-dir </Path/To/OutputDirectory>
 ```
 
 #### Download a single file
 
 ```bash
-pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAF<NUM> --saveto </Path/To/Output>
+pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAF<NUM> --output-dir </Path/To/OutputDirectory>
 ```
 
 #### List unencrypted md5 checksums for all files in a dataset
@@ -226,7 +226,7 @@ nohup pyega3 -cf </Path/To/CREDENTIALS_FILE> files EGAD<NUM> </Path/To/File/md5s
 #### Download a file or dataset using 5 connections
 
 ```bash
-pyega3 -c 5 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --saveto </Path/To/Output>
+pyega3 -c 5 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --output-dir </Path/To/OutputDirectory>
 ```
 
 ## Usage - Genomic range requests via htsget
@@ -236,7 +236,7 @@ usage: pyega3 fetch [-h] [--reference-name REFERENCE_NAME]
                     [--reference-md5 REFERENCE_MD5] [--start START]
                     [--end END] [--format {BAM,CRAM}]
                     [--max-retries MAX_RETRIES] [--retry-wait RETRY_WAIT]
-                    [--saveto [SAVETO]] [--delete-temp-files]
+                    [--output-dir [DIR]] [--delete-temp-files]
                     identifier
 
 positional arguments:
@@ -281,13 +281,13 @@ optional arguments:
 #### Download chromosome 1 for a BAM file
 
 ```bash
-pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM>
+pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --reference-name 1 --format BAM --output-dir </Path/To/OutputDirectory> EGAF<NUM>
 ```
 
 #### Download position 0-1000000 on chromosome 1 for a BAM file
 
 ```bash
-pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --start 0 --end 1000000 --reference-name 1 --format BAM --saveto </Path/To/Output> EGAF<NUM>
+pyega3 fetch -cf </Path/To/CREDENTIALS_FILE> --start 0 --end 1000000 --reference-name 1 --format BAM --output-dir </Path/To/OutputDirectory> EGAF<NUM>
 ```
 
 ## Troubleshooting
