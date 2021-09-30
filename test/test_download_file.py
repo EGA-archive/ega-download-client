@@ -9,6 +9,8 @@ import pytest
 
 from pyega3.libs.data_file import DataFile
 
+OUTPUT_DIR = tempfile.gettempdir()
+
 
 @pytest.fixture
 def mock_writing_files():
@@ -29,11 +31,16 @@ def mock_writing_files():
         file_object.write.side_effect = lambda write_buf: files[filename].extend(write_buf)
         return file_object
 
+    original_os_stat_function = os.stat
+
     def os_stat_mock(fn):
         fn = os.path.basename(fn)
         X = namedtuple('X', 'st_size f1 f2 f3 f4 f5 f6 f7 f8 f9')
         result = X(*([None] * 10))
-        return result._replace(st_size=len(files[fn]))
+        if fn in files:
+            return result._replace(st_size=len(files[fn]))
+        else:
+            return original_os_stat_function(fn)
 
     def os_rename_mock(s, d):
         files.__setitem__(os.path.basename(d), files.pop(os.path.basename(s)))
@@ -41,7 +48,7 @@ def mock_writing_files():
     with mock.patch('builtins.open', new=open_wrapper):
         with mock.patch('os.makedirs', return_value=None):
             with mock.patch('os.path.exists', lambda path: os.path.basename(path) in files):
-                with mock.patch('os.stat', os_stat_mock):
+                with mock.patch('os.stat', new=os_stat_mock):
                     with mock.patch('os.rename', os_rename_mock):
                         with mock.patch('shutil.rmtree'):
                             with mock.patch('os.listdir', return_value=[]):
@@ -57,7 +64,7 @@ def test_download_file(mock_data_server, random_binary_file, mock_writing_files,
 
     file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
                     size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
-    file.download_file_retry(1, save_to=None, genomic_range_args=None, max_retries=5, retry_wait=0)
+    file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
     assert random_binary_file == mock_writing_files[file_name]
 
 
@@ -76,7 +83,7 @@ def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_serve
     file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
                     size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
     file.download_file_retry(1,
-                             save_to=None,
+                             output_dir=OUTPUT_DIR,
                              genomic_range_args=None, max_retries=5, retry_wait=0)
 
 
@@ -93,7 +100,7 @@ def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_bina
 
     with mock.patch('os.remove') as mocked_remove:
         with pytest.raises(Exception):
-            file.download_file_retry(1, None, genomic_range_args=None, max_retries=5, retry_wait=0)
+            file.download_file_retry(1, OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
 
     mocked_remove.assert_has_calls(
         [mock.call(os.path.join(os.getcwd(), file_id, os.path.basename(f))) for f in
@@ -113,7 +120,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
 
     with mock.patch('htsget.get') as mocked_htsget:
         file.download_file_retry(
-            1, save_to=None, genomic_range_args=("chr1", None, 1, 100, None),
+            1, output_dir=OUTPUT_DIR, genomic_range_args=("chr1", None, 1, 100, None),
             max_retries=5,
             retry_wait=0)
 
@@ -130,7 +137,7 @@ def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_w
 def test_gpg_files_not_supported(mock_data_client):
     file = DataFile(mock_data_client, "", "test.gz", "test.gz.gpg", 0, "")
 
-    file.download_file_retry(1, save_to=None, genomic_range_args=None, max_retries=5, retry_wait=5)
+    file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=5)
 
 
 def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_server, random_binary_file,
@@ -146,7 +153,7 @@ def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_s
     file = DataFile(mock_data_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16, file_md5)
 
     # When: the user starts to download a file
-    output_file = os.path.join(tempfile.gettempdir(), "pyega-download-test", "output_file")
+    output_file = os.path.join(OUTPUT_DIR, file_id, file_name)
     md5_file = output_file + ".md5"
     if os.path.exists(output_file):
         os.remove(output_file)
@@ -154,10 +161,10 @@ def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_s
         os.remove(md5_file)
 
     with mock.patch('builtins.open', wraps=open) as wrapped_open:
-        file.download_file_retry(1, save_to=output_file, genomic_range_args=None, max_retries=5, retry_wait=0)
+        file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
 
     # Then: The temporary files for the chunks are in the temporary folder and has .tmp as a suffix
-    temporary_folder = os.path.join(tempfile.gettempdir(), "pyega-download-test", ".tmp_download")
+    temporary_folder = os.path.join(OUTPUT_DIR, file_id, ".tmp_download")
     slices_opened = set([call.args[0] for call in wrapped_open.mock_calls if len(call.args) == 2])
     slices_opened.remove(output_file)
     slices_opened.remove(md5_file)
