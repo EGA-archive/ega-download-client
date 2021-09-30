@@ -6,5 +6,5 @@ do
 	sleep 1
 	rm -rf data
 	mkdir data
-	pyega3 -cf ega.json1 fetch EGAD00001003338 --output-dir=data
+	pyega3 -cf ega.json1 fetch EGAD00001003338 --output-dir data
 done

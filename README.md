@@ -236,7 +236,7 @@ usage: pyega3 fetch [-h] [--reference-name REFERENCE_NAME]
                     [--reference-md5 REFERENCE_MD5] [--start START]
                     [--end END] [--format {BAM,CRAM}]
                     [--max-retries MAX_RETRIES] [--retry-wait RETRY_WAIT]
-                    [--output-dir [DIR]] [--delete-temp-files]
+                    [--output-dir OUTPUT_DIR] [--delete-temp-files]
                     identifier
 
 positional arguments:
@@ -269,8 +269,8 @@ optional arguments:
   --retry-wait RETRY_WAIT, -W RETRY_WAIT
                         The number of seconds to wait before retrying a failed
                         transfer.
-  --output-dir [DIR]    Output directory. The files will be saved into this directory. Must exist.
-                        Default: the current working directory.
+  --output-dir OUTPUT_DIR
+                        Output directory. The files will be saved into this directory. Must exist. Default: the current working directory.
   --delete-temp-files   Do not keep those temporary, partial files which were
                         left on the disk after a failed transfer.
 ```

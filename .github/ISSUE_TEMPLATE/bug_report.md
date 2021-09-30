@@ -30,7 +30,7 @@ Steps to reproduce the behaviour that led you to the bug.
 *e.g.:*
 1. Trying to download BAM file `EGAF00001753754`.
 ```
-pyega3 fetch -cf ./CREDENTIALS_FILE.json --format BAM --delete-temp-files --output-dir ./Output/ EGAF00001775036
+pyega3 fetch -cf ./CREDENTIALS_FILE.json --format BAM --delete-temp-files --output-dir ./OutputDirectory/ EGAF00001775036
 ```
 2. After 1 minute, interrupt transfer by exiting the terminal.
 3. Check for temporary files.
