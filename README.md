@@ -270,6 +270,7 @@ optional arguments:
                         The number of seconds to wait before retrying a failed
                         transfer.
   --output-dir [DIR]    Output directory. The files will be saved into this directory. Must exist.
+                        Default: the current working directory.
   --delete-temp-files   Do not keep those temporary, partial files which were
                         left on the disk after a failed transfer.
 ```

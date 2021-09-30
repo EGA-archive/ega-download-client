@@ -67,12 +67,6 @@ def md5(fname, file_size):
             return f.read().decode()
     # now do the real calculation
     result = calculate_md5(fname, file_size)
-
-    # with open(fname, 'rb') as ff:
-    #     whole = ff.read()
-    #     whole_calc = hashlib.md5(whole).hexdigest()
-    #     print(f'md5 calculations: {fname} {result} {whole_calc} file_size: {os.stat(fname).st_size}')
-
     return result
 
 
@@ -99,7 +93,7 @@ def get_client_ip():
         return unknown_status
 
 
-def verify_output_dir(output_dir=os.getcwd()):
+def verify_output_dir(output_dir):
     """
     Checks whether the directory, specified by the "output_dir" parameter,
     exists or not. If "output_dir" points to a non-existent directory,

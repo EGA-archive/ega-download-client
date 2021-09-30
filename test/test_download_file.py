@@ -31,16 +31,11 @@ def mock_writing_files():
         file_object.write.side_effect = lambda write_buf: files[filename].extend(write_buf)
         return file_object
 
-    original_os_stat_function = os.stat
-
     def os_stat_mock(fn):
         fn = os.path.basename(fn)
         X = namedtuple('X', 'st_size f1 f2 f3 f4 f5 f6 f7 f8 f9')
         result = X(*([None] * 10))
-        if fn in files:
-            return result._replace(st_size=len(files[fn]))
-        else:
-            return original_os_stat_function(fn)
+        return result._replace(st_size=len(files[fn]))
 
     def os_rename_mock(s, d):
         files.__setitem__(os.path.basename(d), files.pop(os.path.basename(s)))
@@ -48,7 +43,7 @@ def mock_writing_files():
     with mock.patch('builtins.open', new=open_wrapper):
         with mock.patch('os.makedirs', return_value=None):
             with mock.patch('os.path.exists', lambda path: os.path.basename(path) in files):
-                with mock.patch('os.stat', new=os_stat_mock):
+                with mock.patch('os.stat', os_stat_mock):
                     with mock.patch('os.rename', os_rename_mock):
                         with mock.patch('shutil.rmtree'):
                             with mock.patch('os.listdir', return_value=[]):

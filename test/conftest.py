@@ -62,7 +62,7 @@ def mock_requests():
 @pytest.fixture
 def random_binary_file():
     mem = virtual_memory().available
-    file_length = random.randint(6991400, 7991400)  # TODO bjuhasz: revert this: mem // 512)
+    file_length = random.randint(1, mem // 512)
     return os.urandom(file_length)
 
 
@@ -134,7 +134,7 @@ def dataset_with_files(mock_data_server, empty_dataset, mock_dataset_files):
     files = mock_dataset_files
     for file in files:
         # The file.pop("fileContent") call would change the original mock_dataset_file object,
-        # which I avoid using copy():
+        # which I avoid now by using copy():
         file = file.copy()
         file_id = file.get("fileId")
         mock_data_server.file_content[file_id] = file.pop("fileContent")

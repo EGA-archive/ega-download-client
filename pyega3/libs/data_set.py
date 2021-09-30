@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 
 from pyega3.libs import data_file

@@ -88,10 +88,6 @@ class MockDataServer:
         file_id = urllib.parse.urlsplit(request.url).path.split('/')[-1]
         file_content = self.file_content[file_id]
 
-        import hashlib
-        mddd = hashlib.md5(file_content).hexdigest()
-        print(f'mock_data_server download_file_callback {file_id} {mddd}')
-
         if request.headers['Range'] is not None:
             start, end = self.parse_ranges(request.headers['Range'])
             assert start < end
