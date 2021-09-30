@@ -86,8 +86,7 @@ def test_temporary_folder_is_deleted_if_the_user_says_so(mock_server_config,
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
                     'check_sum')
 
-    display_file_name = os.path.basename(temporary_output_file)
-    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), display_file_name, '.tmp_download')
+    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), test_file_id, '.tmp_download')
 
     # When: the user completes downloading a file
     download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
@@ -107,7 +106,7 @@ def test_temporary_folder_is_not_deleted_if_the_user_says_so(mock_server_config,
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
                     'check_sum')
 
-    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), '.tmp_download')
+    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), test_file_id, '.tmp_download')
 
     # When: he user completes downloading a file
     download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
