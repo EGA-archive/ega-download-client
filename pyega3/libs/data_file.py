@@ -45,7 +45,9 @@ class DataFile:
         # all the fields empty
         if res['displayFileName'] is None or res['unencryptedChecksum'] is None:
             raise RuntimeError(f"Metadata for file id '{self.id}' could not be retrieved. " +
-                               "This is probably because your account does not have access to this file.")
+                               "This is probably because your account does not have access to this file. "
+                               "You can check which datasets your account has access to at "
+                               "'https://ega-archive.org/my-datasets.php' after logging in.")
 
         self._display_file_name = res['displayFileName']
         self._file_name = res['fileName']
