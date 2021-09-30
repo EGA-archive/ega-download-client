@@ -66,9 +66,7 @@ def random_binary_file():
     return os.urandom(file_length)
 
 
-@pytest.fixture(name="random_binary_file")
-def another_random_binary_file():
-    return random_binary_file()
+another_random_binary_file = random_binary_file
 
 
 @pytest.fixture
@@ -115,7 +113,7 @@ def mock_dataset_file(dataset_id, file_id, file_name, display_file_name, file_co
         "fileSize": len(file_content) + 16,
         "fileName": file_name,
         "displayFileName": display_file_name,
-        "file_content": file_content
+        "fileContent": file_content
     }
 
 
@@ -133,11 +131,15 @@ def mock_dataset_files(empty_dataset, random_binary_file, another_random_binary_
 
 @pytest.fixture
 def dataset_with_files(mock_data_server, empty_dataset, mock_dataset_files):
-    for file in mock_dataset_files:
+    files = mock_dataset_files
+    for file in files:
+        # The file.pop("fileContent") call would change the original mock_dataset_file object,
+        # which I avoid using copy():
+        file = file.copy()
         file_id = file.get("fileId")
-        mock_data_server.file_content[file_id] = file.pop("file_content")
+        mock_data_server.file_content[file_id] = file.pop("fileContent")
         mock_data_server.files[file_id] = file
-    mock_data_server.dataset_files = {empty_dataset.id: [file.get("fileId") for file in mock_dataset_files]}
+    mock_data_server.dataset_files = {empty_dataset.id: [file.get("fileId") for file in files]}
 
     Dataset = namedtuple("DatasetWithFiles", ["id", "files"])
-    return Dataset(empty_dataset.id, mock_dataset_files)
+    return Dataset(empty_dataset.id, files)

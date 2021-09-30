@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 
 import pytest
@@ -48,12 +49,12 @@ def test_file_is_saved_into_an_existing_directory_which_was_specified_by_the_use
     assert os.path.isfile(expected_local_md5_file_name)
 
 
-def test_file_in_directory_is_not_downloaded_again(file_in_fire, random_binary_file, fs):
+def test_file_in_directory_is_not_downloaded_again(file_in_fire, random_binary_file, caplog, fs):
     """
     When the file has correctly been downloaded already into the specified directory,
     then it is not downloaded again.
     """
-
+    caplog.set_level(logging.INFO)
     output_dir = 'user_specified_directory_name'
     expected_local_file_name = f'/{output_dir}/{FILE_ID}/{DISPLAY_FILE_NAME}'
     expected_local_md5_file_name = f'{expected_local_file_name}.md5'
@@ -87,6 +88,8 @@ def test_file_in_directory_is_not_downloaded_again(file_in_fire, random_binary_f
     # If the files haven't been re-downloaded again, then the mtimes should not have changed:
     assert local_file_orig_mtime == local_file_mtime_after_download
     assert local_md5_file_orig_mtime == local_md5_file_mtime_after_download
+
+    assert f"Local file exists:'{expected_local_file_name}'" in caplog.text
 
 
 def test_corrupted_file_in_a_directory_is_downloaded_again(file_in_fire, fs):
