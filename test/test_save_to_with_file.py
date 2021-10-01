@@ -138,6 +138,9 @@ def test_non_existing_directory_is_created(file_in_fire):
     Expected: the non-existent directory is created automatically for the user,
     the file is downloaded into the user-specified directory
     and the file-name will be the 'displayFileName' (e.g. 'EGAF00000000001/ENCFF284YOU.bam.bai').
+    The non-existent directory is created automatically as a (positive) side-effect of the code
+    which creates the .tmp_download directory: that code creates not only the .tmp_download directory,
+    but all the missing parent directories, too, including the non-existent user-specified directory.
     """
 
     output_dir = 'user_specified_directory'
