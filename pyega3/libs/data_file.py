@@ -12,7 +12,7 @@ import htsget
 import psutil
 from tqdm import tqdm
 
-from . import utils
+from pyega3.libs import utils
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
 
@@ -252,7 +252,7 @@ class DataFile:
             f" referenceMD5={gr_args[1]}, start={gr_args[2]}, end={gr_args[3]}, format={gr_args[4]})"
         )
 
-    def download_file_retry(self, num_connections, output_file, genomic_range_args, max_retries, retry_wait,
+    def download_file_retry(self, num_connections, output_dir, genomic_range_args, max_retries, retry_wait,
                             max_slice_size=DEFAULT_SLICE_SIZE):
         if self.name.endswith(".gpg"):
             logging.info(
@@ -262,11 +262,7 @@ class DataFile:
 
         logging.info(f"File Id: '{self.id}'({self.size} bytes).")
 
-        if output_file is None:
-            output_file = self.generate_output_filename(os.getcwd(), genomic_range_args)
-        dir = os.path.dirname(output_file)
-        if not os.path.exists(dir) and len(dir) > 0:
-            os.makedirs(dir)
+        output_file = self.generate_output_filename(output_dir, genomic_range_args)
 
         temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
         if not os.path.exists(temporary_directory):

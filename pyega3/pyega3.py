@@ -7,15 +7,15 @@ import os
 import platform
 import random
 
-from libs.auth_client import AuthClient
-from libs.credentials import Credentials
-from libs.data_client import DataClient
-from libs.server_config import ServerConfig
-from libs.utils import get_client_ip
-from libs.data_file import DataFile
-from libs.commands import execute_subcommand
+from pyega3.libs.auth_client import AuthClient
+from pyega3.libs.credentials import Credentials
+from pyega3.libs.data_client import DataClient
+from pyega3.libs.server_config import ServerConfig
+from pyega3.libs.utils import get_client_ip
+from pyega3.libs.data_file import DataFile
+from pyega3.libs.commands import execute_subcommand
 
-version = "3.4.1"
+version = "3.4.2"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
@@ -78,7 +78,9 @@ def main():
         "--retry-wait", "-W", type=float, default=60,
         help="The number of seconds to wait before retrying a failed transfer.")
 
-    parser_fetch.add_argument("--saveto", nargs='?', help="Output file(for files)/output dir(for datasets)")
+    parser_fetch.add_argument("--output-dir", default=os.getcwd(),
+                              help="Output directory. The files will be saved into this directory. Must exist. "
+                                   "Default: the current working directory.")
 
     parser_fetch.add_argument("--delete-temp-files", action="store_true",
                               help="Do not keep those temporary, partial files "

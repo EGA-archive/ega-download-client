@@ -31,17 +31,20 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, file_size_with_iv,
                     'check_sum')
 
-    file.download_file_retry(1, temporary_output_file, None, 2, 0.1)
+    output_dir = os.path.dirname(temporary_output_file)
+    file.download_file_retry(1, output_dir, None, 2, 0.1)
 
     temp_file = file.temporary_files.pop()
     # The temporary file should not exist because everything went fine,
     # and it was deleted automatically:
     assert not os.path.exists(temp_file)
 
-    assert os.path.exists(temporary_output_file)
-    output_file_size = os.stat(temporary_output_file).st_size
+    display_file_name = os.path.basename(temporary_output_file)
+    downloaded_file = f'{output_dir}/{test_file_id}/{display_file_name}'
+    assert os.path.exists(downloaded_file)
+    output_file_size = os.stat(downloaded_file).st_size
     assert output_file_size == file_size_without_iv
-    os.remove(temporary_output_file)
+    os.remove(downloaded_file)
 
 
 def download_with_exception(mock_requests, output_file_path, mock_server_config, file):
@@ -54,6 +57,7 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
     number_of_retries = 2
     not_enough_bytes = int(expected_file_size / 3 - 1000)
     content = bytearray(os.urandom(not_enough_bytes))
+    output_dir = os.path.dirname(output_file_path)
 
     # First, normal GET request:
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
@@ -62,12 +66,14 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
         mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
 
     with pytest.raises(Exception) as context_manager:
-        file.download_file_retry(1, output_file_path, None, number_of_retries, 0.1)
+        file.download_file_retry(1, output_dir, None, number_of_retries, 0.1)
 
     exception_message = str(context_manager.value)
     assert re.compile(r'Slice error: received=\d+, requested=\d+').search(exception_message)
 
-    assert not os.path.exists(output_file_path)
+    display_file_name = os.path.basename(output_file_path)
+    downloaded_file = f'{output_dir}/{test_file_id}/{display_file_name}'
+    assert not os.path.exists(downloaded_file)
 
 
 def test_temporary_folder_is_deleted_if_the_user_says_so(mock_server_config,
@@ -80,7 +86,7 @@ def test_temporary_folder_is_deleted_if_the_user_says_so(mock_server_config,
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
                     'check_sum')
 
-    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), '.tmp_download')
+    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), test_file_id, '.tmp_download')
 
     # When: the user completes downloading a file
     download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
@@ -100,7 +106,7 @@ def test_temporary_folder_is_not_deleted_if_the_user_says_so(mock_server_config,
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, expected_file_size,
                     'check_sum')
 
-    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), '.tmp_download')
+    temporary_folder_name = os.path.join(os.path.dirname(temporary_output_file), test_file_id, '.tmp_download')
 
     # When: he user completes downloading a file
     download_with_exception(mock_requests, temporary_output_file, mock_server_config, file)
