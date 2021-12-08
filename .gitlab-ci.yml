@@ -9,7 +9,6 @@ stages:
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  TEST_SUITE: "python -m coverage run -m pytest"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
@@ -19,25 +18,41 @@ variables:
 cache:
   paths:
     - .cache/pip
-    - venv/
 
-before_script:
-  - python -V  # Print out python version for debugging
-  - pip install -r requirements.txt
-  - pip install python-coveralls
-
-test:
+.tests:
   stage: test
   script:
-    - echo $TEST_SUITE
-    - echo $TEST_SUITE > test.sh
-    - bash test.sh
+    - python -V  # Print out python version for debugging
+    - pip install -r requirements.txt
+    - pip install python-coveralls
+    - python -m coverage run -m pytest
     - coverage report
     # Test that it can be started using the checked-out source code:
     - python -m pyega3.pyega3 --help
     # Test that it can be started using the installed package:
     - pip install -e . && pyega3 --help
   #  - coveralls
+
+test_python36:
+  extends: .tests
+  image: python:3.6
+
+test_python37:
+  extends: .tests
+  image: python:3.7
+
+test_python38:
+  extends: .tests
+  image: python:3.8
+
+test_python39:
+  extends: .tests
+  image: python:3.9
+
+test_python310:
+  extends: .tests
+  image: python:3.10
+
 
 deploy:
   stage: deploy

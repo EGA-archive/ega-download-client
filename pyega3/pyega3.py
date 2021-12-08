@@ -15,7 +15,7 @@ from pyega3.libs.utils import get_client_ip
 from pyega3.libs.data_file import DataFile
 from pyega3.libs.commands import execute_subcommand
 
-version = "3.4.2"
+version = "4.0.0"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
