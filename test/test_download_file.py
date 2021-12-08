@@ -160,7 +160,8 @@ def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_s
 
     # Then: The temporary files for the chunks are in the temporary folder and has .tmp as a suffix
     temporary_folder = os.path.join(OUTPUT_DIR, file_id, ".tmp_download")
-    slices_opened = set([call.args[0] for call in wrapped_open.mock_calls if len(call.args) == 2])
+    # call[1] is a list of positional arguments which were passed to open():
+    slices_opened = set([call[1][0] for call in wrapped_open.mock_calls if len(call[1]) == 2])
     slices_opened.remove(output_file)
     slices_opened.remove(md5_file)
 
