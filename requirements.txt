@@ -6,7 +6,7 @@ tqdm==4.19.6
 htsget==0.2.5
 urllib3==1.24.2
 
-pytest~=6.0.1
+pytest~=6.2
 setuptools~=54.2.0
 
 pyfakefs~=4.5.1

@@ -308,10 +308,13 @@ Using a very high number of connections will introduce overhead that can slow th
 
 Please note that when a file is being saved, it goes through two processes. First, the downloaded file "chunks" are pieced back together to reconstruct the original file. Second, pyEGA3 calculates the checksum of the file to confirm the file downloaded successfully. Larger files will take more time to reconstruct and validate the checksum.
 
-### The --saveto argument was renamed to --output-dir
+### --saveto argument is not recognised
 
 The `--saveto` command-line argument is now called `--output-dir` and, in contrast with the original
 `--saveto` argument, one can only specify now an output directory, but not an output file.
+
+This change was made to improve the user experience and avoid issues caused by supplying a filename
+where a directory was expected, and vice versa.
 
 Thus, the original command, where the `--saveto` argument specified a directory:
 
@@ -331,7 +334,7 @@ The original command:
 pyega3 -cf </Path/To/CREDENTIALS_FILE> fetch EGAF<NUM> --saveto </Path/To/NewFileName>
 ```
 
-where the `--saveto` argument specified a new file-name, cannot be rewritten,
+where the `--saveto` argument specified a new file-name, is no longer supported,
 because the `--output-dir` argument supports only output directories, but not output files.
 
 ## Further assistance
