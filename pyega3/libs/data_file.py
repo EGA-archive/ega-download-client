@@ -131,7 +131,7 @@ class DataFile:
                 if file_id != self.id:
                     continue
 
-                if (file_from, file_length) in [(param[1], param[2]) for param in params]:
+                if (int(file_from), int(file_length)) in [(param[1], param[2]) for param in params]:
                     continue
 
                 logging.warning(f'Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter ('

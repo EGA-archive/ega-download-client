@@ -222,3 +222,28 @@ def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_cl
     assert not os.path.exists(extra_slice)
     assert "Deleting the leftover" in caplog.text
 
+
+def test_slice_file_is_reused(mock_data_client, mock_data_server, random_binary_file, caplog):
+    # Given: a file that the user has permissions to
+    # download and a custom slice size and some slices that
+    # were already downloaded with correct size.
+    mock_data_server.file_content["EGAF123456"] = random_binary_file
+    file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")
+    slice_size = 1000
+    os.makedirs(".tmp_download", exist_ok=True)
+
+    extra_slice = file.download_file_slice(f'.tmp_download/{file.id}', 0, slice_size)
+    assert os.path.exists(extra_slice)
+
+    # When: when the user downloads the file
+    with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
+        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
+            with mock.patch("os.path.getsize", return_value=file.size):
+                file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
+
+    # Then: the file is downloaded in multiple
+    # slices where each slice is at most the custom
+    # slice size and old slices is not deleted.
+    assert mock_download_slice.call_count == 13
+    assert os.path.exists(extra_slice)
+    assert "Deleting the leftover" not in caplog.text
