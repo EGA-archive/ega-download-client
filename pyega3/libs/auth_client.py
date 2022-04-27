@@ -34,8 +34,8 @@ class AuthClient:
             try:
                 r = requests.post(self.url, headers=headers, data=data)
                 logging.info('')
-                reply = r.json()
                 r.raise_for_status()
+                reply = r.json()
                 oauth_token = reply['access_token']
                 logging.info(f"Authentication success for user '{self.credentials.username}'")
             except ConnectionError:

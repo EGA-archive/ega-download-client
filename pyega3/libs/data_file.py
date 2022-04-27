@@ -187,14 +187,14 @@ class DataFile:
 
         self.temporary_files.add(file_name)
 
-        existing_size = os.stat(file_name).st_size if os.path.exists(file_name) else 0
+        existing_size = os.stat(final_file_name).st_size if os.path.exists(final_file_name) else 0
         if existing_size > length:
-            os.remove(file_name)
+            os.remove(final_file_name)
         if pbar:
             pbar.update(existing_size)
 
         if existing_size == length:
-            return file_name
+            return final_file_name
 
         try:
             with self.data_client.get_stream(path,
