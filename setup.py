@@ -29,7 +29,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     packages=find_packages(),
-    version="4.0.0",
+    version="4.0.1",
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     python_requires=">=3.6",
