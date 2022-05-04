@@ -248,3 +248,9 @@ def test_slice_file_is_reused(mock_data_client, mock_data_server, random_binary_
     assert mock_download_slice.call_count == 13
     assert os.path.exists(extra_slice)
     assert "Deleting the leftover" not in caplog.text
+
+
+def teardown_module():
+    filepath = 'output_file.md5'
+    if os.path.exists(filepath):
+        os.remove(filepath)
