@@ -201,7 +201,8 @@ def test_the_user_does_not_specifies_a_slice_size(mock_data_client):
     assert mock_download_slice.call_count == math.ceil(file.size / DataFile.DEFAULT_SLICE_SIZE)
 
 
-def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_client, mock_data_server, random_binary_file, caplog):
+def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_client, mock_data_server,
+                                                                    random_binary_file, caplog):
     # Given: a file that the user has permissions to download and a custom slice size and some slices that were already downloaded with different size.
     mock_data_server.file_content["EGAF123456"] = random_binary_file
     file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")

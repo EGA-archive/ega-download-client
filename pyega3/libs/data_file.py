@@ -190,6 +190,8 @@ class DataFile:
         existing_size = os.stat(final_file_name).st_size if os.path.exists(final_file_name) else 0
         if existing_size > length:
             os.remove(final_file_name)
+            existing_size = 0
+
         if pbar:
             pbar.update(existing_size)
 
@@ -197,9 +199,12 @@ class DataFile:
             return final_file_name
 
         try:
-            with self.data_client.get_stream(path,
-                                             {
-                                                 'Range': f'bytes={start_pos + existing_size}-{start_pos + length - 1}'}) as r:
+            range_start = start_pos + existing_size
+            range_end = start_pos + length - 1
+            extra_headers = {
+                'Range': f'bytes={range_start}-{range_end}'
+            }
+            with self.data_client.get_stream(path, extra_headers) as r:
                 with open(file_name, 'ba') as file_out:
                     for chunk in r.iter_content(DOWNLOAD_FILE_MEMORY_BUFFER_SIZE):
                         file_out.write(chunk)

@@ -36,7 +36,7 @@ class DataClient:
         return reply
 
     @contextlib.contextmanager
-    def get_stream(self, path, extra_headers = None):
+    def get_stream(self, path, extra_headers=None):
         headers = {'Authorization': f'Bearer {self.auth_client.token}'}
         headers.update(self.standard_headers)
         if extra_headers is not None:
