@@ -35,7 +35,8 @@ def test_download_file_slice_downloads_correct_bytes_to_file(mock_data_server, s
         written_bytes += buf_len
 
     file_name = common.rand_str()
-    file_name_for_slice = file_name + '-from-' + str(slice_file.start) + '-len-' + str(slice_file.length) + '.slice.tmp'
+    file_name_for_slice = file_name + '-from-' + str(slice_file.start) + '-len-' + str(
+        slice_file.length) + '.slice.tmp'
 
     file = DataFile(mock_data_client, slice_file.id)
 
@@ -87,6 +88,7 @@ def test_slice_file_name_removes_tmp_suffix_when_successful(mock_data_server, mo
 
     # Then: the suffix .tmp is removed from file for the successful chunk
     assert os.path.exists(slice_file.file_name)
+    os.remove(slice_file.file_name)
     assert not os.path.exists(slice_file.file_name + '.tmp')
 
 
@@ -147,3 +149,5 @@ def test_remove_existing_slice_file_when_it_exceeds_slice_length(mock_data_serve
         # Then: the existing slice file is deleted
         assert output_file == slice_file.file_name
         remove_file_mock.assert_called_once_with(slice_file.file_name)
+
+    os.remove(slice_file.file_name)
