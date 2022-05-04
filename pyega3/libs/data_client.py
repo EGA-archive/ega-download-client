@@ -4,11 +4,11 @@ import logging
 
 import requests
 from requests import Session
-from requests.adapters import HTTPAdapter
+from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE
 from urllib3.util import retry
 
 
-def create_session_with_retry(retry_policy=None) -> Session:
+def create_session_with_retry(retry_policy=None, pool_max_size=None) -> Session:
     retry_policy = retry_policy or retry.Retry(
         total=50,
         connect=False,
@@ -23,7 +23,8 @@ def create_session_with_retry(retry_policy=None) -> Session:
         backoff_factor=0.6
     )
     session = Session()
-    adapter = HTTPAdapter(max_retries=retry_policy)
+    POOL_MAX_SIZE = max(DEFAULT_POOLSIZE, pool_max_size or 0)
+    adapter = HTTPAdapter(max_retries=retry_policy, pool_maxsize=POOL_MAX_SIZE)
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
@@ -31,12 +32,12 @@ def create_session_with_retry(retry_policy=None) -> Session:
 
 class DataClient:
 
-    def __init__(self, url, htsget_url, auth_client, standard_headers):
+    def __init__(self, url, htsget_url, auth_client, standard_headers, connections=None):
         self.url = url
         self.htsget_url = htsget_url
         self.auth_client = auth_client
         self.standard_headers = standard_headers
-        self.session = create_session_with_retry()
+        self.session = create_session_with_retry(pool_max_size=connections)
 
     @staticmethod
     def print_debug_info(url, reply_json, *args):
