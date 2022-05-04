@@ -1,5 +1,6 @@
 import random
 from unittest import mock
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 import requests
@@ -108,3 +109,53 @@ def test_chunk_fails_to_download(mock_data_server, mock_data_client, random_bina
     file_name_for_slice = file_name + '-from-' + str(slice_start) + '-len-' + str(slice_length) + '.slice'
     assert not os.path.exists(file_name_for_slice)
     assert not os.path.exists(file_name_for_slice + '.tmp')
+
+
+def test_chunk_fails_to_download(mock_data_server, mock_data_client, random_binary_file):
+    # Given: a file that exist in EGA object store and the user has permissions to access to it
+    file_id = "EGAF1234"
+    mock_data_server.file_content[file_id] = random_binary_file
+
+    slice_start = random.randint(0, len(random_binary_file))
+    slice_length = len(random_binary_file) + 10
+
+    # When: the user unsuccessfully downloads a chunk
+    file_name = common.rand_str()
+    file = DataFile(mock_data_client, file_id)
+    try:
+        file.download_file_slice(file_name, slice_start, slice_length)
+    except:
+        # For the purpose of this test the download should fail
+        pass
+
+    # Then: file for the failed chunk is removed
+    file_name_for_slice = file_name + '-from-' + str(slice_start) + '-len-' + str(slice_length) + '.slice'
+    assert not os.path.exists(file_name_for_slice)
+    assert not os.path.exists(file_name_for_slice + '.tmp')
+
+
+def test_return_slice_file_when_existing(mock_data_server, mock_data_client, random_binary_file):
+    # Given: a slice file exist in tmp directory
+    file_id = "EGAF1234"
+    mock_data_server.file_content[file_id] = random_binary_file
+
+    slice_start = random.randint(0, len(random_binary_file))
+    slice_length = random.randint(0, len(random_binary_file) - slice_start)
+
+    file_name = common.rand_str()
+    file_name_for_slice = f'{file_name}-from-{slice_start}-len-{slice_length}.slice'
+
+    file = DataFile(mock_data_client, file_id)
+
+    mock_stat = Mock()
+    mock_stat.st_size = slice_length
+
+    # When: the slice file is downloaded
+    # Then: the existing slice file with same length is reused and data is not re-fetched
+    with patch.object(mock_data_client, 'get_stream', wraps=mock_data_client.get_stream) as get_stream_mock:
+        with mock.patch("os.path.exists", lambda path: True if path == file_name_for_slice else False):
+            with mock.patch("os.path.getsize", lambda path: slice_length):
+                with mock.patch("os.stat", lambda path: mock_stat):
+                    filename = file.download_file_slice(file_name, slice_start, slice_length)
+                    assert filename == file_name_for_slice
+                    get_stream_mock.assert_not_called()
