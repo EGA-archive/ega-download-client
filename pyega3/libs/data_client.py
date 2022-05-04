@@ -18,6 +18,7 @@ def create_session_with_retry(retry_policy=None) -> Session:
         status=10,
         # status is the no. of retries if response is in status_forcelist
 
+        status_forcelist=[429, 500, 503, 504],
         read=10,
         backoff_factor=0.6
     )
