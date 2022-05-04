@@ -135,7 +135,7 @@ def test_chunk_fails_to_download(mock_data_server, mock_data_client, random_bina
 
 
 def test_return_slice_file_when_existing(mock_data_server, mock_data_client, random_binary_file):
-    # Given: a slice file exist in tmp directory
+    # Given: a slice file existing in tmp directory
     file_id = "EGAF1234"
     mock_data_server.file_content[file_id] = random_binary_file
 
