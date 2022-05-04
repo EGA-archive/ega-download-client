@@ -8,6 +8,8 @@ import pytest
 import requests
 import os
 
+from urllib3.exceptions import NewConnectionError
+
 import test.conftest as common
 from pyega3.libs.data_file import DataFile
 
@@ -63,7 +65,7 @@ def test_error_when_bad_token(mock_data_server, mock_data_client):
 
 def test_error_when_bad_url(mock_data_client):
     file = DataFile(mock_data_client, "bad/url")
-    with pytest.raises(requests.exceptions.ConnectionError):
+    with pytest.raises(NewConnectionError):
         file.download_file_slice(common.rand_str(), 1, 10)
 
 
