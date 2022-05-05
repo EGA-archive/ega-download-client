@@ -25,8 +25,6 @@ def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=No
     session = Session()
     POOL_MAX_SIZE = max(DEFAULT_POOLSIZE, pool_max_size or 0)
     adapter = HTTPAdapter(max_retries=retry_policy, pool_maxsize=POOL_MAX_SIZE)
-    # TODO check if this can be removed
-    # session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
 
