@@ -61,4 +61,5 @@ deploy:
   script:
     - python setup.py sdist
     - pip install -r requirements.txt
+    - pip install twine
     - twine upload --username __token__ --password $PYPI_SECRET dist/*
