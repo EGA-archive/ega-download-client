@@ -2,6 +2,8 @@ import sys
 
 from setuptools import setup, find_packages
 
+from pyega3.pyega3 import VERSION
+
 CURRENT_PYTHON_VERSION = sys.version_info[:2]
 
 # When changing the value of the REQUIRED_PYTHON_VERSION variable,
@@ -29,7 +31,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     packages=find_packages(),
-    version="4.0.1",
+    version=VERSION,
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     python_requires=">=3.6",

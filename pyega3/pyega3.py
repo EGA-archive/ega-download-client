@@ -15,7 +15,7 @@ from pyega3.libs.utils import get_client_ip
 from pyega3.libs.data_file import DataFile
 from pyega3.libs.commands import execute_subcommand
 
-version = "4.0.0"
+VERSION = "4.0.2"
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
@@ -102,7 +102,7 @@ def main():
                         ])
 
     logging.info("")
-    logging.info(f"pyEGA3 - EGA python client version {version} (https://github.com/EGA-archive/ega-download-client)")
+    logging.info(f"pyEGA3 - EGA python client version {VERSION} (https://github.com/EGA-archive/ega-download-client)")
     logging.info(
         "Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
     logging.info(f"Python version : {platform.python_version()}")
@@ -128,7 +128,7 @@ def main():
     logging.info(f"Server URL: {server_config.url_api}")
     logging.info(f"Session-Id: {session_id}")
 
-    standard_headers = {'Client-Version': version, 'Session-Id': str(session_id), 'client-ip': get_client_ip()}
+    standard_headers = {'Client-Version': VERSION, 'Session-Id': str(session_id), 'client-ip': get_client_ip()}
 
     auth_client = AuthClient(server_config.url_auth, server_config.client_secret, standard_headers)
     auth_client.credentials = credentials
