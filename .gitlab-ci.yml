@@ -58,8 +58,7 @@ deploy:
   stage: deploy
   only:
     - tags
-    - master
   script:
     - python setup.py sdist
-    - pip install twine
+    - pip install -r requirements.txt
     - twine upload --username __token__ --password $PYPI_SECRET dist/*
