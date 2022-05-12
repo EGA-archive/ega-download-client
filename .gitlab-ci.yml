@@ -59,7 +59,7 @@ deploy:
   only:
     - tags
   script:
-    - python setup.py sdist
     - pip install -r requirements.txt
+    - python setup.py sdist
     - pip install twine
     - twine upload --username __token__ --password $PYPI_SECRET dist/*
