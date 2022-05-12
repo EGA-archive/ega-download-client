@@ -2,7 +2,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-from pyega3.pyega3 import VERSION
+VERSION = "4.0.2"
 
 CURRENT_PYTHON_VERSION = sys.version_info[:2]
 
