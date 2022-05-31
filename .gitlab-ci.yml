@@ -54,23 +54,13 @@ test_python310:
     extends: .tests
     image: python:3.10
 
-functional_tests:
-    stage: functional-test
-    only:
-        - master
-        - EE-2418_fcnl-tests
-    allow_failure: true
-    script:
-        - pip install pytest
-        - export PYEGA3_VERSION=$(cat version)
-        - pip install "dist/pyega3-$PYEGA3_VERSION.tar.gz"
-        - pytest tests/functional
-
 build-package:
     stage: build
     only:
-        - master
+        - tags
         - EE-2418_fcnl-tests
+    except:
+        - branches
     script:
         - pip install -r requirements.txt
         - python setup.py sdist
@@ -80,11 +70,26 @@ build-package:
         paths:
             - dist/
 
+functional_tests:
+    stage: functional-test
+    only:
+        - tags
+        - EE-2418_fcnl-tests
+    except:
+        - branches
+    allow_failure: true
+    script:
+        - pip install pytest
+        - export PYEGA3_VERSION=$(cat version)
+        - pip install "dist/pyega3-$PYEGA3_VERSION.tar.gz"
+        - pytest tests/functional
+
 release:
     stage: release
     when: manual
     only:
         - tags
+        - EE-2418_fcnl-tests
     except:
         - branches
     script:
