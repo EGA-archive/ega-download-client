@@ -3,7 +3,7 @@ from collections import namedtuple
 import pytest
 import requests
 
-import tests.conftest as common
+import tests.unit.conftest as common
 from pyega3.libs.data_file import DataFile
 
 

@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-import tests.conftest as common
+import tests.unit.conftest as common
 from pyega3.libs.data_set import DataSet
 
 
