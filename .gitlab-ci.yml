@@ -54,8 +54,8 @@ test_python310:
   image: python:3.10
 
 
-deploy:
-  stage: deploy
+release:
+  stage: release
   only:
     - tags
   script:
