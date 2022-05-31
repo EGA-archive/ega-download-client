@@ -75,9 +75,8 @@ build-package:
         - pip install -r requirements.txt
         - python setup.py sdist
         - export PYEGA3_VERSION=$(cat version)
-        - export PYEGA3_PKG="pyega-$PYEGA3_VERSION.tar.gz"
     artifacts:
-        name: "$PYEGA3_PKG"
+        name: "pyega3-$PYEGA3_VERSION.tar.gz"
         paths:
             - dist/
 
