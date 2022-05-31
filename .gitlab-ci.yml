@@ -4,7 +4,7 @@
 image: python:latest
 stages:
   - test
-  - functional_tests
+  - release-test
   - release
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -68,6 +68,7 @@ functional_tests:
 
 release_to_test_pypi:
   when: manual
+  stage: release-test
   only:
       - EE-2418_fcnl-tests
   script:
