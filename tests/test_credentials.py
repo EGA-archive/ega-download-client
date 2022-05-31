@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 
 from pyega3.libs.credentials import Credentials
-import test.conftest as common
+import tests.conftest as common
 
 
 def test_load_username_and_password_from_credentials_file(mock_input_file):

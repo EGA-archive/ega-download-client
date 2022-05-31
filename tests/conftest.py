@@ -13,7 +13,7 @@ from psutil import virtual_memory
 
 from pyega3.libs.data_client import DataClient
 from pyega3.libs.server_config import ServerConfig
-from test.mock_data_server import MockDataServer
+from tests.mock_data_server import MockDataServer
 
 
 def rand_str():

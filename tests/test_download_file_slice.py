@@ -10,7 +10,7 @@ import os
 
 from urllib3.exceptions import NewConnectionError
 
-import test.conftest as common
+import tests.conftest as common
 from pyega3.libs.data_file import DataFile
 
 

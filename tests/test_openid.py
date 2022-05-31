@@ -4,7 +4,7 @@ from urllib import parse
 import pytest
 import responses
 
-import test.conftest as common
+import tests.conftest as common
 from pyega3.libs.auth_client import AuthClient
 from pyega3.libs.credentials import Credentials
 
