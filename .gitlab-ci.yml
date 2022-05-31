@@ -3,13 +3,14 @@
 # https://hub.docker.com/r/library/python/tags/
 image: python:latest
 stages:
-  - test
-  - release-test
-  - release
+    - test
+    - build
+    - functional-test
+    - release
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
@@ -17,71 +18,77 @@ variables:
 # If you want to also cache the installed packages, you have to install
 # them in a virtualenv and cache it as well.
 cache:
-  paths:
-    - .cache/pip
+    paths:
+        - .cache/pip
 
 .tests:
-  stage: test
-  script:
-    - python -V  # Print out python version for debugging
-    - pip install -r requirements.txt
-    - pip install python-coveralls
-    - python -m coverage run -m pytest tests/unit
-    - coverage report
-    # Test that it can be started using the checked-out source code:
-    - python -m pyega3.pyega3 --help
-    # Test that it can be started using the installed package:
-    - pip install -e . && pyega3 --help
-  #  - coveralls
+    stage: test
+    script:
+        - python -V  # Print out python version for debugging
+        - pip install -r requirements.txt
+        - pip install python-coveralls
+        - python -m coverage run -m pytest tests/unit
+        - coverage report
+        # Test that it can be started using the checked-out source code:
+        - python -m pyega3.pyega3 --help
+        # Test that it can be started using the installed package:
+        - pip install -e . && pyega3 --help
+    #  - coveralls
 
 test_python36:
-  extends: .tests
-  image: python:3.6
+    extends: .tests
+    image: python:3.6
 
 test_python37:
-  extends: .tests
-  image: python:3.7
+    extends: .tests
+    image: python:3.7
 
 test_python38:
-  extends: .tests
-  image: python:3.8
+    extends: .tests
+    image: python:3.8
 
 test_python39:
-  extends: .tests
-  image: python:3.9
+    extends: .tests
+    image: python:3.9
 
 test_python310:
-  extends: .tests
-  image: python:3.10
-
+    extends: .tests
+    image: python:3.10
 
 functional_tests:
-  only:
-      - EE-2418_fcnl-tests
-  allow_failure: true
-  script:
-      - pip install -r requirements.txt
-      - python setup.py sdist
-      - export PYEGA3_DIST_DIR="$(pwd)/dist"
-      - export PYEGA3_VERSION='4.0.3' # this will be extracted from a VERSION FILE
-      - pip install "$(pwd)/dist/pyega3-$PYEGA3_VERSION.tar.gz"
-      - pytest tests/functional
+    stage: functional-test
+    only:
+        - master
+        - EE-2418_fcnl-tests
+    allow_failure: true
+    script:
+        - export PYEGA3_VERSION=$(cat version)
+        - pip install "pyega3-$PYEGA3_VERSION.tar.gz"
+        - pytest tests/functional
 
-release_to_test_pypi:
-  when: manual
-  stage: release-test
-  only:
-      - EE-2418_fcnl-tests
-  script:
-      - echo 'release to pypi test'
+build-package:
+    stage: build
+    only:
+        - master
+        - EE-2418_fcnl-tests
+    script:
+        - pip install -r requirements.txt
+        - python setup.py sdist
+        - export PYEGA3_VERSION=$(cat version)
+        - export PYEGA3_PKG="pyega-$PYEGA3_VERSION.tar.gz"
+    artifacts:
+        name: "$PYEGA3_PKG"
+        paths:
+            - dist/
 
 release:
-  stage: release
-  only:
-    - tags
-  except:
-    - branches
-  script:
-    - python setup.py sdist
-    - pip install twine
-    - twine upload --username __token__ --password $PYPI_SECRET dist/*
+    stage: release
+    when: manual
+    only:
+        - tags
+    except:
+        - branches
+    script:
+        - python setup.py sdist
+        - pip install twine
+        - twine upload --username __token__ --password $PYPI_SECRET dist/*
