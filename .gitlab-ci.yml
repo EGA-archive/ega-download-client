@@ -25,7 +25,7 @@ cache:
     - python -V  # Print out python version for debugging
     - pip install -r requirements.txt
     - pip install python-coveralls
-    - python -m coverage run -m pytest
+    - python -m coverage run -m pytest tests/unit
     - coverage report
     # Test that it can be started using the checked-out source code:
     - python -m pyega3.pyega3 --help
