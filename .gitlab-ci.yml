@@ -79,6 +79,8 @@ release:
   stage: release
   only:
     - tags
+  except:
+    - branches
   script:
     - python setup.py sdist
     - pip install twine
