@@ -33,7 +33,6 @@ cache:
         - python -m pyega3.pyega3 --help
         # Test that it can be started using the installed package:
         - pip install -e . && pyega3 --help
-    #  - coveralls
 
 test_python36:
     extends: .tests
