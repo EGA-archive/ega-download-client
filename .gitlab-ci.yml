@@ -62,7 +62,7 @@ functional_tests:
     allow_failure: true
     script:
         - export PYEGA3_VERSION=$(cat version)
-        - pip install "pyega3-$PYEGA3_VERSION.tar.gz"
+        - pip install "dist/pyega3-$PYEGA3_VERSION.tar.gz"
         - pytest tests/functional
 
 build-package:
