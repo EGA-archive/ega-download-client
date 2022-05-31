@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 
+from tests.functional.conftest import PYEGA3_NAME
 from tests.functional.util import run
 
 
@@ -11,7 +12,7 @@ def test_download_file():
     parent_dir = os.path.dirname(__file__)
     download_dir = f'{parent_dir}/{file}'
 
-    exit_code, output, error = run(f'pyega3 -t fetch {file} --output-dir {parent_dir}')
+    exit_code, output, error = run(f'{PYEGA3_NAME} -t fetch {file} --output-dir {parent_dir}')
 
     assert exit_code == 0
     output += error  # it seems that output is in stderr

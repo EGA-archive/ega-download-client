@@ -4,7 +4,8 @@
 image: python:latest
 stages:
   - test
-  - deploy
+  - functional_tests
+  - release
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
@@ -53,6 +54,24 @@ test_python310:
   extends: .tests
   image: python:3.10
 
+
+functional_tests:
+  only:
+      - EE-2418_fcnl-tests
+  script:
+      - pip install -r requirements.txt
+      - python setup.py sdist
+      - export PYEGA3_DIST_DIR="$(pwd)/dist"
+      - export PYEGA3_VERSION='4.0.3'
+      - export PYEGA3_NAME='pyega3'
+      - pytest tests/functional
+
+release_to_test_pypi:
+  when: manual
+  only:
+      - EE-2418_fcnl-tests
+  script:
+      - echo 'release to pypi test'
 
 release:
   stage: release
