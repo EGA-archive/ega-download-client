@@ -61,6 +61,7 @@ functional_tests:
         - EE-2418_fcnl-tests
     allow_failure: true
     script:
+        - pip install pytest
         - export PYEGA3_VERSION=$(cat version)
         - pip install "dist/pyega3-$PYEGA3_VERSION.tar.gz"
         - pytest tests/functional
