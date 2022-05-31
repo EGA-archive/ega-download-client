@@ -62,9 +62,7 @@ functional_tests:
   script:
       - pip install -r requirements.txt
       - python setup.py sdist
-      - export PYEGA3_DIST_DIR="$(pwd)/dist"
-      - export PYEGA3_VERSION='4.0.3'
-      - export PYEGA3_NAME='pyega3'
+      - pip install "$(pwd)/dist"
       - pytest tests/functional
 
 release_to_test_pypi:
