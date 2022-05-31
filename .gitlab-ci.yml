@@ -58,6 +58,7 @@ test_python310:
 functional_tests:
   only:
       - EE-2418_fcnl-tests
+  allow_failure: true
   script:
       - pip install -r requirements.txt
       - python setup.py sdist
