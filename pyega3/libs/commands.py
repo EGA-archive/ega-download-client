@@ -32,8 +32,6 @@ def execute_subcommand(args, data_client):
         else:
             logging.error(f"There was a problem communicating with the EGA repository: {error}")
 
-        sys.exit(1)
-
 
 def fetch_data(args, data_client):
     output_dir = verify_output_dir(args.output_dir)
