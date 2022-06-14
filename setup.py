@@ -2,7 +2,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-VERSION = "4.0.3"
+VERSION = "4.0.4"
 
 CURRENT_PYTHON_VERSION = sys.version_info[:2]
 
