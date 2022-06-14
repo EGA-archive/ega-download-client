@@ -52,7 +52,7 @@ class DataClient:
         headers.update(self.standard_headers)
 
         url = f"{self.url}{path}"
-        r = requests.get(url, headers=headers)
+        r = self.session.get(url, headers=headers)
         r.raise_for_status()
 
         reply = r.json()
