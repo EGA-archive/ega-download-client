@@ -6,7 +6,9 @@ import logging.handlers
 import os
 import platform
 import random
+import sys
 
+from os.path import join, abspath, dirname
 from pyega3.libs.auth_client import AuthClient
 from pyega3.libs.credentials import Credentials
 from pyega3.libs.data_client import DataClient
@@ -15,13 +17,14 @@ from pyega3.libs.utils import get_client_ip
 from pyega3.libs.data_file import DataFile
 from pyega3.libs.commands import execute_subcommand
 
-VERSION = "4.0.4"
+base_dir = abspath(dirname(__file__))
+VERSION = open(join(base_dir, 'VERSION')).read().strip()
 session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download from EMBL EBI's EGA (European Genome-phenome Archive)")
+    parser = argparse.ArgumentParser(description="Download from the European Genome-phenome Archive. \r\nClient version: "+VERSION)
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf", "--config-file", dest='config_file',
                         help='JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}')
@@ -34,6 +37,8 @@ def main():
     parser.add_argument("-ms", "--max-slice-size", type=int, default=DataFile.DEFAULT_SLICE_SIZE,
                         help="Set maximum size for each slice in bytes (default: 100 MB)")
     parser.add_argument("-j", "--json", action="store_true", help="Output data in JSON format instead of tables")
+    parser.add_argument("-v", "--version", action="store_true", help="Displays the client's version number. Please note, "
+                                                                     "this aborts any additional actions.")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommands")
 
@@ -103,6 +108,10 @@ def main():
 
     logging.info("")
     logging.info(f"pyEGA3 - EGA python client version {VERSION} (https://github.com/EGA-archive/ega-download-client)")
+
+    if args.version:
+        sys.exit()
+
     logging.info(
         "Parts of this software are derived from pyEGA (https://github.com/blachlylab/pyega) by James Blachly")
     logging.info(f"Python version : {platform.python_version()}")
