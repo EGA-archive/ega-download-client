@@ -24,7 +24,7 @@ logging_level = logging.INFO
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download from the European Genome-phenome Archive. \r\nClient version: "+VERSION)
+    parser = argparse.ArgumentParser(description="Download from the European Genome-phenome Archive. Client version: "+VERSION)
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf", "--config-file", dest='config_file',
                         help='JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}')
