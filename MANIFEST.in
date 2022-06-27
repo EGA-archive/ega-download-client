@@ -1,2 +1,3 @@
 include pyega3/config/default_credential_file.json
 include pyega3/config/default_server_file.json
+include pyega3/VERSION
