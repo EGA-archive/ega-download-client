@@ -58,8 +58,7 @@ build_package:
     stage: build
     only:
         - tags
-    except:
-        - branches
+        - EE-2310_include-version-file
     script:
         - pip install -r requirements.txt
         - python setup.py sdist
@@ -73,8 +72,7 @@ functional_tests:
     stage: functional_test
     only:
         - tags
-    except:
-        - branches
+        - EE-2310_include-version-file
     allow_failure: true
     script:
         - pip install pytest
@@ -87,8 +85,7 @@ release:
     when: manual
     only:
         - tags
-    except:
-        - branches
+        - EE-2310_include-version-file
     script:
         - python setup.py sdist
         - pip install twine
