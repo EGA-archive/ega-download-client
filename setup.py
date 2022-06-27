@@ -1,8 +1,10 @@
 import sys
+from os.path import abspath, dirname, join
 
 from setuptools import setup, find_packages
 
-VERSION = "4.0.4"
+base_dir = abspath(dirname(__file__))
+VERSION = open(join(base_dir, 'pyega3/VERSION')).read().strip()
 
 CURRENT_PYTHON_VERSION = sys.version_info[:2]
 
