@@ -39,7 +39,7 @@ class DataFile:
         self._file_status = status
 
     def load_metadata(self):
-        res = self.data_client.get_json(f"/metadata/files/{self.id}")
+        res = self.data_client.get_json(f"/files/{self.id}")
 
         # If the user does not have access to the file then the server returns HTTP code 200 but the JSON payload has
         # all the fields empty

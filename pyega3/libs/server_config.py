@@ -10,9 +10,10 @@ class ServerConfig:
     url_api_ticket = None
     client_secret = None
 
-    def __init__(self, url_api, url_auth, url_api_ticket, client_secret):
+    def __init__(self, url_api, url_auth, url_api_metadata, url_api_ticket, client_secret):
         self.url_api = url_api
         self.url_auth = url_auth
+        self.url_api_metadata = url_api_metadata
         self.url_api_ticket = url_api_ticket
         self.client_secret = client_secret
 
@@ -42,9 +43,11 @@ class ServerConfig:
             check_key('url_api')
             check_key('url_api_ticket')
             check_key('client_secret')
+            # Do not check url_metadata_api, it is optional
 
             return ServerConfig(custom_server_config['url_api'],
                                 custom_server_config['url_auth'],
+                                custom_server_config['url_api_metadata'] if 'url_api_metadata' in custom_server_config else None,
                                 custom_server_config['url_api_ticket'],
                                 custom_server_config['client_secret'])
 

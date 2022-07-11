@@ -25,6 +25,7 @@ def rand_str():
 def mock_server_config():
     return ServerConfig(url_api='https://test.data.server',
                         url_auth='https://test.auth.server/ega-openid-connect-server/token',
+                        url_api_metadata=None,
                         url_api_ticket='https://test.ticket.server',
                         client_secret='test-client-secret')
 
