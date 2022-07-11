@@ -43,7 +43,7 @@ class ServerConfig:
             check_key('url_api')
             check_key('url_api_ticket')
             check_key('client_secret')
-            # Do not check url_metadata_api, it is optional
+            # Do not check url_api_metadata, it is optional
 
             return ServerConfig(custom_server_config['url_api'],
                                 custom_server_config['url_auth'],
