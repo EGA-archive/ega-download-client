@@ -143,7 +143,8 @@ def main():
     auth_client.credentials = credentials
 
     data_client = DataClient(server_config.url_api, server_config.url_api_ticket, auth_client, standard_headers,
-                             connections=args.connections, metadata_url=server_config.url_api_metadata)
+                             connections=args.connections, metadata_url=server_config.url_api_metadata,
+                             api_version=server_config.api_version)
 
     execute_subcommand(args, data_client)
 
