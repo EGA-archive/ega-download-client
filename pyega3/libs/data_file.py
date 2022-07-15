@@ -300,9 +300,13 @@ class DataFile:
                             f"location")
 
         if DataFile.is_genomic_range(genomic_range_args):
+            if self.data_client.api_version == 1:
+                endpoint_type = "files"
+            else:
+                endpoint_type = "reads" if self.name.endswith(".bam") or self.name.endswith(".cram") else "variants"
             with open(output_file, 'wb') as output:
                 htsget.get(
-                    f"{self.data_client.htsget_url}/files/{self.id}",
+                    f"{self.data_client.htsget_url}/{endpoint_type}/{self.id}",
                     output,
                     reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                     start=genomic_range_args[2], end=genomic_range_args[3],
