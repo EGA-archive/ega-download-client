@@ -38,6 +38,13 @@ class DataFile:
         self._unencrypted_checksum = unencrypted_checksum
         self._file_status = status
 
+    @staticmethod
+    def from_metadata(data_client, metadata):
+        file_id = metadata['fileId']
+        result = DataFile(data_client, file_id)
+        result._set_metadata_from_json(metadata)
+        return result
+
     def load_metadata(self):
         res = self.data_client.get_json(f"/files/{self.id}")
 
@@ -49,11 +56,14 @@ class DataFile:
                                "You can check which datasets your account has access to at "
                                "'https://ega-archive.org/my-datasets.php' after logging in.")
 
-        self._display_file_name = res['displayFileName']
-        self._file_name = res['fileName']
-        self._file_size = res['fileSize']
-        self._unencrypted_checksum = res['unencryptedChecksum']
-        self._file_status = res['fileStatus']
+        self._set_metadata_from_json(res)
+
+    def _set_metadata_from_json(self, res):
+        self._display_file_name = res['displayFileName'] if 'displayFileName' in res else None
+        self._file_name = res['fileName'] if 'fileName' in res else None
+        self._file_size = res['fileSize'] if 'fileSize' in res else None
+        self._unencrypted_checksum = res['unencryptedChecksum'] if 'unencryptedChecksum' in res else None
+        self._file_status = res['fileStatus'] if 'fileStatus' in res else None
 
     @property
     def display_name(self):
