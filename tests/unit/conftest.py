@@ -23,7 +23,8 @@ def rand_str():
 
 @pytest.fixture
 def mock_server_config():
-    return ServerConfig(url_api='https://test.data.server',
+    return ServerConfig(api_version=1,
+                        url_api='https://test.data.server',
                         url_auth='https://test.auth.server/ega-openid-connect-server/token',
                         url_api_metadata=None,
                         url_api_ticket='https://test.ticket.server',
