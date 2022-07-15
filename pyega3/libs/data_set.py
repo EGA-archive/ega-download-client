@@ -24,7 +24,7 @@ class DataSet:
     def list_authorized_datasets(data_client):
         """List datasets to which the credentialed user has authorized access"""
 
-        reply = data_client.get_json("/metadata/datasets")
+        reply = data_client.get_json("/datasets")
 
         if reply is None:
             logging.error(
@@ -46,7 +46,7 @@ class DataSet:
             logging.error(f"Dataset '{self.id}' is not in the list of your authorized datasets.")
             sys.exit()
 
-        reply = self.data_client.get_json(f"/metadata/datasets/{self.id}/files")
+        reply = self.data_client.get_json(f"/datasets/{self.id}/files")
 
         if reply is None:
             logging.error(f"List files in dataset {self.id} failed")

@@ -31,8 +31,9 @@ def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=No
 
 class DataClient:
 
-    def __init__(self, url, htsget_url, auth_client, standard_headers, connections=None):
-        self.url = url
+    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None):
+        self.url = data_url
+        self.metadata_url = metadata_url if metadata_url is not None else data_url + "/metadata"
         self.htsget_url = htsget_url
         self.auth_client = auth_client
         self.standard_headers = standard_headers
@@ -51,7 +52,7 @@ class DataClient:
         headers = {'Accept': 'application/json', 'Authorization': f'Bearer {self.auth_client.token}'}
         headers.update(self.standard_headers)
 
-        url = f"{self.url}{path}"
+        url = f"{self.metadata_url}{path}"
         r = self.session.get(url, headers=headers)
         r.raise_for_status()
 
