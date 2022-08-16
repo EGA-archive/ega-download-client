@@ -32,7 +32,10 @@ class DataSet:
                 " If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
             sys.exit()
 
-        return [DataSet(data_client, dataset_id) for dataset_id in reply]
+        if data_client.api_version == 1:
+            return [DataSet(data_client, dataset_id) for dataset_id in reply]
+
+        return [DataSet(data_client, dataset['datasetId']) for dataset in reply]
 
     def list_files(self):
         if self.id in LEGACY_DATASETS:
@@ -42,8 +45,9 @@ class DataSet:
 
         authorized_datasets = DataSet.list_authorized_datasets(self.data_client)
 
-        if self.id not in [dataset.id for dataset in authorized_datasets]:
-            logging.error(f"Dataset '{self.id}' is not in the list of your authorized datasets.")
+        authorized_dataset_ids = [dataset.id for dataset in authorized_datasets]
+        if self.id not in authorized_dataset_ids:
+            logging.error(f"Dataset '{self.id}' is not in the list of your authorized datasets ({authorized_dataset_ids})")
             sys.exit()
 
         reply = self.data_client.get_json(f"/datasets/{self.id}/files")
