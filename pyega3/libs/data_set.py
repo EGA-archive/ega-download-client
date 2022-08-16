@@ -32,7 +32,10 @@ class DataSet:
                 " If you believe you should have access please contact helpdesk on helpdesk@ega-archive.org")
             sys.exit()
 
-        return [DataSet(data_client, dataset_id) for dataset_id in reply]
+        if data_client.api_version == 1:
+            return [DataSet(data_client, dataset_id) for dataset_id in reply]
+
+        return [DataSet(data_client, dataset['datasetId']) for dataset in reply]
 
     def list_files(self):
         if self.id in LEGACY_DATASETS:
@@ -42,8 +45,9 @@ class DataSet:
 
         authorized_datasets = DataSet.list_authorized_datasets(self.data_client)
 
-        if self.id not in [dataset.id for dataset in authorized_datasets]:
-            logging.error(f"Dataset '{self.id}' is not in the list of your authorized datasets.")
+        authorized_dataset_ids = [dataset.id for dataset in authorized_datasets]
+        if self.id not in authorized_dataset_ids:
+            logging.error(f"Dataset '{self.id}' is not in the list of your authorized datasets ({authorized_dataset_ids})")
             sys.exit()
 
         reply = self.data_client.get_json(f"/datasets/{self.id}/files")
@@ -52,19 +56,7 @@ class DataSet:
             logging.error(f"List files in dataset {self.id} failed")
             sys.exit()
 
-        def make_data_file(res):
-            display_file_name = res['displayFileName'] if 'displayFileName' in res else None
-            file_name = res['fileName'] if 'fileName' in res else None
-            size = res['fileSize'] if 'fileSize' in res else None
-            unencrypted_checksum = res['unencryptedChecksum'] if 'unencryptedChecksum' in res else None
-            return data_file.DataFile(self.data_client, res['fileId'],
-                                      display_file_name=display_file_name,
-                                      file_name=file_name,
-                                      size=size,
-                                      unencrypted_checksum=unencrypted_checksum,
-                                      status=res['fileStatus'])
-
-        return [make_data_file(res) for res in reply]
+        return [data_file.DataFile.from_metadata(self.data_client, res) for res in reply]
 
     def download(self, num_connections, output_dir, genomic_range_args, max_retries=5, retry_wait=5,
                  max_slice_size=DataFile.DEFAULT_SLICE_SIZE):

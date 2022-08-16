@@ -31,13 +31,14 @@ def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=No
 
 class DataClient:
 
-    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None):
+    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None, api_version=1):
         self.url = data_url
         self.metadata_url = metadata_url if metadata_url is not None else data_url + "/metadata"
         self.htsget_url = htsget_url
         self.auth_client = auth_client
         self.standard_headers = standard_headers
         self.session = create_session_with_retry(pool_max_size=connections)
+        self.api_version = api_version
 
     @staticmethod
     def print_debug_info(url, reply_json, *args):

@@ -10,7 +10,8 @@ class ServerConfig:
     url_api_ticket = None
     client_secret = None
 
-    def __init__(self, url_api, url_auth, url_api_metadata, url_api_ticket, client_secret):
+    def __init__(self, api_version, url_api, url_auth, url_api_metadata, url_api_ticket, client_secret):
+        self.api_version = api_version
         self.url_api = url_api
         self.url_auth = url_auth
         self.url_api_metadata = url_api_metadata
@@ -39,13 +40,16 @@ class ServerConfig:
                     logging.error(f"{filepath} does not contain '{key}' field")
                     sys.exit()
 
+            api_version = 1 if 'api_version' not in custom_server_config else custom_server_config['api_version']
+
             check_key('url_auth')
             check_key('url_api')
             check_key('url_api_ticket')
             check_key('client_secret')
             # Do not check url_api_metadata, it is optional
 
-            return ServerConfig(custom_server_config['url_api'],
+            return ServerConfig(api_version,
+                                custom_server_config['url_api'],
                                 custom_server_config['url_auth'],
                                 custom_server_config['url_api_metadata'] if 'url_api_metadata' in custom_server_config else None,
                                 custom_server_config['url_api_ticket'],

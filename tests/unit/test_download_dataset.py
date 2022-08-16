@@ -7,7 +7,7 @@ from pyega3.libs.data_file import DataFile
 from pyega3.libs.data_set import DataSet
 
 
-@mock.patch("pyega3.libs.data_file.DataFile")
+@mock.patch("pyega3.libs.data_file.DataFile.from_metadata")
 def test_calls_download_for_every_file_in_dataset(mocked_datafile, mock_data_server, dataset_with_files,
                                                   mock_server_config,
                                                   mock_auth_client, mock_data_client):
@@ -22,15 +22,10 @@ def test_calls_download_for_every_file_in_dataset(mocked_datafile, mock_data_ser
     dataset.download(num_connections, None, None, 5, 5)
 
     assert len(dataset_with_files.files) == mocked_datafile.call_count
-    mocked_datafile.assert_has_calls(
-        [mock.call(mock_data_client,
-                   f['fileId'],
-                   display_file_name=f['displayFileName'],
-                   file_name=f['fileName'],
-                   size=f['fileSize'],
-                   unencrypted_checksum=f['unencryptedChecksum'],
-                   status=f['fileStatus'])
-         for f in dataset_with_files.files])
+    mocked_datafile.assert_has_calls([mock.call(mock_data_client,
+                                                {k: v for k, v in f.items() if k not in ['fileContent']})
+                                      for f in dataset_with_files.files],
+                                     any_order=True)
 
     for mock_file in mock_files:
         assert len(mock_file.method_calls) == 1
@@ -38,7 +33,7 @@ def test_calls_download_for_every_file_in_dataset(mocked_datafile, mock_data_ser
                                              (num_connections, None, None, 5, 5, DataFile.DEFAULT_SLICE_SIZE))
 
 
-@mock.patch("pyega3.libs.data_file.DataFile")
+@mock.patch("pyega3.libs.data_file.DataFile.from_metadata")
 def test_only_download_available_files(mocked_datafile, mock_server_config, mock_data_server, dataset_with_files,
                                        mock_auth_client, mock_data_client):
     num_connections = 5
@@ -59,12 +54,8 @@ def test_only_download_available_files(mocked_datafile, mock_server_config, mock
 
     assert len(dataset_with_files.files) == mocked_datafile.call_count
     mocked_datafile.assert_has_calls(
-        [mock.call(mock_data_client, f['fileId'],
-                   display_file_name=f.get('displayFileName'),
-                   file_name=f.get('fileName'),
-                   size=f.get('fileSize'),
-                   unencrypted_checksum=f.get('unencryptedChecksum'),
-                   status=f.get('fileStatus')) for f in dataset_with_files.files])
+        [mock.call(mock_data_client, {k: v for k, v in f.items() if k not in ['fileContent']})
+         for f in dataset_with_files.files])
 
     # The first file was not available so it should not have been called
     assert len(mock_files[0].method_calls) == 0

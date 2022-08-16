@@ -38,22 +38,38 @@ class DataFile:
         self._unencrypted_checksum = unencrypted_checksum
         self._file_status = status
 
+    @staticmethod
+    def from_metadata(data_client, metadata):
+        file_id = metadata['fileId']
+        result = DataFile(data_client, file_id)
+        result._set_metadata_from_json(metadata)
+        return result
+
     def load_metadata(self):
         res = self.data_client.get_json(f"/files/{self.id}")
 
         # If the user does not have access to the file then the server returns HTTP code 200 but the JSON payload has
         # all the fields empty
-        if res['displayFileName'] is None or res['unencryptedChecksum'] is None:
+        if self.data_client.api_version < 2 and (res['displayFileName'] is None or res['unencryptedChecksum'] is None):
             raise RuntimeError(f"Metadata for file id '{self.id}' could not be retrieved. " +
                                "This is probably because your account does not have access to this file. "
                                "You can check which datasets your account has access to at "
                                "'https://ega-archive.org/my-datasets.php' after logging in.")
 
-        self._display_file_name = res['displayFileName']
-        self._file_name = res['fileName']
-        self._file_size = res['fileSize']
-        self._unencrypted_checksum = res['unencryptedChecksum']
-        self._file_status = res['fileStatus']
+        self._set_metadata_from_json(res)
+
+    def _set_metadata_from_json(self, res):
+        self._display_file_name = res['displayFileName'] if 'displayFileName' in res else None
+        self._file_name = res['fileName'] if 'fileName' in res else None
+        self._file_size = res['fileSize'] if 'fileSize' in res else None
+
+        if self.data_client.api_version == 1:
+            self._unencrypted_checksum = res['unencryptedChecksum'] if 'unencryptedChecksum' in res else None
+            self._file_status = res['fileStatus'] if 'fileStatus' in res else None
+
+        elif self.data_client.api_version == 2:
+            self._unencrypted_checksum = res['plainChecksum'] if 'plainChecksum' in res else None
+            self._file_status = "unknown"  # API does not currently include file status
 
     @property
     def display_name(self):
@@ -284,9 +300,13 @@ class DataFile:
                             f"location")
 
         if DataFile.is_genomic_range(genomic_range_args):
+            if self.data_client.api_version == 1:
+                endpoint_type = "files"
+            else:
+                endpoint_type = "reads" if self.name.endswith(".bam") or self.name.endswith(".cram") else "variants"
             with open(output_file, 'wb') as output:
                 htsget.get(
-                    f"{self.data_client.htsget_url}/files/{self.id}",
+                    f"{self.data_client.htsget_url}/{endpoint_type}/{self.id}",
                     output,
                     reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
                     start=genomic_range_args[2], end=genomic_range_args[3],
