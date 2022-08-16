@@ -50,7 +50,7 @@ class DataFile:
 
         # If the user does not have access to the file then the server returns HTTP code 200 but the JSON payload has
         # all the fields empty
-        if res['displayFileName'] is None or res['unencryptedChecksum'] is None:
+        if self.data_client.api_version < 2 and (res['displayFileName'] is None or res['unencryptedChecksum'] is None):
             raise RuntimeError(f"Metadata for file id '{self.id}' could not be retrieved. " +
                                "This is probably because your account does not have access to this file. "
                                "You can check which datasets your account has access to at "
