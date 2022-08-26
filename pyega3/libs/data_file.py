@@ -135,7 +135,7 @@ class DataFile:
         with tqdm(total=int(file_size), unit='B', unit_scale=True) as pbar:
             params = [
                 (os.path.join(temporary_directory, self.id), chunk_start_pos,
-                 min(chunk_len, file_size - chunk_start_pos), options, pbar)
+                 min(chunk_len, file_size - chunk_start_pos + 16), options, pbar)
                 for chunk_start_pos in range(0, file_size, chunk_len)]
 
             for file in os.listdir(temporary_directory):
@@ -228,7 +228,10 @@ class DataFile:
                             pbar.update(len(chunk))
 
             total_received = os.path.getsize(file_name)
-            if total_received != length:
+
+            # if total_received != length:
+            # first chunk will be downloaded without the IV vector (16 bytes)
+            if (range_start == 0 and total_received != length - 16) or (range_start > 0 and total_received != length):
                 raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
         except Exception:
