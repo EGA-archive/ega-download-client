@@ -305,7 +305,7 @@ class DataFile:
             if self.data_client.api_version == 1:
                 endpoint_type = "files"
             else:
-                endpoint_type = "reads" if self.name.endswith(".bam") or self.name.endswith(".cram") else "htsget/variants"
+                endpoint_type = "htsget/reads" if self.is_bam_or_cram_file(self.name) else "htsget/variants"
             with open(output_file, 'wb') as output:
                 htsget.get(
                     f"{self.data_client.htsget_url}/{endpoint_type}/{self.id}",
@@ -338,6 +338,9 @@ class DataFile:
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
+
+    def is_bam_or_cram_file(self, name: str):
+        return re.search("\.bam", name, re.IGNORECASE) or re.search("\.cram", name, re.IGNORECASE)
 
     def delete_temporary_folder(self, temporary_directory):
         try:
