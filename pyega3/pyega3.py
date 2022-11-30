@@ -73,7 +73,8 @@ def main():
             "The end position of the range on the reference, 0-based exclusive. If "
             "specified, reference-name or reference-md5 must also be specified."))
     parser_fetch.add_argument(
-        "--format", "-f", type=str, default=None, choices=["BAM", "CRAM"], help="The format of data to request.")
+        "--format", "-f", type=str, default=None, choices=["BAM", "CRAM", "VCF", "BCF"],
+        help="The format of data to request.")
 
     parser_fetch.add_argument(
         "--max-retries", "-M", type=int, default=5,
