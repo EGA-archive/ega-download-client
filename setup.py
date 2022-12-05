@@ -31,7 +31,7 @@ setup(
     name="pyega3",
     description="EGA python client",
     long_description=long_description,
-    long_description_content_type="text/plain",
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     version=VERSION,
     author="EGA team",
