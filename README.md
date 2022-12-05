@@ -232,7 +232,7 @@ pyega3 -c 5 -cf </Path/To/CREDENTIALS_FILE> fetch EGAD<NUM> --output-dir </Path/
 ```bash
 usage: pyega3 fetch [-h] [--reference-name REFERENCE_NAME]
                     [--reference-md5 REFERENCE_MD5] [--start START]
-                    [--end END] [--format {BAM,CRAM}]
+                    [--end END] [--format {BAM,CRAM,VCF,BCF}]
                     [--max-retries MAX_RETRIES] [--retry-wait RETRY_WAIT]
                     [--output-dir OUTPUT_DIR] [--delete-temp-files]
                     identifier
@@ -258,7 +258,7 @@ optional arguments:
   --end END, -e END     The end position of the range on the reference,
                         0-based exclusive. If specified, reference-name or
                         reference-md5 must also be specified.
-  --format {BAM,CRAM}, -f {BAM,CRAM}
+  --format {BAM,CRAM,VCF,BCF}, -f {BAM,CRAM,VCF,BCF}
                         The format of data to request.
   --max-retries MAX_RETRIES, -M MAX_RETRIES
                         The maximum number of times to retry a failed
