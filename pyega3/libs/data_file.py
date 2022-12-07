@@ -315,7 +315,8 @@ class DataFile:
                     data_format=genomic_range_args[4],
                     max_retries=sys.maxsize if max_retries < 0 else max_retries,
                     retry_wait=retry_wait,
-                    bearer_token=self.data_client.auth_client.token)
+                    bearer_token=self.data_client.auth_client.token,
+                    headers=self.data_client.standard_headers)
             DataFile.print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)
             return
 
