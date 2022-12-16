@@ -65,11 +65,11 @@ class DataFile:
 
         if self.data_client.api_version == 1:
             self._unencrypted_checksum = res['unencryptedChecksum'] if 'unencryptedChecksum' in res else None
-            self._file_status = res['fileStatus'] if 'fileStatus' in res else None
 
         elif self.data_client.api_version == 2:
             self._unencrypted_checksum = res['plainChecksum'] if 'plainChecksum' in res else None
-            self._file_status = "unknown"  # API does not currently include file status
+
+        self._file_status = res['fileStatus'] if 'fileStatus' in res else None
 
     @property
     def display_name(self):
