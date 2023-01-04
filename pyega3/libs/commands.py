@@ -57,7 +57,7 @@ def fetch_data(args, data_client):
             "Unrecognized identifier - please use EGAD accession for dataset request"
             " or EGAF accession for individual file requests")
         sys.exit()
-    logging.info("Download complete")
+    logging.info(f"Download complete for {args.identifier}.")
 
 
 def list_files_in_dataset(args, data_client):

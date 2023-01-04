@@ -124,7 +124,7 @@ class DataFile:
         if file_size < 100 * 1024 * 1024:
             num_connections = 1
 
-        logging.info(f"Download starting [using {num_connections} connection(s), file size {file_size} and chunk "
+        logging.info(f"File ID {self.id}: Download starting [using {num_connections} connection(s), file size {file_size} and chunk "
                      f"length {max_slice_size}]...")
 
         chunk_len = max_slice_size
@@ -150,7 +150,7 @@ class DataFile:
                 if (int(file_from), int(file_length)) in [(param[1], param[2]) for param in params]:
                     continue
 
-                logging.warning(f'Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter ('
+                logging.warning(f'File ID {self.id}: Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter ('
                                 f'and thus the slice sizes) have been modified since the last run.')
                 os.remove(os.path.join(temporary_directory, file))
 
@@ -167,11 +167,11 @@ class DataFile:
 
         not_valid_server_md5 = len(str(check_sum or '')) != 32
 
-        logging.info("Calculating md5 (this operation can take a long time depending on the file size)")
+        logging.info(f"File ID {self.id}: Calculating md5 (this operation can take a long time depending on the file size)")
 
         received_file_md5 = utils.md5(output_file, file_size)
 
-        logging.info("Verifying file checksum")
+        logging.info(f"File ID {self.id}: Verifying file checksum")
 
         if received_file_md5 == check_sum or not_valid_server_md5:
             DataFile.print_local_file_info('Saved to : ', output_file, check_sum)
@@ -183,7 +183,7 @@ class DataFile:
                 f.write(received_file_md5.encode())
         else:
             os.remove(output_file)
-            raise Exception(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
+            raise Exception(f"File ID {self.id}: Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
 
     def download_file_slice_(self, args):
         return self.download_file_slice(*args)
@@ -231,7 +231,7 @@ class DataFile:
             total_received = os.path.getsize(file_name)
 
             if total_received != length:
-                raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
+                raise Exception(f"File ID {self.id}: Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
         except Exception:
             if os.path.exists(file_name):
@@ -298,7 +298,7 @@ class DataFile:
 
         # If file is bigger than free space, warning
         if hdd.free < self.size:
-            logging.warning(f"The size of the file that you want to download is bigger than your free space in this "
+            logging.warning(f"The size of the file that you want to download ({self.id}) is bigger than your free space in this "
                             f"location")
 
         if DataFile.is_genomic_range(genomic_range_args):
@@ -327,17 +327,19 @@ class DataFile:
                 done = True
             except Exception as e:
                 if e is ConnectionError:
-                    logging.info("Failed to connect to data service. Check that the necessary ports are open in your "
+                    logging.info(f"Failed to connect to data service. Check that the necessary ports are open in your "
                                  "firewall. See the documentation for more information.")
                 logging.exception(e)
                 if num_retries == max_retries:
+                    deletetext = ""
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
-
+                        deletetext = "Temporary files deleted."
+                    logging.info(f"File ID {self.id}: reached max retries; aborting. {deletetext}")
                     raise e
                 time.sleep(retry_wait)
                 num_retries += 1
-                logging.info(f"retry attempt {num_retries}")
+                logging.info(f"File ID {self.id}: retry attempt {num_retries}")
 
     def is_bam_or_cram_file(self, name: str):
         return re.search("\.bam", name, re.IGNORECASE) or re.search("\.cram", name, re.IGNORECASE)
