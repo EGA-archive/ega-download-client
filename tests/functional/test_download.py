@@ -48,9 +48,9 @@ def _assert_successful_run(command: str):
     assert bool(re.search(f'Download complete', output))
 
 
-def _assert_complete_files(download_dir):
+def _assert_complete_files(file_dir):
     # there will be 2 files (the actual file and its md5 file)
-    downloaded_files = [f for f in os.listdir(download_dir) if os.path.isfile(f'{download_dir}/{f}')]
+    downloaded_files = [f for f in os.listdir(file_dir) if os.path.isfile(f'{file_dir}/{f}')]
     assert len(downloaded_files) == 2
 
 
