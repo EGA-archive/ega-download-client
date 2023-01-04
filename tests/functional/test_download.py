@@ -31,10 +31,14 @@ def test_download_dataset():
     download_dir = f'{script_dir}/{dataset}'
     os.makedirs(download_dir, exist_ok=True)
     _assert_successful_run(f'pyega3 -t fetch {dataset} --output-dir {dataset}')
-    downloaded_file_dirs = [d for d in os.listdir(download_dir) if os.path.isdir(f'{download_dir}/{d}')]
-    for d in downloaded_file_dirs:
-        _assert_complete_files(f'{download_dir}/{d}')
+    _assert_all_files_downloaded(download_dir)
     _cleanup(download_dir)
+
+
+def _assert_all_files_downloaded(download_dir):
+    file_dirs = [d for d in os.listdir(download_dir) if os.path.isdir(f'{download_dir}/{d}')]
+    for d in file_dirs:
+        _assert_complete_files(f'{download_dir}/{d}')
 
 
 def _assert_successful_run(command: str):
