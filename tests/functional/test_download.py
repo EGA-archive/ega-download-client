@@ -26,6 +26,15 @@ def test_multipart_downloading():
     _cleanup(download_dir)
 
 
+def test_download_dataset():
+    dataset = 'EGAD00001009826'
+    download_dir = f'{script_dir}/{dataset}'
+
+    _assert_successful_run(f'pyega3 -t fetch {dataset} --output-dir {script_dir}', download_dir)
+    _assert_complete_files(download_dir)
+    _cleanup(download_dir)
+
+
 def _assert_successful_run(command: str, download_dir: str):
     exit_code, output, error = run(command)
     assert exit_code == 0
