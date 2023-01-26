@@ -203,16 +203,23 @@ class DataFile:
 
         self.temporary_files.add(file_name)
 
-        existing_size = os.stat(final_file_name).st_size if os.path.exists(final_file_name) else 0
-        if existing_size > length:
-            os.remove(final_file_name)
-            existing_size = 0
+        if os.path.exists(final_file_name):
+            return final_file_name
+
+        existing_size = 0
+
+        if os.path.exists(file_name):
+            existing_size = os.stat(file_name).st_size
+
+            if existing_size > length:
+                os.remove(file_name)
+
+            if existing_size == length:
+                os.rename(file_name, final_file_name)
+                return final_file_name
 
         if pbar:
             pbar.update(existing_size)
-
-        if existing_size == length:
-            return final_file_name
 
         try:
             range_start = start_pos + existing_size
@@ -223,6 +230,7 @@ class DataFile:
 
             with self.data_client.get_stream(path, extra_headers) as r:
                 with open(file_name, 'ba') as file_out:
+                    self.temporary_files.add(file_name)
                     for chunk in r.iter_content(DOWNLOAD_FILE_MEMORY_BUFFER_SIZE):
                         file_out.write(chunk)
                         if pbar:
