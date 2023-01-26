@@ -56,7 +56,7 @@ def test_htsget_cram_with_range():
     cleanup(output_dir)
 
 
-def test_htsget_cram_with_4GB_size_with_range():
+def test_htsget_cram_with_range_4GB_file():
     file_id, file_format, ref, start, end = ['EGAF00007462304', 'CRAM', 'chr10', 10000, 10035]
 
     output_dir = _run_pyega3(file_id, file_format, ref, start, end)
