@@ -9,8 +9,6 @@ from tests.functional.util import md5
 script_dir = os.path.dirname(__file__)
 
 
-# TODO enable once bug is fixed
-@pytest.mark.skip(reason="Failing because of a bug")
 def test_htsget_vcf():
     file_id, file_format, ref = ['EGAF00005001623', 'VCF', '22']
 
@@ -23,8 +21,6 @@ def test_htsget_vcf():
     cleanup(output_dir)
 
 
-# TODO enable once bug is fixed
-@pytest.mark.skip(reason="Failing because of a bug")
 def test_htsget_vcf_with_range():
     file_id, file_format, ref, start, end = ['EGAF00005001623', 'VCF', '22', 0, 100000]
 
@@ -60,7 +56,7 @@ def test_htsget_cram_with_range():
     cleanup(output_dir)
 
 
-def test_htsget_cram_with_range2():
+def test_htsget_cram_with_4GB_size_with_range():
     file_id, file_format, ref, start, end = ['EGAF00007462304', 'CRAM', 'chr10', 10000, 10035]
 
     output_dir = _run_pyega3(file_id, file_format, ref, start, end)
@@ -70,11 +66,6 @@ def test_htsget_cram_with_range2():
                                        '86b66eb1a56aaa0535a5aaecf8923552')
 
     cleanup(output_dir)
-
-
-@pytest.mark.skip(reason="implement this")
-def test_htsget_cram_big_file_with_range():
-    pass
 
 
 def test_htsget_bam():
