@@ -56,7 +56,7 @@ def test_htsget_cram_with_range():
         cleanup_logs()
 
 
-def test_htsget_cram_with_range_4GB_file():
+def test_htsget_cram_with_range_4gb_file():
     file_id, file_format, ref, start, end = ['EGAF00007462304', 'CRAM', 'chr10', 10000, 10035]
 
     with tempfile.TemporaryDirectory() as output_dir:
