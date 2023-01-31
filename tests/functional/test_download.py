@@ -15,11 +15,11 @@ def test_download_file():
 
 
 def test_multipart_downloading():
-    file_id = 'EGAF00005001625'  # less 200MB, will create 2 slices
-    conns = 2  # only 2 will be utilised
+    file_id = 'EGAF00005001625'  # greater than 100MB but less than 200MB, this will create 2 slices
+    connections = 2
     with tempfile.TemporaryDirectory() as output_dir:
         download_dir = f'{output_dir}/{file_id}'
-        run_command_and_assert_download_complete(f'pyega3 -t -c {conns} fetch {file_id} --output-dir {output_dir}')
+        run_command_and_assert_download_complete(f'pyega3 -t -c {connections} fetch {file_id} --output-dir {output_dir}')
         _assert_complete_files(download_dir)
         cleanup_logs()
 

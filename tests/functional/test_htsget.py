@@ -4,8 +4,6 @@ import tempfile
 from tests.functional.test_download import run_command_and_assert_download_complete, cleanup_logs
 from tests.functional.util import md5
 
-script_dir = os.path.dirname(__file__)
-
 
 def test_htsget_vcf():
     file_id, file_format, ref = ['EGAF00005001623', 'VCF', '22']
