@@ -140,3 +140,7 @@ cython_debug/
 .idea/
 
 .tmp_download/
+
+# Sonar related files
+.scannerwork/
+sonar-project.properties

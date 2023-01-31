@@ -1,3 +1,4 @@
+import hashlib
 import subprocess
 
 
@@ -19,3 +20,12 @@ def run(command: str, input: str = None, verbose: bool = True):
         print(stderr.decode())
 
     return proc.returncode, stdout.decode(), stderr.decode()
+
+
+def md5(filepath):
+    hash_md5 = hashlib.md5()
+    with open(filepath, "rb") as f:
+        chunk_size_in_bytes = 4096
+        for chunk in iter(lambda: f.read(chunk_size_in_bytes), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
