@@ -124,9 +124,9 @@ def test_return_slice_file_when_existing(mock_data_server, mock_data_client, sli
     mock_stat.st_size = slice_file.length
 
     with patch.object(mock_data_client, 'get_stream', wraps=mock_data_client.get_stream) as get_stream_mock, \
-        mock.patch("os.path.exists", lambda path: True if path == slice_file.file_name else False), \
-        mock.patch("os.path.getsize", lambda path: slice_file.length), \
-        mock.patch("os.stat", lambda path: mock_stat):
+            mock.patch("os.path.exists", lambda path: True if path == slice_file.file_name else False), \
+            mock.patch("os.path.getsize", lambda path: slice_file.length), \
+            mock.patch("os.stat", lambda path: mock_stat):
         # When: the slice file is downloaded
         filename = file.download_file_slice(slice_file.original_file_name, slice_file.start, slice_file.length)
         # Then: the existing slice file with same length is reused and data is not re-fetched
@@ -134,23 +134,80 @@ def test_return_slice_file_when_existing(mock_data_server, mock_data_client, sli
         get_stream_mock.assert_not_called()
 
 
-def test_remove_existing_slice_file_when_it_exceeds_slice_length(mock_data_server, mock_data_client, slice_file):
-    # Given: a slice file existing in tmp directory whose size exceeds the expected slice length
+def test_remove_existing_slice_file_redownload_all_bytes_when_it_exceeds_slice_length(mock_data_server,
+                                                                                      mock_data_client, slice_file):
     mock_data_server.file_content[slice_file.id] = slice_file.binary
+
+    written_bytes = 0
+
+    def mock_write(buf):
+        nonlocal written_bytes
+        buf_len = len(buf)
+        expected_buf = slice_file.binary[slice_file.start + written_bytes:slice_file.start + written_bytes + buf_len]
+        assert expected_buf == buf
+        written_bytes += buf_len
+
+    # for condition to meet tmp size is greater than expected - this shouldn't happen ever
     file = DataFile(mock_data_client, slice_file.id)
+
+    m_open = mock.mock_open()
 
     mock_stat = Mock()
     mock_stat.st_size = slice_file.length + 1
 
-    with mock.patch("os.remove") as remove_file_mock, \
-        mock.patch("os.path.exists", lambda path: True if path == slice_file.file_name else False), \
-        mock.patch("os.path.getsize", lambda path: slice_file.length), \
-        mock.patch("os.stat", lambda path: mock_stat):
-        # When: the slice file is downloaded
+    mock_file_exists = {slice_file.file_name: False}
+    slice_temp_file_name = slice_file.file_name + '.tmp'
+    mock_file_exists[slice_temp_file_name] = True
+
+    with mock.patch("builtins.open", m_open, create=True), \
+            mock.patch("os.remove") as remove_file_mock, \
+            mock.patch("os.path.exists", lambda path: mock_file_exists.get(path)), \
+            mock.patch("os.path.getsize", lambda path: written_bytes if path == slice_temp_file_name else 0), \
+            mock.patch("os.rename"), \
+            mock.patch("os.stat", lambda path: mock_stat):
+        m_open().write.side_effect = mock_write
         output_file = file.download_file_slice(slice_file.original_file_name, slice_file.start, slice_file.length)
-        # Then: the existing slice file is deleted
+        assert slice_file.length == written_bytes
         assert output_file == slice_file.file_name
-        remove_file_mock.assert_called_once_with(slice_file.file_name)
+        remove_file_mock.assert_called_once_with(slice_temp_file_name)
+    m_open.assert_called_with(slice_temp_file_name, 'ba')
+
+
+def test_resume_existing_tmp_slice_file(mock_data_server, mock_data_client, slice_file):
+    mock_data_server.file_content[slice_file.id] = slice_file.binary
+
+    written_bytes = 0
+
+    # tracks bytes written, create a mock class which tracks the written bytes and another method which asserts that all expected bytes are written
+    def mock_write(buf):
+        nonlocal written_bytes
+        buf_len = len(buf)
+        written_bytes += buf_len
+
+    # for condition to meet tmp size is greater than expected - this shouldn't happen ever
+    file = DataFile(mock_data_client, slice_file.id)
+
+    m_open = mock.mock_open()
+    missing_bytes_length = 5
+    mock_stat = Mock()
+    mock_stat.st_size = slice_file.length - missing_bytes_length
+
+    mock_file_exists = {slice_file.file_name: False}
+    slice_temp_file_name = slice_file.file_name + '.tmp'
+    mock_file_exists[slice_temp_file_name] = True
+
+    with mock.patch("builtins.open", m_open, create=True), \
+            mock.patch("os.remove") as remove_file_mock, \
+            mock.patch("os.path.exists", lambda path: mock_file_exists.get(path)), \
+            mock.patch("os.path.getsize", lambda path: slice_file.length if path == slice_temp_file_name else 0), \
+            mock.patch("os.rename"), \
+            mock.patch("os.stat", lambda path: mock_stat):
+        m_open().write.side_effect = mock_write
+        output_file = file.download_file_slice(slice_file.original_file_name, slice_file.start, slice_file.length)
+        assert written_bytes == missing_bytes_length
+        assert output_file == slice_file.file_name
+
+    m_open.assert_called_with(slice_temp_file_name, 'ba')
 
 
 def teardown_module():

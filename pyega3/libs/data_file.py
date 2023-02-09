@@ -204,6 +204,8 @@ class DataFile:
         self.temporary_files.add(file_name)
 
         if os.path.exists(final_file_name):
+            existing_size = os.stat(final_file_name).st_size
+            pbar and pbar.update(existing_size)
             return final_file_name
 
         existing_size = 0
@@ -213,13 +215,13 @@ class DataFile:
 
             if existing_size > length:
                 os.remove(file_name)
+                existing_size = 0
 
             if existing_size == length:
                 os.rename(file_name, final_file_name)
                 return final_file_name
 
-        if pbar:
-            pbar.update(existing_size)
+        pbar and pbar.update(existing_size)
 
         try:
             range_start = start_pos + existing_size
@@ -241,7 +243,7 @@ class DataFile:
             if total_received != length:
                 raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
-        except Exception:
+        except Exception as e:
             if os.path.exists(file_name):
                 os.remove(file_name)
             raise
