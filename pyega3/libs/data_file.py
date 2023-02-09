@@ -223,8 +223,7 @@ class DataFile:
                     self.temporary_files.add(file_name)
                     for chunk in r.iter_content(DOWNLOAD_FILE_MEMORY_BUFFER_SIZE):
                         file_out.write(chunk)
-                        if pbar:
-                            pbar.update(len(chunk))
+                        pbar and pbar.update(len(chunk))
 
             total_received = os.path.getsize(file_name)
 
