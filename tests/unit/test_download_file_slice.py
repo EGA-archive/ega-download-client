@@ -125,7 +125,8 @@ def test_return_slice_file_when_existing(mock_data_server, mock_data_client, sli
         get_stream_mock.assert_not_called()
 
 
-def test_remove_existing_slice_file_and_redownload_that_slice(mock_data_server, mock_data_client, slice_file):
+def test_remove_existing_slice_file_and_download_that_slice(mock_data_server, mock_data_client, slice_file):
+    # Given: a slice.tmp file existing in tmp directory
     mock_data_server.file_content[slice_file.id] = slice_file.binary
     file = DataFile(mock_data_client, slice_file.id)
 
@@ -141,7 +142,9 @@ def test_remove_existing_slice_file_and_redownload_that_slice(mock_data_server, 
                        lambda path: download_mock.written_bytes if path == slice_temp_file_name else 0), \
             mock.patch("os.rename"):
         m_open().write.side_effect = download_mock.write
+        # When: the slice file is downloaded
         output_file = file.download_file_slice(slice_file.original_file_name, slice_file.start, slice_file.length)
+        # Then: delete the existing .slice.tmp file and download that slice
         assert slice_file.length == download_mock.written_bytes
         assert output_file == slice_file.file_name
         remove_file_mock.assert_called_once_with(slice_temp_file_name)
