@@ -208,23 +208,11 @@ class DataFile:
             pbar and pbar.update(existing_size)
             return final_file_name
 
-        existing_size = 0
-
         if os.path.exists(file_name):
-            existing_size = os.stat(file_name).st_size
-
-            if existing_size > length:
-                os.remove(file_name)
-                existing_size = 0
-
-            if existing_size == length:
-                os.rename(file_name, final_file_name)
-                return final_file_name
-
-        pbar and pbar.update(existing_size)
+            os.remove(file_name)
 
         try:
-            range_start = start_pos + existing_size
+            range_start = start_pos
             range_end = start_pos + length - 1
             extra_headers = {
                 'Range': f'bytes={range_start}-{range_end}'
