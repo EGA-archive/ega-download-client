@@ -36,14 +36,14 @@ def test_download_file_slice_downloads_correct_bytes_to_file(mock_data_server, s
     file = DataFile(mock_data_client, slice_file.id)
 
     m_open = mock.mock_open()
-    download_mock = SliceFileDownloadMock(slice_file)
+    slice_download_mock = SliceFileDownloadMock(slice_file)
     with mock.patch("builtins.open", m_open, create=True):
         with mock.patch("os.path.getsize",
-                        lambda path: download_mock.written_bytes if path == file_name_for_slice else 0):
+                        lambda path: slice_download_mock.written_bytes if path == file_name_for_slice else 0):
             with mock.patch("os.rename"):
-                m_open().write.side_effect = download_mock.write
+                m_open().write.side_effect = slice_download_mock.write
                 file.download_file_slice(file_name, slice_file.start, slice_file.length)
-                assert slice_file.length == download_mock.written_bytes
+                assert slice_file.length == slice_download_mock.written_bytes
 
     m_open.assert_called_with(file_name_for_slice, 'ba')
 
