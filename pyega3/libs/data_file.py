@@ -203,19 +203,16 @@ class DataFile:
 
         self.temporary_files.add(file_name)
 
-        existing_size = os.stat(final_file_name).st_size if os.path.exists(final_file_name) else 0
-        if existing_size > length:
-            os.remove(final_file_name)
-            existing_size = 0
-
-        if pbar:
-            pbar.update(existing_size)
-
-        if existing_size == length:
+        if os.path.exists(final_file_name):
+            existing_size = os.stat(final_file_name).st_size
+            pbar and pbar.update(existing_size)
             return final_file_name
 
+        if os.path.exists(file_name):
+            os.remove(file_name)
+
         try:
-            range_start = start_pos + existing_size
+            range_start = start_pos
             range_end = start_pos + length - 1
             extra_headers = {
                 'Range': f'bytes={range_start}-{range_end}'
@@ -223,17 +220,17 @@ class DataFile:
 
             with self.data_client.get_stream(path, extra_headers) as r:
                 with open(file_name, 'ba') as file_out:
+                    self.temporary_files.add(file_name)
                     for chunk in r.iter_content(DOWNLOAD_FILE_MEMORY_BUFFER_SIZE):
                         file_out.write(chunk)
-                        if pbar:
-                            pbar.update(len(chunk))
+                        pbar and pbar.update(len(chunk))
 
             total_received = os.path.getsize(file_name)
 
             if total_received != length:
                 raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
-        except Exception:
+        except Exception as e:
             if os.path.exists(file_name):
                 os.remove(file_name)
             raise
