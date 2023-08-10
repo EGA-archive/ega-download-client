@@ -27,7 +27,7 @@ def mock_server_config():
                         url_api='https://test.data.server',
                         url_auth='https://test.auth.server/ega-openid-connect-server/token',
                         url_api_metadata=None,
-                        url_api_stats=None,
+                        url_api_stats='https://test.stats.server',
                         url_api_ticket='https://test.ticket.server',
                         client_secret='test-client-secret')
 

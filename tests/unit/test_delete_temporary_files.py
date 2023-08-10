@@ -27,6 +27,7 @@ def test_temp_files_are_deleted_automatically_if_there_are_no_exceptions(mock_se
 
     input_file = bytearray(os.urandom(file_size_without_iv))
     mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{test_file_id}', body=input_file, status=200)
+    mock_requests.add(responses.POST, f'{mock_server_config.url_api_stats}', status=200)
 
     file = DataFile(mock_data_client, test_file_id, temporary_output_file, temporary_output_file, file_size_with_iv,
                     'check_sum')
@@ -65,6 +66,7 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
     for _ in range(number_of_retries):
         mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
 
+    mock_requests.add(responses.POST, f'{mock_server_config.url_api_stats}', status=200)
     with pytest.raises(Exception) as context_manager:
         file.download_file_retry(1, output_dir, None, number_of_retries, 0.1)
 
