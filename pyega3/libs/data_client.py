@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+import requests
 from requests import Session
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE
 from urllib3.util import retry
@@ -90,7 +91,7 @@ class DataClient:
         stats = Stats(session_id, client_download_started_at, client_stats_created_at, file_id, number_of_attempts,
                       file_size_in_bytes, connections, status, error_reason=error_reason)
         format = '%Y/%m/%dT%H:%M:%S'
-        self.session.post(f"{self.stats_url}", json={
+        payload = {
             'clientDownloadStartedAt': stats.client_download_started_at.strftime(format),
             'clientStatsCreatedAt': stats.client_stats_created_at.strftime(format),
             'fileId': stats.file_id,
@@ -100,4 +101,10 @@ class DataClient:
             'sessionId': stats.session_id,
             'status': stats.status,
             'errorReason': error_reason if stats.status == 'Failed' else None
-        }, headers={'Authorization': f'Bearer {self.auth_client.token}'})
+        }
+        response = self.session.post(f"{self.stats_url}", json=payload,
+                                     headers={'Authorization': f'Bearer {self.auth_client.token}'})
+
+        if response.status_code == requests.codes.ok:
+            logging.warning(f'Failed to report stats to EGA: {json.dumps(payload)}')
+            logging.warning(f'url: {self.stats_url}, response: {str(response.status_code)}')
