@@ -11,7 +11,7 @@ import sys
 from os.path import join, abspath, dirname
 from pyega3.libs.auth_client import AuthClient
 from pyega3.libs.credentials import Credentials
-from pyega3.libs.data_client import DataClient
+from pyega3.libs.data_client import DataClient, create_session_with_retry
 from pyega3.libs.server_config import ServerConfig
 from pyega3.libs.utils import get_client_ip
 from pyega3.libs.data_file import DataFile
@@ -24,7 +24,8 @@ logging_level = logging.INFO
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download from the European Genome-phenome Archive. Client version: "+VERSION)
+    parser = argparse.ArgumentParser(
+        description="Download from the European Genome-phenome Archive. Client version: " + VERSION)
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
     parser.add_argument("-cf", "--config-file", dest='config_file',
                         help='JSON file containing credentials/config e.g.{"username":"user1","password":"toor"}')
@@ -37,8 +38,9 @@ def main():
     parser.add_argument("-ms", "--max-slice-size", type=int, default=DataFile.DEFAULT_SLICE_SIZE,
                         help="Set maximum size for each slice in bytes (default: 100 MB)")
     parser.add_argument("-j", "--json", action="store_true", help="Output data in JSON format instead of tables")
-    parser.add_argument("-v", "--version", action="store_true", help="Displays the client's version number. Please note, "
-                                                                     "this aborts any additional actions.")
+    parser.add_argument("-v", "--version", action="store_true",
+                        help="Displays the client's version number. Please note, "
+                             "this aborts any additional actions.")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="subcommands")
 
@@ -143,8 +145,8 @@ def main():
     auth_client = AuthClient(server_config.url_auth, server_config.client_secret, standard_headers)
     auth_client.credentials = credentials
 
-    data_client = DataClient(server_config.url_api, server_config.url_api_ticket, auth_client, standard_headers,
-                             connections=args.connections, metadata_url=server_config.url_api_metadata,
+    data_client = DataClient(server_config.url_api, server_config.url_api_ticket, server_config.url_api_stats,
+                             auth_client, standard_headers, args.connections, metadata_url=server_config.url_api_metadata,
                              api_version=server_config.api_version)
 
     execute_subcommand(args, data_client)

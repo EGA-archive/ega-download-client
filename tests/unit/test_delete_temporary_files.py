@@ -99,7 +99,6 @@ def test_temporary_folder_is_not_deleted_if_the_user_says_so(mock_server_config,
                                                              mock_data_client,
                                                              temporary_output_file,
                                                              mock_requests):
-
     # Given: a file that exist in EGA object store and the user has permissions to access to it
     DataFile.temporary_files_should_be_deleted = False
 

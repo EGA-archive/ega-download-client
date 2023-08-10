@@ -10,12 +10,13 @@ class ServerConfig:
     url_api_ticket = None
     client_secret = None
 
-    def __init__(self, api_version, url_api, url_auth, url_api_metadata, url_api_ticket, client_secret):
+    def __init__(self, api_version, url_api, url_auth, url_api_metadata, url_api_ticket, url_api_stats, client_secret):
         self.api_version = api_version
         self.url_api = url_api
         self.url_auth = url_auth
         self.url_api_metadata = url_api_metadata
         self.url_api_ticket = url_api_ticket
+        self.url_api_stats = url_api_stats
         self.client_secret = client_secret
 
     @staticmethod
@@ -53,6 +54,7 @@ class ServerConfig:
                                 custom_server_config['url_auth'],
                                 custom_server_config['url_api_metadata'] if 'url_api_metadata' in custom_server_config else None,
                                 custom_server_config['url_api_ticket'],
+                                custom_server_config['url_api_stats'],
                                 custom_server_config['client_secret'])
 
         except ValueError:

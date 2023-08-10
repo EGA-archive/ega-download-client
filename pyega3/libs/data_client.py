@@ -1,9 +1,9 @@
 import contextlib
 import json
 import logging
+from datetime import datetime
 from typing import Optional
 
-from datetime import datetime
 from requests import Session
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE
 from urllib3.util import retry
@@ -34,11 +34,12 @@ def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=No
 
 class DataClient:
 
-    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None,
+    def __init__(self, data_url, htsget_url, stats_url, auth_client, standard_headers, connections=1, metadata_url=None,
                  api_version=1):
         self.url = data_url
         self.metadata_url = metadata_url if metadata_url is not None else data_url + "/metadata"
         self.htsget_url = htsget_url
+        self.stats_url = stats_url
         self.auth_client = auth_client
         self.standard_headers = standard_headers
         self.session = create_session_with_retry(pool_max_size=connections)
@@ -84,8 +85,7 @@ class DataClient:
 
     def post_stats(self, client_download_started_at: datetime, client_stats_created_at: datetime,
                    file_id: str, number_of_attempts: int, file_size_in_bytes: int, connections: int, status: str,
-                   error_reason: Optional[str]):
-
+                   error_reason=None):
         session_id = self.standard_headers.get('Session-Id')
         stats = Stats(session_id, client_download_started_at, client_stats_created_at, file_id, number_of_attempts,
                       file_size_in_bytes, connections, status, error_reason=error_reason)
