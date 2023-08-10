@@ -90,7 +90,7 @@ class DataClient:
         stats = Stats(session_id, client_download_started_at, client_stats_created_at, file_id, number_of_attempts,
                       file_size_in_bytes, connections, status, error_reason=error_reason)
         format = '%Y/%m/%dT%H:%M:%S'
-        self.session.post(f"{self.url}/download-stats", json={
+        self.session.post(f"{self.stats_url}", json={
             'clientDownloadStartedAt': stats.client_download_started_at.strftime(format),
             'clientStatsCreatedAt': stats.client_stats_created_at.strftime(format),
             'fileId': stats.file_id,
