@@ -1,11 +1,14 @@
 import contextlib
 import json
 import logging
+from typing import Optional
 
-import requests
+from datetime import datetime
 from requests import Session
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE
 from urllib3.util import retry
+
+from pyega3.libs.stats import Stats
 
 
 def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=None) -> Session:
@@ -31,7 +34,8 @@ def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=No
 
 class DataClient:
 
-    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None, api_version=1):
+    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None,
+                 api_version=1):
         self.url = data_url
         self.metadata_url = metadata_url if metadata_url is not None else data_url + "/metadata"
         self.htsget_url = htsget_url
@@ -77,3 +81,23 @@ class DataClient:
             self.print_debug_info(url, None, f"Response headers: {r.headers}")
             r.raise_for_status()
             yield r
+
+    def post_stats(self, client_download_started_at: datetime, client_stats_created_at: datetime,
+                   file_id: str, number_of_attempts: int, file_size_in_bytes: int, connections: int, status: str,
+                   error_reason: Optional[str]):
+
+        session_id = self.standard_headers.get('Session-Id')
+        stats = Stats(session_id, client_download_started_at, client_stats_created_at, file_id, number_of_attempts,
+                      file_size_in_bytes, connections, status, error_reason=error_reason)
+        format = '%Y/%m/%dT%H:%M:%S'
+        self.session.post(f"{self.url}/download-stats", json={
+            'clientDownloadStartedAt': stats.client_download_started_at.strftime(format),
+            'clientStatsCreatedAt': stats.client_stats_created_at.strftime(format),
+            'fileId': stats.file_id,
+            'numberOfAttempts': stats.number_of_attempts,
+            'fileSizeInBytes': stats.file_size_in_bytes,
+            'numberOfConnections': stats.number_of_connections,
+            'sessionId': stats.session_id,
+            'status': stats.status,
+            'errorReason': error_reason if stats.status == 'Failed' else None
+        }, headers={'Authorization': f'Bearer {self.auth_client.token}'})

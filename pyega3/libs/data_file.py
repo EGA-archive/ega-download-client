@@ -7,12 +7,14 @@ import shutil
 import sys
 import time
 import urllib
+from datetime import datetime
 
 import htsget
 import psutil
 from tqdm import tqdm
 
 from pyega3.libs import utils
+from pyega3.libs.data_client import Stats
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
 
@@ -112,7 +114,7 @@ class DataFile:
         check_sum = self.unencrypted_checksum
         options = {"destinationFormat": "plain"}
 
-        file_size -= 16  # 16 bytes IV not necesary in plain mode
+        file_size -= 16  # 16 bytes IV not necessary in plain mode
 
         if os.path.exists(output_file) and utils.md5(output_file, file_size) == check_sum:
             DataFile.print_local_file_info('Local file exists:', output_file, check_sum)
@@ -181,6 +183,7 @@ class DataFile:
                     f" Can't validate download. Please contact EGA helpdesk on helpdesk@ega-archive.org")
             with open(utils.get_fname_md5(output_file), 'wb') as f:  # save good md5 in aux file for future re-use
                 f.write(received_file_md5.encode())
+
         else:
             os.remove(output_file)
             raise Exception(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
@@ -320,7 +323,10 @@ class DataFile:
         num_retries = 0
         while not done:
             try:
+                start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
+                self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                            num_connections, "Success")
                 done = True
             except Exception as e:
                 if e is ConnectionError:
@@ -330,7 +336,8 @@ class DataFile:
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
-
+                    self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                                num_connections, "Failed", str(e))
                     raise e
                 time.sleep(retry_wait)
                 num_retries += 1
