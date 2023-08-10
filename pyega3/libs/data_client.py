@@ -105,6 +105,6 @@ class DataClient:
         response = self.session.post(f"{self.stats_url}", json=payload,
                                      headers={'Authorization': f'Bearer {self.auth_client.token}'})
 
-        if response.status_code == requests.codes.ok:
+        if response.status_code != requests.codes.ok:
             logging.warning(f'Failed to report stats to EGA: {json.dumps(payload)}')
             logging.warning(f'url: {self.stats_url}, response: {str(response.status_code)}')
