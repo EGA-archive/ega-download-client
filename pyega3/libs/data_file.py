@@ -339,6 +339,9 @@ class DataFile:
                     self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
                                                 num_connections, "Failed", str(e))
                     raise e
+
+                self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                            num_connections, "Failed", str(e))
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
