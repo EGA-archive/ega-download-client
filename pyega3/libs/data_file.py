@@ -186,7 +186,7 @@ class DataFile:
 
         else:
             os.remove(output_file)
-            raise Exception(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
+            raise MD5MismatchError(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
 
     def download_file_slice_(self, args):
         return self.download_file_slice(*args)
@@ -231,7 +231,7 @@ class DataFile:
             total_received = os.path.getsize(file_name)
 
             if total_received != length:
-                raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
+                raise SliceError(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
         except Exception as e:
             if os.path.exists(file_name):
@@ -325,7 +325,7 @@ class DataFile:
             try:
                 start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
-                self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
                                             num_connections, "Success")
                 done = True
             except Exception as e:
@@ -336,12 +336,12 @@ class DataFile:
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
-                    self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
-                                                num_connections, "Failed", str(e))
+                    self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
+                                                num_connections, "Failed", e.__class__.__name__)
                     raise e
 
-                self.data_client.post_stats(start_time, datetime.now(), self.id, num_retries + 1, self.size,
-                                            num_connections, "Failed", str(e))
+                self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
+                                            num_connections, "Failed", e.__class__.__name__)
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
@@ -354,3 +354,18 @@ class DataFile:
             shutil.rmtree(temporary_directory)
         except FileNotFoundError as ex:
             logging.error(f'Could not delete the temporary folder: {ex}')
+
+
+class DataFileError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class MD5MismatchError(DataFileError):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class SliceError(DataFileError):
+    def __init__(self, message: str):
+        super().__init__(message)

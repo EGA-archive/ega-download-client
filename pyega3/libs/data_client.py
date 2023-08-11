@@ -84,11 +84,11 @@ class DataClient:
             r.raise_for_status()
             yield r
 
-    def post_stats(self, client_download_started_at: datetime, client_stats_created_at: datetime,
+    def post_stats(self, client_download_started_at: datetime,
                    file_id: str, number_of_attempts: int, file_size_in_bytes: int, connections: int, status: str,
                    error_reason=None):
         session_id = self.standard_headers.get('Session-Id')
-        stats = Stats(session_id, client_download_started_at, client_stats_created_at, file_id, number_of_attempts,
+        stats = Stats(session_id, client_download_started_at, datetime.now(), file_id, number_of_attempts,
                       file_size_in_bytes, connections, status, error_reason=error_reason)
         format = '%Y-%m-%dT%H:%M:%S'
         payload = {
