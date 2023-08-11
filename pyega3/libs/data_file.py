@@ -116,10 +116,6 @@ class DataFile:
 
         file_size -= 16  # 16 bytes IV not necessary in plain mode
 
-        if os.path.exists(output_file) and utils.md5(output_file, file_size) == check_sum:
-            DataFile.print_local_file_info('Local file exists:', output_file, check_sum)
-            return
-
         num_connections = max(num_connections, 1)
         num_connections = min(num_connections, 128)
 
@@ -187,6 +183,12 @@ class DataFile:
         else:
             os.remove(output_file)
             raise MD5MismatchError(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
+
+    def does_file_exist(self, output_file):
+        if os.path.exists(output_file) and utils.md5(output_file, self.size) == self.unencrypted_checksum:
+            DataFile.print_local_file_info('Local file exists:', output_file, self.unencrypted_checksum)
+            return True
+        return False
 
     def download_file_slice_(self, args):
         return self.download_file_slice(*args)
@@ -321,7 +323,8 @@ class DataFile:
 
         done = False
         num_retries = 0
-        while not done:
+        file_already_exists = self.does_file_exist(output_file)
+        while not file_already_exists and not done:
             try:
                 start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
