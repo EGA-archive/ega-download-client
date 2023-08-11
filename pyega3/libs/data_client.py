@@ -86,10 +86,10 @@ class DataClient:
 
     def post_stats(self, client_download_started_at: datetime,
                    file_id: str, number_of_attempts: int, file_size_in_bytes: int, connections: int, status: str,
-                   error_reason=None):
+                   error_reason=None, error_details=None):
         session_id = self.standard_headers.get('Session-Id')
         stats = Stats(session_id, client_download_started_at, datetime.now(), file_id, number_of_attempts,
-                      file_size_in_bytes, connections, status, error_reason=error_reason)
+                      file_size_in_bytes, connections, status, error_reason, error_details)
         format = '%Y-%m-%dT%H:%M:%S'
         payload = {
             'clientDownloadStartedAt': stats.client_download_started_at.strftime(format),
@@ -100,7 +100,8 @@ class DataClient:
             'numberOfConnections': stats.number_of_connections,
             'sessionId': stats.session_id,
             'status': stats.status,
-            'errorReason': error_reason if stats.status == 'Failed' else None
+            'errorReason': error_reason if stats.status == 'Failed' else None,
+            'errorDetails': error_details if stats.status == 'Failed' else None
         }
         response = self.session.post(f"{self.stats_url}", json=payload,
                                      headers={'Authorization': f'Bearer {self.auth_client.token}'})

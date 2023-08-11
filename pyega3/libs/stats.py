@@ -14,3 +14,4 @@ class Stats:
     number_of_connections: int
     status: str
     error_reason: Optional[str] = None
+    error_details: Optional[str] = None

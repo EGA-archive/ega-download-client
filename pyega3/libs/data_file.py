@@ -334,24 +334,27 @@ class DataFile:
                                  "firewall. See the documentation for more information.")
                 logging.exception(e)
 
+                error_reason, error_details = self._format_stats_error_reason(e)
+
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
                     self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                                num_connections, "Failed", self._format_stats_error_reason(e))
+                                                num_connections, "Failed", error_reason, error_details)
                     raise e
 
                 self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                            num_connections, "Failed", self._format_stats_error_reason(e))
+                                            num_connections, "Failed", error_reason, error_details)
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
 
     def _format_stats_error_reason(self, e):
-        error_reason = f'{e.__class__.__name__} : {str(e)}'
+        error_class_name = e.__class__.__name__
+        error_reason = str(e)
         if isinstance(e, DataFileError):
-            error_reason = f'{e.__class__.__name__} : {e.message}'
-        return error_reason
+            error_reason = e.message
+        return error_class_name, error_reason
 
     def is_bam_or_cram_file(self, name: str):
         return re.search("\.bam", name, re.IGNORECASE) or re.search("\.cram", name, re.IGNORECASE)
