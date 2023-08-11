@@ -333,18 +333,25 @@ class DataFile:
                     logging.info("Failed to connect to data service. Check that the necessary ports are open in your "
                                  "firewall. See the documentation for more information.")
                 logging.exception(e)
+
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
                     self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                                num_connections, "Failed", e.__class__.__name__)
+                                                num_connections, "Failed", self._format_stats_error_reason(e))
                     raise e
 
                 self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                            num_connections, "Failed", e.__class__.__name__)
+                                            num_connections, "Failed", self._format_stats_error_reason(e))
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
+
+    def _format_stats_error_reason(self, e):
+        error_reason = f'{e.__class__.__name__} : {str(e)}'
+        if isinstance(e, DataFileError):
+            error_reason = f'{e.__class__.__name__} : {e.message}'
+        return error_reason
 
     def is_bam_or_cram_file(self, name: str):
         return re.search("\.bam", name, re.IGNORECASE) or re.search("\.cram", name, re.IGNORECASE)
@@ -359,6 +366,7 @@ class DataFile:
 class DataFileError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+        self.message = message
 
 
 class MD5MismatchError(DataFileError):
