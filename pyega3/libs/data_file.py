@@ -14,7 +14,7 @@ import psutil
 from tqdm import tqdm
 
 from pyega3.libs import utils
-from pyega3.libs.data_client import Stats
+from pyega3.libs.stats import Stats
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
 
@@ -329,8 +329,9 @@ class DataFile:
             try:
                 start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
-                self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                            num_connections, "Success")
+                stats = Stats(start_time, datetime.now(), self.id, num_retries + 1, self.size, num_connections,
+                              "Success")
+                self.data_client.post_stats(stats)
                 done = True
             except Exception as e:
                 if e is ConnectionError:
@@ -343,12 +344,28 @@ class DataFile:
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
-                    self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                                num_connections, "Failed", error_reason, error_details)
+
+                    self.data_client.post_stats(Stats(
+                        start_time,
+                        datetime.now(),
+                        self.id,
+                        num_retries + 1,
+                        self.size,
+                        num_connections,
+                        "Failed",
+                        error_reason,
+                        error_details))
                     raise e
 
-                self.data_client.post_stats(start_time, self.id, num_retries + 1, self.size,
-                                            num_connections, "Failed", error_reason, error_details)
+                self.data_client.post_stats(Stats(
+                    start_time,
+                    datetime.now(),
+                    self.id,
+                    num_retries + 1,
+                    self.size,
+                    num_connections,
+                    "Failed"
+                ))
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")

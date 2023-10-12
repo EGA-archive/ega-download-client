@@ -5,7 +5,6 @@ from typing import Optional
 
 @dataclass
 class Stats:
-    session_id: str
     client_download_started_at: datetime
     client_stats_created_at: datetime
     file_id: str
@@ -15,3 +14,4 @@ class Stats:
     status: str
     error_reason: Optional[str] = None
     error_details: Optional[str] = None
+    session_id: Optional[str] = None

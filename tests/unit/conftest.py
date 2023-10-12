@@ -60,7 +60,7 @@ def mock_requests():
 @pytest.fixture
 def mock_data_client(mock_server_config, mock_auth_client):
     return DataClient(mock_server_config.url_api, mock_server_config.url_api_ticket, mock_server_config.url_api_stats,
-                      mock_auth_client, {})
+                      mock_auth_client, {'Session-Id': 'sessionid'})
 
 
 @pytest.fixture
@@ -83,7 +83,7 @@ def temporary_output_file():
 
 @pytest.fixture
 def mock_data_server(mock_requests, mock_server_config, mock_auth_client):
-    return MockDataServer(mock_requests, mock_server_config.url_api, mock_auth_client.token)
+    return MockDataServer(mock_requests, mock_server_config, mock_auth_client.token)
 
 
 @pytest.fixture
