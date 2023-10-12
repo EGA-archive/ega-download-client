@@ -11,7 +11,7 @@ import sys
 from os.path import join, abspath, dirname
 from pyega3.libs.auth_client import AuthClient
 from pyega3.libs.credentials import Credentials
-from pyega3.libs.data_client import DataClient, create_session_with_retry
+from pyega3.libs.data_client import DataClient
 from pyega3.libs.server_config import ServerConfig
 from pyega3.libs.utils import get_client_ip
 from pyega3.libs.data_file import DataFile
@@ -146,7 +146,8 @@ def main():
     auth_client.credentials = credentials
 
     data_client = DataClient(server_config.url_api, server_config.url_api_ticket, server_config.url_api_stats,
-                             auth_client, standard_headers, args.connections, metadata_url=server_config.url_api_metadata,
+                             auth_client, standard_headers, args.connections,
+                             metadata_url=server_config.url_api_metadata,
                              api_version=server_config.api_version)
 
     execute_subcommand(args, data_client)

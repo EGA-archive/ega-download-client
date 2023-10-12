@@ -108,7 +108,7 @@ class MockDataServer:
     def post_stats_callback(self, request: PreparedRequest):
         if not self.check_auth_header(request):
             return 400, {}, json.dumps({"error_description": "invalid token"})
-        return 200, {}, None
+        return 200, {}, request.body
 
     @property
     def all_datasets(self):

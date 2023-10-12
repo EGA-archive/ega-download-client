@@ -103,3 +103,5 @@ class DataClient:
         if response.status_code != requests.codes.ok:
             logging.warning(f'Failed to report stats to EGA: {json.dumps(payload)}')
             logging.warning(f'url: {self.stats_url}, response: {str(response.status_code)}')
+
+        return response.json()
