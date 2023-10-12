@@ -329,9 +329,8 @@ class DataFile:
             try:
                 start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
-                stats = Stats(start_time, datetime.now(), self.id, num_retries + 1, self.size, num_connections,
-                              "Success")
-                self.data_client.post_stats(stats)
+                self.data_client.post_stats(
+                    Stats.succeeded(start_time, datetime.now(), self.id, num_retries + 1, self.size, num_connections))
                 done = True
             except Exception as e:
                 if e is ConnectionError:
@@ -345,26 +344,26 @@ class DataFile:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
 
-                    self.data_client.post_stats(Stats(
+                    self.data_client.post_stats(Stats.failed(
                         start_time,
                         datetime.now(),
                         self.id,
                         num_retries + 1,
                         self.size,
                         num_connections,
-                        "Failed",
                         error_reason,
                         error_details))
                     raise e
 
-                self.data_client.post_stats(Stats(
+                self.data_client.post_stats(Stats.failed(
                     start_time,
                     datetime.now(),
                     self.id,
                     num_retries + 1,
                     self.size,
                     num_connections,
-                    "Failed"
+                    error_reason,
+                    error_details
                 ))
                 time.sleep(retry_wait)
                 num_retries += 1

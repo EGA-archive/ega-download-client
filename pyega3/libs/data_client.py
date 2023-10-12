@@ -1,7 +1,6 @@
 import contextlib
 import json
 import logging
-from datetime import datetime
 
 import requests
 from requests import Session
