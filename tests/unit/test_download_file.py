@@ -52,8 +52,8 @@ def mock_writing_files():
 
 
 def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_data_client):
-    file_md5 = hashlib.md5(random_binary_file).hexdigest()
-    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
+    correct_md5 = hashlib.md5(random_binary_file).hexdigest()
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, correct_md5)
     file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
     assert random_binary_file == mock_writing_files[file.display_name]
 
@@ -61,8 +61,8 @@ def test_download_file(mock_data_server, random_binary_file, mock_writing_files,
 def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_server, random_binary_file,
                                                                  mock_writing_files, mock_server_config,
                                                                  mock_data_client):
-    file_md5 = hashlib.md5(random_binary_file).hexdigest()
-    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
+    correct_file_md5 = hashlib.md5(random_binary_file).hexdigest()
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, correct_file_md5)
     mock_writing_files[file.display_name] = random_binary_file
     file.download_file_retry(1,
                              output_dir=OUTPUT_DIR,
@@ -87,8 +87,8 @@ def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_bina
 
 def test_post_stats_if_download_succeeded(mock_data_server, random_binary_file, mock_writing_files,
                                           mock_server_config, mock_data_client):
-    file_md5 = hashlib.md5(random_binary_file).hexdigest()
-    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
+    correct_file_md5 = hashlib.md5(random_binary_file).hexdigest()
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, correct_file_md5)
     stats = file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
     assert len(stats) == 1
     assert stats[0].status == "Succeeded"
