@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 from pyega3.libs.data_file import DataFile
-from pyega3.libs.error import MaxRetriesReachedError
+from pyega3.libs.error import MaxRetriesReachedError, MD5MismatchError
 
 OUTPUT_DIR = tempfile.gettempdir()
 
@@ -123,6 +123,8 @@ def test_post_stats_if_download_failed(mock_data_server, random_binary_file, moc
         with pytest.raises(MaxRetriesReachedError) as exception_info:
             file.download_file_retry(1, OUTPUT_DIR, genomic_range_args=None, max_retries=max_retries, retry_wait=0)
     assert len(exception_info.value.download_stats_list) == max_retries + 1
+    assert exception_info.type == MaxRetriesReachedError
+    assert isinstance(exception_info.value.__cause__, MD5MismatchError)
 
 
 def _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5):
