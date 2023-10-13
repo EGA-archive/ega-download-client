@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 from pyega3.libs.data_file import DataFile
+from pyega3.libs.error import MaxRetriesReachedError
 
 OUTPUT_DIR = tempfile.gettempdir()
 
@@ -33,9 +34,9 @@ def mock_writing_files():
 
     def os_stat_mock(fn):
         fn = os.path.basename(fn)
-        X = namedtuple('X', 'st_size f1 f2 f3 f4 f5 f6 f7 f8 f9')
-        result = X(*([None] * 10))
-        return result._replace(st_size=len(files[fn]))
+        X = namedtuple('X', 'st_size st_mtime f1 f2 f3 f4 f5 f6 f7 f8 f9')
+        result = X(*([None] * 11))
+        return result._replace(st_size=len(files.get(fn, "")))
 
     def os_rename_mock(s, d):
         files.__setitem__(os.path.basename(d), files.pop(os.path.basename(s)))
@@ -51,32 +52,18 @@ def mock_writing_files():
 
 
 def test_download_file(mock_data_server, random_binary_file, mock_writing_files, mock_server_config, mock_data_client):
-    file_id = "EGAF00000000001"
-    file_name = "resulting.file"
     file_md5 = hashlib.md5(random_binary_file).hexdigest()
-
-    mock_data_server.file_content[file_id] = random_binary_file
-
-    file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
-                    size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
     file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
-    assert random_binary_file == mock_writing_files[file_name]
+    assert random_binary_file == mock_writing_files[file.display_name]
 
 
 def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_server, random_binary_file,
                                                                  mock_writing_files, mock_server_config,
                                                                  mock_data_client):
-    file_id = "EGAF00000000001"
-    file_name = "resulting.file"
     file_md5 = hashlib.md5(random_binary_file).hexdigest()
-
-    mock_data_server.file_content[file_id] = random_binary_file
-
-    mock_writing_files[file_name] = random_binary_file
-
-    # add 16 bytes to file size ( IV adjustment )
-    file = DataFile(mock_data_client, file_id, display_file_name=file_name, file_name=file_name + ".cip",
-                    size=len(random_binary_file) + 16, unencrypted_checksum=file_md5)
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
+    mock_writing_files[file.display_name] = random_binary_file
     file.download_file_retry(1,
                              output_dir=OUTPUT_DIR,
                              genomic_range_args=None, max_retries=5, retry_wait=0)
@@ -85,22 +72,65 @@ def test_no_error_if_output_file_already_exists_with_correct_md5(mock_data_serve
 def test_output_file_is_removed_if_md5_was_invalid(mock_data_server, random_binary_file, mock_writing_files,
                                                    mock_server_config,
                                                    mock_data_client):
-    file_id = "EGAF00000000001"
-    file_name = "resulting.file"
     wrong_md5 = "wrong_md5_exactly_32_chars_longg"
-
-    mock_data_server.file_content[file_id] = random_binary_file
-
-    file = DataFile(mock_data_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16, wrong_md5)
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, wrong_md5)
 
     with mock.patch('os.remove') as mocked_remove:
         with pytest.raises(Exception):
             file.download_file_retry(1, OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
 
     mocked_remove.assert_has_calls(
-        [mock.call(os.path.join(os.getcwd(), file_id, os.path.basename(f))) for f in
-         list(mock_writing_files.keys()) if file_name not in f],
+        [mock.call(os.path.join(os.getcwd(), file.id, os.path.basename(f))) for f in
+         list(mock_writing_files.keys()) if file.display_name not in f],
         any_order=True)
+
+
+def test_post_stats_if_download_succeeded(mock_data_server, random_binary_file, mock_writing_files,
+                                          mock_server_config, mock_data_client):
+    file_md5 = hashlib.md5(random_binary_file).hexdigest()
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
+    stats = file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None, max_retries=5, retry_wait=0)
+    assert len(stats) == 1
+    assert stats[0].status == "Succeeded"
+    assert stats[0].session_id == "sessionid"
+    assert stats[0].file_size_in_bytes == file.size
+    assert stats[0].error_reason is None
+    assert stats[0].error_details is None
+    assert stats[0].number_of_connections == 1
+    assert stats[0].number_of_attempts == 1
+    assert stats[0].client_stats_created_at > stats[0].client_download_started_at
+
+
+def test_post_no_stats_if_file_exists_with_correct_md5(mock_data_server, random_binary_file,
+                                                       mock_writing_files, mock_server_config,
+                                                       mock_data_client):
+    file_md5 = hashlib.md5(random_binary_file).hexdigest()
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5)
+    mock_writing_files[file.display_name] = random_binary_file
+    stats = file.download_file_retry(1,
+                                     output_dir=OUTPUT_DIR,
+                                     genomic_range_args=None, max_retries=5, retry_wait=0)
+    assert len(stats) == 0
+
+
+def test_post_stats_if_download_failed(mock_data_server, random_binary_file, mock_writing_files,
+                                       mock_server_config,
+                                       mock_data_client):
+    wrong_md5 = "wrong_md5_exactly_32_chars_longg"
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, wrong_md5)
+    max_retries = 5
+    with mock.patch('os.remove'):
+        with pytest.raises(MaxRetriesReachedError) as exception_info:
+            file.download_file_retry(1, OUTPUT_DIR, genomic_range_args=None, max_retries=max_retries, retry_wait=0)
+    assert len(exception_info.value.download_stats_list) == max_retries + 1
+
+
+def _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, file_md5):
+    file_id = "EGAF00000000001"
+    file_name = "resulting.file"
+    mock_data_server.file_content[file_id] = random_binary_file
+    file = DataFile(mock_data_client, file_id, file_name, file_name + ".cip", len(random_binary_file) + 16, file_md5)
+    return file
 
 
 def test_genomic_range_calls_htsget(mock_data_server, random_binary_file, mock_writing_files, mock_server_config,

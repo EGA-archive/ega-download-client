@@ -14,7 +14,7 @@ import psutil
 from tqdm import tqdm
 
 from pyega3.libs import utils
-from pyega3.libs.error import DataFileError, SliceError, MD5MismatchError
+from pyega3.libs.error import DataFileError, SliceError, MD5MismatchError, MaxRetriesReachedError
 from pyega3.libs.stats import Stats
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
@@ -295,7 +295,7 @@ class DataFile:
                 self._download_htsget_slice(genomic_range_args, max_retries, output_file, retry_wait)
             else:
                 stats_list = self._download_whole_file(max_retries, max_slice_size, num_connections, output_file,
-                                                   retry_wait, temporary_directory)
+                                                       retry_wait, temporary_directory)
                 download_stats_list.extend(stats_list)
 
         return download_stats_list
@@ -358,7 +358,9 @@ class DataFile:
                                                       num_connections, error_reason, error_details)
                     self.data_client.post_stats(final_failed_stats)
                     download_stats_list.append(final_failed_stats)
-                    raise e
+
+                    raise MaxRetriesReachedError(f'Download retries are exhausted, error: {str(e)}',
+                                                 download_stats_list) from e
 
                 failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
                                             num_connections, error_reason, error_details)
