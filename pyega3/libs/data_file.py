@@ -7,12 +7,15 @@ import shutil
 import sys
 import time
 import urllib
+from datetime import datetime
 
 import htsget
 import psutil
 from tqdm import tqdm
 
 from pyega3.libs import utils
+from pyega3.libs.error import DataFileError, SliceError, MD5MismatchError, MaxRetriesReachedError
+from pyega3.libs.stats import Stats
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
 
@@ -112,11 +115,7 @@ class DataFile:
         check_sum = self.unencrypted_checksum
         options = {"destinationFormat": "plain"}
 
-        file_size -= 16  # 16 bytes IV not necesary in plain mode
-
-        if os.path.exists(output_file) and utils.md5(output_file, file_size) == check_sum:
-            DataFile.print_local_file_info('Local file exists:', output_file, check_sum)
-            return
+        file_size -= 16  # 16 bytes IV not necessary in plain mode
 
         num_connections = max(num_connections, 1)
         num_connections = min(num_connections, 128)
@@ -181,9 +180,13 @@ class DataFile:
                     f" Can't validate download. Please contact EGA helpdesk on helpdesk@ega-archive.org")
             with open(utils.get_fname_md5(output_file), 'wb') as f:  # save good md5 in aux file for future re-use
                 f.write(received_file_md5.encode())
+
         else:
             os.remove(output_file)
-            raise Exception(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
+            raise MD5MismatchError(f"Download process expected md5 value '{check_sum}' but got '{received_file_md5}'")
+
+    def does_file_exist(self, output_file):
+        return os.path.exists(output_file) and utils.md5(output_file, self.size) == self.unencrypted_checksum
 
     def download_file_slice_(self, args):
         return self.download_file_slice(*args)
@@ -228,7 +231,7 @@ class DataFile:
             total_received = os.path.getsize(file_name)
 
             if total_received != length:
-                raise Exception(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
+                raise SliceError(f"Slice error: received={total_received}, requested={length}, file='{file_name}'")
 
         except Exception as e:
             if os.path.exists(file_name):
@@ -274,67 +277,114 @@ class DataFile:
 
     def download_file_retry(self, num_connections, output_dir, genomic_range_args, max_retries, retry_wait,
                             max_slice_size=DEFAULT_SLICE_SIZE):
+        download_stats_list = []
+
         if self.name.endswith(".gpg"):
             logging.info(
                 "GPG files are currently not supported."
                 " Please email EGA Helpdesk at helpdesk@ega-archive.org")
-            return
+        else:
+            logging.info(f"File Id: '{self.id}'({self.size} bytes).")
+            self._check_and_warn_if_file_is_bigger_than_free_space()
+            output_file = self.generate_output_filename(output_dir, genomic_range_args)
+            temporary_directory = self._create_temp_dir(output_file)
 
-        logging.info(f"File Id: '{self.id}'({self.size} bytes).")
+            if self.does_file_exist(output_file):
+                DataFile.print_local_file_info('Local file exists:', output_file, self.unencrypted_checksum)
+            elif DataFile.is_genomic_range(genomic_range_args):
+                self._download_htsget_slice(genomic_range_args, max_retries, output_file, retry_wait)
+            else:
+                stats_list = self._download_whole_file(max_retries, max_slice_size, num_connections, output_file,
+                                                       retry_wait, temporary_directory)
+                download_stats_list.extend(stats_list)
 
-        output_file = self.generate_output_filename(output_dir, genomic_range_args)
+        return download_stats_list
 
-        temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
-        if not os.path.exists(temporary_directory):
-            os.makedirs(temporary_directory)
-
+    def _check_and_warn_if_file_is_bigger_than_free_space(self):
         hdd = psutil.disk_usage(os.getcwd())
         logging.info(f"Total space : {hdd.total / (2 ** 30):.2f} GiB")
         logging.info(f"Used space : {hdd.used / (2 ** 30):.2f} GiB")
         logging.info(f"Free space : {hdd.free / (2 ** 30):.2f} GiB")
-
         # If file is bigger than free space, warning
         if hdd.free < self.size:
             logging.warning(f"The size of the file that you want to download is bigger than your free space in this "
                             f"location")
 
-        if DataFile.is_genomic_range(genomic_range_args):
-            if self.data_client.api_version == 1:
-                endpoint_type = "files"
-            else:
-                endpoint_type = "htsget/reads" if self.is_bam_or_cram_file(self.name) else "htsget/variants"
-            with open(output_file, 'wb') as output:
-                htsget.get(
-                    f"{self.data_client.htsget_url}/{endpoint_type}/{self.id}",
-                    output,
-                    reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
-                    start=genomic_range_args[2], end=genomic_range_args[3],
-                    data_format=genomic_range_args[4],
-                    max_retries=sys.maxsize if max_retries < 0 else max_retries,
-                    retry_wait=retry_wait,
-                    bearer_token=self.data_client.auth_client.token)
-            DataFile.print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)
-            return
+    def _download_htsget_slice(self, genomic_range_args, max_retries, output_file, retry_wait):
+        if self.data_client.api_version == 1:
+            endpoint_type = "files"
+        else:
+            endpoint_type = "htsget/reads" if self.is_bam_or_cram_file(self.name) else "htsget/variants"
+        with open(output_file, 'wb') as output:
+            htsget.get(
+                f"{self.data_client.htsget_url}/{endpoint_type}/{self.id}",
+                output,
+                reference_name=genomic_range_args[0], reference_md5=genomic_range_args[1],
+                start=genomic_range_args[2], end=genomic_range_args[3],
+                data_format=genomic_range_args[4],
+                max_retries=sys.maxsize if max_retries < 0 else max_retries,
+                retry_wait=retry_wait,
+                bearer_token=self.data_client.auth_client.token)
+        DataFile.print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)
 
+    def _download_whole_file(self, max_retries, max_slice_size, num_connections, output_file, retry_wait,
+                             temporary_directory):
+        download_stats_list = []
         done = False
         num_retries = 0
+
         while not done:
             try:
+                start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
+                succeeded_stats = Stats.succeeded(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                                  num_connections)
+                self.data_client.post_stats(succeeded_stats)
+                download_stats_list.append(succeeded_stats)
                 done = True
             except Exception as e:
                 if e is ConnectionError:
                     logging.info("Failed to connect to data service. Check that the necessary ports are open in your "
                                  "firewall. See the documentation for more information.")
                 logging.exception(e)
+
+                error_reason, error_details = self._format_stats_error_reason(e)
+
                 if num_retries == max_retries:
                     if DataFile.temporary_files_should_be_deleted:
                         self.delete_temporary_folder(temporary_directory)
 
-                    raise e
+                    final_failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                                      num_connections, error_reason, error_details)
+                    self.data_client.post_stats(final_failed_stats)
+                    download_stats_list.append(final_failed_stats)
+
+                    raise MaxRetriesReachedError(f'Download retries are exhausted, error: {str(e)}',
+                                                 download_stats_list) from e
+
+                failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                            num_connections, error_reason, error_details)
+                self.data_client.post_stats(failed_stats)
+                download_stats_list.append(failed_stats)
+
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
+
+        return download_stats_list
+
+    def _create_temp_dir(self, output_file):
+        temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")
+        if not os.path.exists(temporary_directory):
+            os.makedirs(temporary_directory)
+        return temporary_directory
+
+    def _format_stats_error_reason(self, e):
+        error_class_name = e.__class__.__name__
+        error_reason = str(e)
+        if isinstance(e, DataFileError):
+            error_reason = e.message
+        return error_class_name, error_reason
 
     def is_bam_or_cram_file(self, name: str):
         return re.search("\.bam", name, re.IGNORECASE) or re.search("\.cram", name, re.IGNORECASE)

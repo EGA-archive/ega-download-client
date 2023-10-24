@@ -3,6 +3,9 @@ import re
 import urllib
 
 import responses
+from requests import PreparedRequest
+
+from pyega3.libs.server_config import ServerConfig
 
 
 class MockDataServer:
@@ -13,8 +16,9 @@ class MockDataServer:
     files = {}
     file_content = {}
 
-    def __init__(self, mock_requests, url, token):
-        self.url = url
+    def __init__(self, mock_requests, server_config: ServerConfig, token):
+        self.url = server_config.url_api
+        self.stats_url = server_config.url_api_stats
         self.token = token
 
         mock_requests.add_callback(
@@ -42,6 +46,12 @@ class MockDataServer:
             responses.GET,
             re.compile(self.url + "/files/.*"),
             callback=self.download_file_callback
+        )
+
+        mock_requests.add_callback(
+            responses.POST,
+            re.compile(self.stats_url),
+            callback=self.post_stats_callback
         )
 
         mock_requests.assert_all_requests_are_fired = False
@@ -94,6 +104,11 @@ class MockDataServer:
             return 200, {}, file_content[start:end + 1]
 
         return 200, {}, file_content
+
+    def post_stats_callback(self, request: PreparedRequest):
+        if not self.check_auth_header(request):
+            return 400, {}, json.dumps({"error_description": "invalid token"})
+        return 200, {}, request.body
 
     @property
     def all_datasets(self):

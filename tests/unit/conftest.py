@@ -27,6 +27,7 @@ def mock_server_config():
                         url_api='https://test.data.server',
                         url_auth='https://test.auth.server/ega-openid-connect-server/token',
                         url_api_metadata=None,
+                        url_api_stats='https://test.stats.server',
                         url_api_ticket='https://test.ticket.server',
                         client_secret='test-client-secret')
 
@@ -51,14 +52,15 @@ def mock_auth_client():
 
 
 @pytest.fixture
-def mock_data_client(mock_server_config, mock_auth_client):
-    return DataClient(mock_server_config.url_api, mock_server_config.url_api_ticket, mock_auth_client, {})
-
-
-@pytest.fixture
 def mock_requests():
     with responses.RequestsMock() as rsps:
         yield rsps
+
+
+@pytest.fixture
+def mock_data_client(mock_server_config, mock_auth_client):
+    return DataClient(mock_server_config.url_api, mock_server_config.url_api_ticket, mock_server_config.url_api_stats,
+                      mock_auth_client, {'Session-Id': 'sessionid'})
 
 
 @pytest.fixture
@@ -81,7 +83,7 @@ def temporary_output_file():
 
 @pytest.fixture
 def mock_data_server(mock_requests, mock_server_config, mock_auth_client):
-    return MockDataServer(mock_requests, mock_server_config.url_api, mock_auth_client.token)
+    return MockDataServer(mock_requests, mock_server_config, mock_auth_client.token)
 
 
 @pytest.fixture

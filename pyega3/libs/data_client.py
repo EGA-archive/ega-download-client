@@ -7,6 +7,8 @@ from requests import Session
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE
 from urllib3.util import retry
 
+from pyega3.libs.stats import Stats
+
 
 def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=None) -> Session:
     retry_policy = retry_policy or retry.Retry(
@@ -31,10 +33,12 @@ def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=No
 
 class DataClient:
 
-    def __init__(self, data_url, htsget_url, auth_client, standard_headers, connections=None, metadata_url=None, api_version=1):
+    def __init__(self, data_url, htsget_url, stats_url, auth_client, standard_headers, connections=1, metadata_url=None,
+                 api_version=1):
         self.url = data_url
         self.metadata_url = metadata_url if metadata_url is not None else data_url + "/metadata"
         self.htsget_url = htsget_url
+        self.stats_url = stats_url
         self.auth_client = auth_client
         self.standard_headers = standard_headers
         self.session = create_session_with_retry(pool_max_size=connections)
@@ -77,3 +81,27 @@ class DataClient:
             self.print_debug_info(url, None, f"Response headers: {r.headers}")
             r.raise_for_status()
             yield r
+
+    def post_stats(self, stats: Stats):
+        format = '%Y-%m-%dT%H:%M:%S'
+        stats.session_id = self.standard_headers.get('Session-Id')
+        payload = {
+            'clientDownloadStartedAt': stats.client_download_started_at.strftime(format),
+            'clientStatsCreatedAt': stats.client_stats_created_at.strftime(format),
+            'fileId': stats.file_id,
+            'numberOfAttempts': stats.number_of_attempts,
+            'fileSizeInBytes': stats.file_size_in_bytes,
+            'numberOfConnections': stats.number_of_connections,
+            'sessionId': stats.session_id,
+            'status': stats.status,
+            'errorReason': stats.error_reason if stats.status == 'Failed' else None,
+            'errorDetails': stats.error_details if stats.status == 'Failed' else None
+        }
+        response = self.session.post(f"{self.stats_url}", json=payload,
+                                     headers={'Authorization': f'Bearer {self.auth_client.token}'})
+
+        if response.status_code != requests.codes.ok:
+            logging.warning(f'Failed to report stats to EGA: {json.dumps(payload)}')
+            logging.warning(f'url: {self.stats_url}, response: {str(response.status_code)}')
+
+        return response.json()
