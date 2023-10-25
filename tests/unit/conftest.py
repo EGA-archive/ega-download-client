@@ -44,6 +44,7 @@ class MockAuthClient:
         if token is None:
             token = ''.join(random.choices(string.ascii_letters, k=64))
         self.token = token
+        self.user_id = 'EGAW123'
 
 
 @pytest.fixture
