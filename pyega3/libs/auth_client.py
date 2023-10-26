@@ -1,12 +1,14 @@
 import logging
 import sys
 import time
+from urllib.parse import urljoin
 
 import requests
 
 
 class AuthClient:
     _token = None
+    _user_id = None
     credentials = None
     token_expires_at = None
     token_expiry_seconds = 1 * 60 * 60  # token expires after 1 hour
@@ -53,3 +55,18 @@ class AuthClient:
             self.token_expires_at = time.time() + self.token_expiry_seconds
 
         return self._token
+
+    @property
+    def user_id(self):
+        if not self._user_id:
+            headers = {'Accept': 'application/json', 'Authorization': f'Bearer {self.token}'}
+            user_info_url = urljoin(self.url, 'userinfo')
+            r = requests.post(user_info_url, headers=headers)
+            r.raise_for_status()
+            reply = r.json()
+            self._user_id = reply.get('sub')
+        return self._user_id
+
+
+
+

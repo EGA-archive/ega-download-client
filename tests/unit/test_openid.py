@@ -1,5 +1,6 @@
 import json
 from urllib import parse
+from urllib.parse import urljoin
 
 import pytest
 import responses
@@ -50,3 +51,13 @@ def test_bad_openid_credentials_exits(mock_openid_server, mock_server_config):
     auth_server.credentials = bad_credentials
     with pytest.raises(SystemExit):
         token = auth_server.token
+
+
+def test_get_user_id_from_openid_server(mock_requests, mock_openid_server, mock_server_config):
+    user_id = common.rand_str()
+    auth_server = AuthClient(mock_server_config.url_auth, mock_server_config.client_secret, {})
+    good_credentials = Credentials(username=mock_openid_server.username, password=mock_openid_server.password)
+    auth_server.credentials = good_credentials
+    user_info_url = urljoin(mock_server_config.url_auth, 'userinfo')
+    mock_requests.add(responses.POST, user_info_url, body=json.dumps({'sub': user_id}), status=200)
+    assert auth_server.user_id == user_id

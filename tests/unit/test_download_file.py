@@ -95,6 +95,7 @@ def test_post_stats_if_download_succeeded(mock_data_server, random_binary_file, 
     assert len(stats) == 1
     assert stats[0].status == "Succeeded"
     assert stats[0].session_id == "sessionid"
+    assert stats[0].user_id == "EGAW123"
     assert stats[0].file_size_in_bytes == file.size
     assert stats[0].error_reason is None
     assert stats[0].error_details is None
@@ -131,6 +132,9 @@ def test_post_stats_if_download_failed(mock_data_server, random_binary_file, moc
     assert isinstance(cause, MD5MismatchError)
     stats: List[Stats] = exception_info.value.download_stats_list
     assert len(stats) == max_retries + 1
+    assert stats[0].session_id == "sessionid"
+    assert stats[0].user_id == "EGAW123"
+    assert stats[0].status == "Failed"
     assert stats[0].error_details == cause.message
     assert stats[0].error_reason == cause.__class__.__name__
     assert stats[max_retries].error_details == cause.message
