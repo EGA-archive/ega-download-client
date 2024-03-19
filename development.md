@@ -13,6 +13,9 @@ The repo is maintained by the EGA development team. The client connects to the f
 6. Create a PR against master
 7. Merge PR
 8. Push a tag. The tag must match the version in the VERSION file (there is an internal JIRA ticket EE-2809 filed to ensure this in the future). The tag push will then trigger the GitLab pipeline which will run tests and release to PyPI which is manually trigger at the moment to have more control on when to release.
+9. Release to PyPI via manual trigger in GitLab https://gitlab.ebi.ac.uk/EGA/ega-download-client/-/pipelines
+10. Verify the new version is published in PyPI https://pypi.org/project/pyega3/
+11. Add a release note to describe the changes from last release
 
 ## Release a new version to PyPI
 ```mermaid
