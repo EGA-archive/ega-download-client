@@ -327,3 +327,6 @@ If, after troubleshooting an issue, you are still experiencing difficulties, ple
 ## Attribution
 
 Parts of pyEGA3 are derived from [pyEGA](https://github.com/blachlylab/pyega) developed by James Blachly.
+
+## Development
+See guide in updating and releasing updates to client in the [Development](development.md) page.
