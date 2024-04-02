@@ -314,7 +314,7 @@ class DataFile:
         logging.info(f"Free space : {hdd.free / (2 ** 30):.2f} GiB")
         # If file is bigger than free space, warning
         if hdd.free < self.size:
-            logging.warning(f"The size of the file that you want to download is biggear than your free space in this "
+            logging.warning(f"The size of the file that you want to download is bigger than your free space in this "
                             f"location")
 
     def _download_htsget_slice(self, genomic_range_args, max_retries, output_file, retry_wait):
