@@ -91,6 +91,7 @@ check-version:
     - 'if [ "$TAG_VERSION" != "v$FILE_VERSION" ]; then echo "Version mismatch! Tag: $TAG_VERSION, VERSION file: $FILE_VERSION"; exit 1; fi'
   only:
     - tags
+    - EE-2809_check-version-file-vs-tag
 
 release:
     stage: release
