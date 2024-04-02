@@ -2,9 +2,9 @@ import logging
 import re
 
 
-def autocorrect_format_in_genomic_range_args(name: str, genomic_range_args: tuple, format_list: list) -> tuple:
+def autocorrect_format_in_genomic_range_args(name: str, genomic_range_args: tuple, possible_format_list: list) -> tuple:
     file_format_from_user = genomic_range_args[4] if len(genomic_range_args) == 5 else None
-    detected_file_format = detect_file_format(name, format_list)
+    detected_file_format = detect_file_format(name, possible_format_list)
     if file_format_from_user and detected_file_format and file_format_from_user != detected_file_format:
         logging.warning(
             f"Warning: The specified format {file_format_from_user} does not match the detected format in the "
@@ -32,10 +32,10 @@ def search_format_in_filename(file_format: str, filename: str):
     return re.search(f"\.{file_format}", filename, re.IGNORECASE)
 
 
-def detect_file_format(filename, format_list):
+def detect_file_format(filename, possible_format_list):
     detected_file_format = None
 
-    for file_format in format_list:
+    for file_format in possible_format_list:
         if search_format_in_filename(file_format.lower(), filename):
             detected_file_format = file_format
             break
