@@ -38,9 +38,8 @@ end
 ```
 
 The GitLab pipeline pipeline covers running unit tests, functional tests to be run automatically after a commit is
-tagged for release. It also provides
-the ability to download the python package (within a week) for manual testing. Manual testing can test other aspects of
-the download client like usability and the test cases which can’t be automated.
+tagged for release. It also provides the ability to download the python package (within a week) for manual testing.
+Manual testing can test other aspects of the download client like usability and the test cases which can’t be automated.
 
 The test cases covered in functional tests are detailed in
 the [pyega3 functional test plan](https://docs.google.com/spreadsheets/d/1kMLWBGDrsf3f98DdArOc0HXG-vsvMLJ5MjKk-aJfKGw/edit#gid=0).
