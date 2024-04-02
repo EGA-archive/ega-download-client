@@ -17,7 +17,11 @@ from pyega3.libs import utils
 from pyega3.libs.error import DataFileError, SliceError, MD5MismatchError, MaxRetriesReachedError
 from pyega3.libs.stats import Stats
 
+from pyega3.libs.file_format import is_bam_or_cram_file, autocorrect_format_in_genomic_range_args
+
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
+
+SUPPORTED_FILE_FORMATS = ["BAM", "CRAM", "VCF", "BCF"]
 
 
 class DataFile:
@@ -292,7 +296,10 @@ class DataFile:
             if self.does_file_exist(output_file):
                 DataFile.print_local_file_info('Local file exists:', output_file, self.unencrypted_checksum)
             elif DataFile.is_genomic_range(genomic_range_args):
-                self._download_htsget_slice(genomic_range_args, max_retries, output_file, retry_wait)
+                corrected_genomic_range_args = autocorrect_format_in_genomic_range_args(self.name,
+                                                                                        genomic_range_args,
+                                                                                        SUPPORTED_FILE_FORMATS)
+                self._download_htsget_slice(corrected_genomic_range_args, max_retries, output_file, retry_wait)
             else:
                 stats_list = self._download_whole_file(max_retries, max_slice_size, num_connections, output_file,
                                                        retry_wait, temporary_directory)
@@ -307,14 +314,14 @@ class DataFile:
         logging.info(f"Free space : {hdd.free / (2 ** 30):.2f} GiB")
         # If file is bigger than free space, warning
         if hdd.free < self.size:
-            logging.warning(f"The size of the file that you want to download is bigger than your free space in this "
+            logging.warning(f"The size of the file that you want to download is biggear than your free space in this "
                             f"location")
 
     def _download_htsget_slice(self, genomic_range_args, max_retries, output_file, retry_wait):
         if self.data_client.api_version == 1:
             endpoint_type = "files"
         else:
-            endpoint_type = "htsget/reads" if self.is_bam_or_cram_file(self.name) else "htsget/variants"
+            endpoint_type = "htsget/reads" if is_bam_or_cram_file(self.name) else "htsget/variants"
         with open(output_file, 'wb') as output:
             htsget.get(
                 f"{self.data_client.htsget_url}/{endpoint_type}/{self.id}",
@@ -385,9 +392,6 @@ class DataFile:
         if isinstance(e, DataFileError):
             error_reason = e.message
         return error_class_name, error_reason
-
-    def is_bam_or_cram_file(self, name: str):
-        return re.search("\.bam", name, re.IGNORECASE) or re.search("\.cram", name, re.IGNORECASE)
 
     def delete_temporary_folder(self, temporary_directory):
         try:
