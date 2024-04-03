@@ -5,19 +5,32 @@ serves the files.
 
 ## Update the client
 
-1. Clone the repo in a local workspace
-2. Create a feature branch
+1. Clone the repo in a local workspace.
+2. Create a feature branch.
 3. Add changes & tests. To run pyega3 command locally:
     ```bash
     python -m pyega3.pyega3 -t -d fetch <EGAF id> 
     ```
-4. Commit and push the changes
-5. Update the VERSION file with the new target version
-6. Create a PR against master
-7. Merge PR
-8. Push a tag. The tag must match the version in the VERSION file (the check-version job in pre-release stage checks
-   this). The tag push will then trigger the GitLab pipeline which will run tests and release to PyPI which is manually
-   trigger at the moment to have more control on when to release.
+4. Commit and push the changes.
+5. Update the VERSION file with the new target version.
+6. Create a PR against master.
+7. Merge PR.
+8. Push a tag. Tag commit to release with the new version. Follow [semantic versioning](https://semver.org/).
+   For example, for the new version `5.2.0` , create the tag:
+   ```bash
+   git tag v5.2.0
+   ```
+   Note that currently we prefix the tag with a 'v' character.
+
+   Push the tag:
+   ```bash
+   git push origin v5.2.0
+   ```
+
+   The tag push will then trigger the GitLab pipeline which will run tests and release to PyPI which is manually trigger
+   at the moment to have more control on when to release. The tag must match the version in the VERSION file (the
+   check-version job in pre-release stage in the GitLab pipeline verifies this).
+
 9. Release to PyPI via manual trigger in GitLab https://gitlab.ebi.ac.uk/EGA/ega-download-client/-/pipelines
 10. Verify the new version is published in PyPI https://pypi.org/project/pyega3/
 11. Add a release note to describe the changes from last release
@@ -29,11 +42,12 @@ graph LR
     A[Update VERSION file] --> B[Push tag] --> C[ Run Unit tests]
     D --> G[Download package]
     G --> H[Run manual tests]
-    H --> F
+    H --> I
 subgraph GitLab pipeline
     C --> D[Build package]
     D --> E["Run functional tests <br> (allow failure)"]
-    E --> F["Release to PyPI <br> (manual trigger)"]
+    E --> F["Check VERSION file content matches git tag"]
+    F --> I["Release to PyPI <br> (manual trigger)"]
 end
 ```
 
