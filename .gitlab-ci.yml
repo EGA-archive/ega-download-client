@@ -6,6 +6,7 @@ stages:
     - test
     - build
     - functional_test
+    - pre-release
     - release
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -81,6 +82,15 @@ functional_tests:
         - export PYEGA3_VERSION=$(cat pyega3/VERSION)
         - pip install "dist/pyega3-$PYEGA3_VERSION.tar.gz"
         - pytest tests/functional
+
+check-version:
+  stage: pre-release
+  script:
+    - 'TAG_VERSION=$(git describe --tags --abbrev=0)'
+    - 'FILE_VERSION=$(cat pyega3/VERSION)'
+    - 'if [ "$TAG_VERSION" != "v$FILE_VERSION" ]; then echo "Version mismatch! Tag: $TAG_VERSION, VERSION file: $FILE_VERSION"; exit 1; fi'
+  only:
+    - tags
 
 release:
     stage: release
