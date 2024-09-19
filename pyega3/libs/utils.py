@@ -14,12 +14,16 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge, downloaded_file_to
 
     with tqdm(total=int(downloaded_file_total_size), unit='B', unit_scale=True) as pbar:
         os.rename(files_to_merge[0], target_file_name)
-        logging.debug(files_to_merge[0])
+        first_chunk_md5 = calculate_md5(target_file_name)
+        logging.debug(f"Merged first chunk: {files_to_merge[0]}, MD5: {first_chunk_md5}")
+
         if pbar:
             pbar.update(os.path.getsize(target_file_name))
 
         with open(target_file_name, 'ab') as target_file:
             for file_name in files_to_merge[1:]:
+                chunk_md5 = calculate_md5(file_name)
+                logging.info(f"Merging chunk: {file_name}, MD5: {chunk_md5}")
                 with open(file_name, 'rb') as f:
                     logging.debug(file_name)
                     copyfileobj(f, target_file, 65536, pbar)
@@ -39,7 +43,18 @@ def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None):
         pbar.update(len(buf))
 
 
-def calculate_md5(fname, file_size):
+def calculate_md5(fname):
+    if not os.path.exists(fname):
+        raise Exception(f"Local file '{fname}' does not exist")
+
+    hash_md5 = hashlib.md5()
+    with open(fname, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b''):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def calculate_md5_with_progress(fname, file_size):
     if not os.path.exists(fname):
         raise Exception(f"Local file '{fname}' does not exist")
     hash_md5 = hashlib.md5()
@@ -66,7 +81,7 @@ def md5(fname, file_size):
         with open(fname_md5, 'rb') as f:
             return f.read().decode()
     # now do the real calculation
-    result = calculate_md5(fname, file_size)
+    result = calculate_md5_with_progress(fname, file_size)
     return result
 
 

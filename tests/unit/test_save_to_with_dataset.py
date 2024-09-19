@@ -138,7 +138,7 @@ def test_corrupted_file_in_a_directory_is_downloaded_again(mock_dataset_files, d
 
         # Check that the actual MD5 of the re-downloaded file is correct:
         correct_expected_md5 = file['unencryptedChecksum']
-        actual_md5 = utils.calculate_md5(file_path, file['fileSize'])
+        actual_md5 = utils.calculate_md5_with_progress(file_path, file['fileSize'])
         assert actual_md5 == correct_expected_md5
 
         # The .md5 file should now exist:
