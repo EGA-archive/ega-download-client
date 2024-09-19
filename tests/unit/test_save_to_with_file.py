@@ -119,7 +119,7 @@ def test_corrupted_file_in_a_directory_is_downloaded_again(file_in_fire, fs):
 
     # Check that the actual MD5 of the re-downloaded file is correct:
     correct_expected_md5 = file_in_fire.unencrypted_checksum
-    actual_md5 = utils.calculate_md5(expected_local_file_name, file_in_fire.size)
+    actual_md5 = utils.calculate_md5_with_progress(expected_local_file_name, file_in_fire.size)
     assert actual_md5 == correct_expected_md5
 
     # The .md5 file should now exist:

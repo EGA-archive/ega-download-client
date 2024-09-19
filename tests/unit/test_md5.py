@@ -25,4 +25,4 @@ def test_calculating_md5_of_non_existent_file_raises_exception():
     assert not os.path.exists(non_existent_file)
 
     with pytest.raises(Exception):
-        utils.calculate_md5(non_existent_file, -1)
+        utils.calculate_md5_with_progress(non_existent_file, -1)

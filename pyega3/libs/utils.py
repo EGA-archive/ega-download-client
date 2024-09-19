@@ -34,14 +34,6 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge, downloaded_file_to
     logging.debug(f'Merged in {end - start} sec')
 
 
-def calculate_md5(file_path, chunk_size=65536):
-    md5_digest = hashlib.md5()
-    with open(file_path, 'rb') as f:
-        for chunk in iter(lambda: f.read(chunk_size), b''):
-            md5_digest.update(chunk)
-    return md5_digest.hexdigest()
-
-
 def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None):
     while 1:
         buf = f_source.read(length)
@@ -51,7 +43,18 @@ def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None):
         pbar.update(len(buf))
 
 
-def calculate_md5(fname, file_size):
+def calculate_md5(fname):
+    if not os.path.exists(fname):
+        raise Exception(f"Local file '{fname}' does not exist")
+
+    hash_md5 = hashlib.md5()
+    with open(fname, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b''):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def calculate_md5_with_progress(fname, file_size):
     if not os.path.exists(fname):
         raise Exception(f"Local file '{fname}' does not exist")
     hash_md5 = hashlib.md5()
@@ -78,7 +81,7 @@ def md5(fname, file_size):
         with open(fname_md5, 'rb') as f:
             return f.read().decode()
     # now do the real calculation
-    result = calculate_md5(fname, file_size)
+    result = calculate_md5_with_progress(fname, file_size)
     return result
 
 
