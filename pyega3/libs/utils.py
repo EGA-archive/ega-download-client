@@ -23,7 +23,7 @@ def merge_bin_files_on_disk(target_file_name, files_to_merge, downloaded_file_to
         with open(target_file_name, 'ab') as target_file:
             for file_name in files_to_merge[1:]:
                 chunk_md5 = calculate_md5(file_name)
-                logging.debug(f"Merging chunk: {file_name}, MD5: {chunk_md5}")
+                logging.info(f"Merging chunk: {file_name}, MD5: {chunk_md5}")
                 with open(file_name, 'rb') as f:
                     logging.debug(file_name)
                     copyfileobj(f, target_file, 65536, pbar)
