@@ -141,6 +141,8 @@ class DataFile:
                  min(chunk_len, file_size - chunk_start_pos), options, pbar)
                 for chunk_start_pos in range(0, file_size, chunk_len)]
 
+            all_slices = set([(param[1], param[2]) for param in params])
+
             for file in os.listdir(temporary_directory):
                 match = re.match(r"(.*)-from-(\d*)-len-(\d*).*", file)
                 file_id = match.group(1)
@@ -150,7 +152,7 @@ class DataFile:
                 if file_id != self.id:
                     continue
 
-                if (int(file_from), int(file_length)) in [(param[1], param[2]) for param in params]:
+                if (int(file_from), int(file_length)) in all_slices:
                     continue
 
                 logging.warning(f'Deleting the leftover {file} temporary file because the MAX_SLICE_SIZE parameter ('
