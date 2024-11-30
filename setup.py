@@ -37,7 +37,7 @@ setup(
     author="EGA team",
     author_email="ega-helpdesk@ebi.ac.uk",
     python_requires=">=3.6",
-    install_requires=["requests==2.26.0", "tqdm==4.19.6", "htsget==0.2.5", "psutil==5.6.6", "urllib3==1.26.7"],
+    install_requires=["requests==2.31.0", "tqdm==4.19.6", "htsget==0.2.5", "psutil==5.6.6", "urllib3==1.26.7"],
     tests_require=["pytest~=6.2.5", "coverage==4.5.1", "responses~=0.16.0", "pyfakefs~=4.5.3"],
     keywords=["EGA", "archive"],
     license="Apache License, Version 2.0",
