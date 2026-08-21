@@ -341,14 +341,9 @@ class DataFile:
         num_retries = 0
 
         while not done:
+            start_time = datetime.now()
             try:
-                start_time = datetime.now()
                 self.download_file(output_file, num_connections, max_slice_size)
-                succeeded_stats = Stats.succeeded(start_time, datetime.now(), self.id, num_retries + 1, self.size,
-                                                  num_connections)
-                self.data_client.post_stats(succeeded_stats)
-                download_stats_list.append(succeeded_stats)
-                done = True
             except Exception as e:
                 if e is ConnectionError:
                     logging.info("Failed to connect to data service. Check that the necessary ports are open in your "
@@ -363,7 +358,7 @@ class DataFile:
 
                     final_failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
                                                       num_connections, error_reason, error_details)
-                    self.data_client.post_stats(final_failed_stats)
+                    self._post_stats_nonfatal(final_failed_stats)
                     download_stats_list.append(final_failed_stats)
 
                     raise MaxRetriesReachedError(f'Download retries are exhausted, error: {str(e)}',
@@ -371,14 +366,26 @@ class DataFile:
 
                 failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
                                             num_connections, error_reason, error_details)
-                self.data_client.post_stats(failed_stats)
+                self._post_stats_nonfatal(failed_stats)
                 download_stats_list.append(failed_stats)
 
                 time.sleep(retry_wait)
                 num_retries += 1
                 logging.info(f"retry attempt {num_retries}")
+            else:
+                succeeded_stats = Stats.succeeded(start_time, datetime.now(), self.id, num_retries + 1, self.size,
+                                                  num_connections)
+                self._post_stats_nonfatal(succeeded_stats)
+                download_stats_list.append(succeeded_stats)
+                done = True
 
         return download_stats_list
+
+    def _post_stats_nonfatal(self, stats):
+        try:
+            self.data_client.post_stats(stats)
+        except Exception as exc:
+            logging.warning("Unable to submit download statistics: %s", exc)
 
     def _create_temp_dir(self, output_file):
         temporary_directory = os.path.join(os.path.dirname(output_file), ".tmp_download")

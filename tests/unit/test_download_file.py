@@ -3,10 +3,12 @@ import math
 import os
 import tempfile
 from collections import namedtuple
+from datetime import datetime
 from typing import List
 from unittest import mock
 
 import pytest
+import requests
 
 from pyega3.libs.data_file import DataFile
 from pyega3.libs.error import MaxRetriesReachedError, MD5MismatchError
@@ -102,6 +104,33 @@ def test_post_stats_if_download_succeeded(mock_data_server, random_binary_file, 
     assert stats[0].number_of_connections == 1
     assert stats[0].number_of_attempts == 1
     assert stats[0].client_stats_created_at > stats[0].client_download_started_at
+
+
+def test_telemetry_failure_does_not_change_download_success(mock_data_server, random_binary_file,
+                                                            mock_writing_files, mock_data_client):
+    correct_md5 = hashlib.md5(random_binary_file).hexdigest()
+    file = _create_data_file_with_md5(mock_data_client, mock_data_server, random_binary_file, correct_md5)
+
+    with mock.patch.object(mock_data_client, "post_stats", side_effect=RuntimeError("telemetry failed")) as post_stats:
+        stats = file.download_file_retry(1, output_dir=OUTPUT_DIR, genomic_range_args=None,
+                                         max_retries=5, retry_wait=0)
+
+    assert post_stats.call_count == 1
+    assert len(stats) == 1
+    assert stats[0].status == "Succeeded"
+
+
+def test_telemetry_network_retries_are_bounded(mock_data_client):
+    now = datetime.now()
+    stats = Stats.succeeded(now, now, "EGAF123456", 1, 100, 1)
+
+    with mock.patch.object(
+            mock_data_client.session, "post", side_effect=requests.exceptions.ConnectTimeout("telemetry timeout")
+    ) as post, mock.patch("pyega3.libs.data_client.time.sleep") as sleep:
+        assert mock_data_client.post_stats(stats) is None
+
+    assert post.call_count == 3
+    assert sleep.call_args_list == [mock.call(1), mock.call(2)]
 
 
 def test_post_no_stats_if_file_exists_with_correct_md5(mock_data_server, random_binary_file,
