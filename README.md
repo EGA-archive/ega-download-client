@@ -4,7 +4,7 @@
 
 The pyEGA3 download client is a python-based tool for viewing and downloading files from authorized EGA datasets. pyEGA3 uses the EGA Data API and has several key features:
 * Files are transferred over secure https connections and received unencrypted, so no need for decryption after download.
-* Downloads resume from where they left off in the event that the connection is interrupted.
+* Interrupted downloads reuse completed file slices; an incomplete slice is downloaded again.
 * pyEGA3 supports file segmenting and parallelized download of segments, improving overall performance.
 * After download completes, file integrity is verified using checksums.
 * pyEGA3 implements the GA4GH-compliant htsget protocol for download of genomic ranges for data files with accompanying index files.
@@ -244,11 +244,11 @@ optional arguments:
   --format {BAM,CRAM,VCF,BCF}, -f {BAM,CRAM,VCF,BCF}
                         The format of data to request.
   --max-retries MAX_RETRIES, -M MAX_RETRIES
-                        The maximum number of times to retry a failed
-                        transfer. Any negative number means infinite number of
-                        retries.
+                        Maximum retries for a genomic-range transfer. Whole-
+                        file downloads attempt each slice up to 3 times. Any
+                        negative number means infinite genomic-range retries.
   --retry-wait RETRY_WAIT, -W RETRY_WAIT
-                        The number of seconds to wait before retrying a failed
+                        Seconds to wait before retrying a genomic-range
                         transfer.
   --output-dir OUTPUT_DIR
                         Output directory. The files will be saved into this directory. Must exist. Default: the current working directory.
@@ -287,7 +287,7 @@ Using a very high number of connections will introduce overhead that can slow th
 
 ### File taking a long time to save
 
-Please note that when a file is being saved, it goes through two processes. First, the downloaded file "chunks" are pieced back together to reconstruct the original file. Second, pyEGA3 calculates the checksum of the file to confirm the file downloaded successfully. Larger files will take more time to reconstruct and validate the checksum.
+When a file is saved, downloaded chunks are reconstructed in order while the checksum is calculated from the same data pass. Larger files will take more time to reconstruct and validate.
 
 ### --saveto argument is not recognised
 

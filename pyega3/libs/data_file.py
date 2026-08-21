@@ -1,27 +1,80 @@
-import concurrent.futures
 import logging
 import logging.handlers
 import os
+import queue
 import re
 import shutil
+import statistics
 import sys
+import threading
 import time
 import urllib
 from datetime import datetime
 
 import htsget
+import requests
 import psutil
 from tqdm import tqdm
 
 from pyega3.libs import utils
-from pyega3.libs.error import DataFileError, SliceError, MD5MismatchError, MaxRetriesReachedError
+from pyega3.libs.error import AuthenticationError, DataFileError, SliceError, MD5MismatchError, MaxRetriesReachedError
 from pyega3.libs.stats import Stats
 
 from pyega3.libs.file_format import is_bam_or_cram_file, autocorrect_format_in_genomic_range_args
 
 DOWNLOAD_FILE_MEMORY_BUFFER_SIZE = 32 * 1024
+SLICE_DOWNLOAD_MAX_ATTEMPTS = 3
+SLICE_PROGRESS_BASELINE_MIN_SAMPLES = 5
+SLICE_PROGRESS_BASELINE_WINDOW = 20
+SLICE_PROGRESS_CHECK_SECONDS = 15
+SLICE_PROGRESS_MIN_RATE_RATIO = 0.02
+SLICE_PROGRESS_DEGRADED_SECONDS = 90
 
 SUPPORTED_FILE_FORMATS = ["BAM", "CRAM", "VCF", "BCF"]
+
+
+def _make_slice_progress_guard(get_baseline_rate):
+    checkpoint_time = time.monotonic()
+    checkpoint_bytes = 0
+    degraded_since = None
+
+    def check_progress(total_received):
+        nonlocal checkpoint_time, checkpoint_bytes, degraded_since
+
+        now = time.monotonic()
+        elapsed = now - checkpoint_time
+        if elapsed < SLICE_PROGRESS_CHECK_SECONDS:
+            return
+
+        recent_bytes = total_received - checkpoint_bytes
+        recent_rate = recent_bytes / elapsed
+        checkpoint_time = now
+        checkpoint_bytes = total_received
+
+        baseline_rate = get_baseline_rate()
+        if baseline_rate is None:
+            degraded_since = None
+            return
+
+        minimum_healthy_rate = baseline_rate * SLICE_PROGRESS_MIN_RATE_RATIO
+        if recent_rate >= minimum_healthy_rate:
+            degraded_since = None
+            return
+
+        if degraded_since is None:
+            degraded_since = now
+            return
+
+        degraded_for = now - degraded_since
+        if degraded_for >= SLICE_PROGRESS_DEGRADED_SECONDS:
+            ratio = recent_rate / baseline_rate
+            raise SliceError(
+                f"Slice progress is pathologically slow: recent={recent_rate:.0f} B/s, "
+                f"baseline={baseline_rate:.0f} B/s, ratio={ratio:.4f}, "
+                f"degraded_for={degraded_for:.0f}s"
+            )
+
+    return check_progress
 
 
 class DataFile:
@@ -157,10 +210,7 @@ class DataFile:
                                 f'and thus the slice sizes) have been modified since the last run.')
                 os.remove(os.path.join(temporary_directory, file))
 
-            results = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=num_connections) as executor:
-                for part_file_name in executor.map(self.download_file_slice_, params):
-                    results.append(part_file_name)
+            results = self._download_file_slices(params, num_connections)
 
             pbar.close()
 
@@ -193,10 +243,103 @@ class DataFile:
     def does_file_exist(self, output_file):
         return os.path.exists(output_file) and utils.md5(output_file, self.size) == self.unencrypted_checksum
 
+    def _download_file_slices(self, params, num_workers):
+        num_workers = min(max(num_workers, 1), len(params))
+        jobs = queue.Queue()
+        results = [None] * len(params)
+        failures = queue.Queue()
+        cancelled = threading.Event()
+        successful_rates = []
+        successful_rates_lock = threading.Lock()
+
+        def get_baseline_rate():
+            with successful_rates_lock:
+                if len(successful_rates) < SLICE_PROGRESS_BASELINE_MIN_SAMPLES:
+                    return None
+                return statistics.median(successful_rates[-SLICE_PROGRESS_BASELINE_WINDOW:])
+
+        def record_successful_rate(length, elapsed):
+            if elapsed <= 0:
+                return
+            with successful_rates_lock:
+                successful_rates.append(length / elapsed)
+                if len(successful_rates) > SLICE_PROGRESS_BASELINE_WINDOW:
+                    del successful_rates[:-SLICE_PROGRESS_BASELINE_WINDOW]
+
+        for index, param in enumerate(params):
+            jobs.put((index, param, 1))
+
+        def worker():
+            while True:
+                job = jobs.get()
+                try:
+                    if job is None:
+                        return
+
+                    if cancelled.is_set():
+                        continue
+
+                    index, param, attempt = job
+                    final_file_name = f'{param[0]}-from-{param[1]}-len-{param[2]}.slice'
+                    was_cached = os.path.exists(final_file_name)
+                    progress_guard = _make_slice_progress_guard(get_baseline_rate)
+                    attempt_started = time.monotonic()
+                    try:
+                        results[index] = self.download_file_slice_((*param, progress_guard))
+                        if not was_cached:
+                            record_successful_rate(param[2], time.monotonic() - attempt_started)
+                    except (requests.exceptions.ConnectionError,
+                            requests.exceptions.Timeout,
+                            requests.exceptions.ChunkedEncodingError,
+                            SliceError) as exc:
+                        if attempt < SLICE_DOWNLOAD_MAX_ATTEMPTS:
+                            logging.warning(
+                                f"Retrying slice from={param[1]} len={param[2]} "
+                                f"attempt={attempt + 1}/{SLICE_DOWNLOAD_MAX_ATTEMPTS} "
+                                f"after {type(exc).__name__}: {exc}"
+                            )
+                            jobs.put((index, param, attempt + 1))
+                        else:
+                            cancelled.set()
+                            failures.put((index, exc, exc.__traceback__))
+                    except AuthenticationError as exc:
+                        cancelled.set()
+                        failures.put((index, exc, exc.__traceback__))
+                    except (requests.exceptions.RetryError, requests.exceptions.HTTPError) as exc:
+                        cancelled.set()
+                        failures.put((index, exc, exc.__traceback__))
+                    except Exception as exc:
+                        cancelled.set()
+                        failures.put((index, exc, exc.__traceback__))
+                finally:
+                    jobs.task_done()
+
+        workers = [
+            threading.Thread(target=worker, name=f'pyega3-download-{index}')
+            for index in range(num_workers)
+        ]
+
+        for thread in workers:
+            thread.start()
+
+        jobs.join()
+
+        for _ in workers:
+            jobs.put(None)
+
+        for thread in workers:
+            thread.join()
+
+        if not failures.empty():
+            _, exc, traceback = failures.get()
+            raise exc.with_traceback(traceback)
+
+        return results
+
     def download_file_slice_(self, args):
         return self.download_file_slice(*args)
 
-    def download_file_slice(self, file_name, start_pos, length, options=None, pbar=None):
+    def download_file_slice(self, file_name, start_pos, length, options=None, pbar=None, progress_guard=None):
         if start_pos < 0:
             raise ValueError("start : must be positive")
         if length <= 0:
@@ -213,8 +356,14 @@ class DataFile:
 
         if os.path.exists(final_file_name):
             existing_size = os.stat(final_file_name).st_size
-            pbar and pbar.update(existing_size)
-            return final_file_name
+            if existing_size == length:
+                pbar and pbar.update(existing_size)
+                return final_file_name
+            logging.warning(
+                f"Deleting cached slice with invalid size: received={existing_size}, "
+                f"expected={length}, file='{final_file_name}'"
+            )
+            os.remove(final_file_name)
 
         if os.path.exists(file_name):
             os.remove(file_name)
@@ -229,9 +378,12 @@ class DataFile:
             with self.data_client.get_stream(path, extra_headers) as r:
                 with open(file_name, 'ba') as file_out:
                     self.temporary_files.add(file_name)
+                    total_received = 0
                     for chunk in r.iter_content(DOWNLOAD_FILE_MEMORY_BUFFER_SIZE):
                         file_out.write(chunk)
+                        total_received += len(chunk)
                         pbar and pbar.update(len(chunk))
+                        progress_guard and progress_guard(total_received)
 
             total_received = os.path.getsize(file_name)
 
@@ -240,6 +392,8 @@ class DataFile:
 
         except Exception as e:
             if os.path.exists(file_name):
+                partial_size = os.path.getsize(file_name)
+                pbar and pbar.update(-partial_size)
                 os.remove(file_name)
             raise
 
@@ -302,8 +456,8 @@ class DataFile:
                                                                                         SUPPORTED_FILE_FORMATS)
                 self._download_htsget_slice(corrected_genomic_range_args, max_retries, output_file, retry_wait)
             else:
-                stats_list = self._download_whole_file(max_retries, max_slice_size, num_connections, output_file,
-                                                       retry_wait, temporary_directory)
+                stats_list = self._download_whole_file_once(max_slice_size, num_connections, output_file,
+                                                            temporary_directory)
                 download_stats_list.extend(stats_list)
 
         return download_stats_list
@@ -335,52 +489,26 @@ class DataFile:
                 bearer_token=self.data_client.auth_client.token)
         DataFile.print_local_file_info_genomic_range('Saved to : ', output_file, genomic_range_args)
 
-    def _download_whole_file(self, max_retries, max_slice_size, num_connections, output_file, retry_wait,
-                             temporary_directory):
-        download_stats_list = []
-        done = False
-        num_retries = 0
+    def _download_whole_file_once(self, max_slice_size, num_connections, output_file, temporary_directory):
+        start_time = datetime.now()
+        try:
+            self.download_file(output_file, num_connections, max_slice_size)
+        except Exception as e:
+            logging.exception(e)
+            error_reason, error_details = self._format_stats_error_reason(e)
+            if DataFile.temporary_files_should_be_deleted:
+                self.delete_temporary_folder(temporary_directory)
 
-        while not done:
-            start_time = datetime.now()
-            try:
-                self.download_file(output_file, num_connections, max_slice_size)
-            except Exception as e:
-                if e is ConnectionError:
-                    logging.info("Failed to connect to data service. Check that the necessary ports are open in your "
-                                 "firewall. See the documentation for more information.")
-                logging.exception(e)
+            failed_stats = Stats.failed(start_time, datetime.now(), self.id, 1, self.size,
+                                        num_connections, error_reason, error_details)
+            self._post_stats_nonfatal(failed_stats)
+            if isinstance(e, AuthenticationError):
+                raise
+            raise MaxRetriesReachedError(f'Download failed: {str(e)}', [failed_stats]) from e
 
-                error_reason, error_details = self._format_stats_error_reason(e)
-
-                if num_retries == max_retries:
-                    if DataFile.temporary_files_should_be_deleted:
-                        self.delete_temporary_folder(temporary_directory)
-
-                    final_failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
-                                                      num_connections, error_reason, error_details)
-                    self._post_stats_nonfatal(final_failed_stats)
-                    download_stats_list.append(final_failed_stats)
-
-                    raise MaxRetriesReachedError(f'Download retries are exhausted, error: {str(e)}',
-                                                 download_stats_list) from e
-
-                failed_stats = Stats.failed(start_time, datetime.now(), self.id, num_retries + 1, self.size,
-                                            num_connections, error_reason, error_details)
-                self._post_stats_nonfatal(failed_stats)
-                download_stats_list.append(failed_stats)
-
-                time.sleep(retry_wait)
-                num_retries += 1
-                logging.info(f"retry attempt {num_retries}")
-            else:
-                succeeded_stats = Stats.succeeded(start_time, datetime.now(), self.id, num_retries + 1, self.size,
-                                                  num_connections)
-                self._post_stats_nonfatal(succeeded_stats)
-                download_stats_list.append(succeeded_stats)
-                done = True
-
-        return download_stats_list
+        succeeded_stats = Stats.succeeded(start_time, datetime.now(), self.id, 1, self.size, num_connections)
+        self._post_stats_nonfatal(succeeded_stats)
+        return [succeeded_stats]
 
     def _post_stats_nonfatal(self, stats):
         try:

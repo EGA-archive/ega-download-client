@@ -3,6 +3,7 @@ import sys
 
 from pyega3.libs import data_file
 from pyega3.libs.data_file import DataFile
+from pyega3.libs.error import AuthenticationError
 from pyega3.libs.utils import status_ok
 
 LEGACY_DATASETS = ["EGAD00000000003", "EGAD00000000004", "EGAD00000000005", "EGAD00000000006", "EGAD00000000007",
@@ -76,5 +77,7 @@ class DataSet:
             try:
                 if status_ok(file.status):
                     file.download_file_retry(num_connections, output_dir, genomic_range_args, max_retries, retry_wait, max_slice_size)
+            except AuthenticationError:
+                raise
             except Exception as e:
                 logging.exception(e)

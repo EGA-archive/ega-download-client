@@ -12,6 +12,7 @@ from os.path import join, abspath, dirname
 from pyega3.libs.auth_client import AuthClient
 from pyega3.libs.credentials import Credentials
 from pyega3.libs.data_client import DataClient
+from pyega3.libs.error import AuthenticationError
 from pyega3.libs.server_config import ServerConfig
 from pyega3.libs.utils import get_client_ip
 from pyega3.libs.data_file import DataFile
@@ -23,7 +24,7 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 
-def main():
+def _main():
     parser = argparse.ArgumentParser(
         description="Download from the European Genome-phenome Archive. Client version: " + VERSION)
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
@@ -80,11 +81,12 @@ def main():
 
     parser_fetch.add_argument(
         "--max-retries", "-M", type=int, default=5,
-        help="The maximum number of times to retry a failed transfer. Any negative number means infinite number of retries.")
+        help="Maximum retries for a genomic-range transfer. Whole-file downloads attempt each slice up to 3 times. "
+             "Any negative number means infinite genomic-range retries.")
 
     parser_fetch.add_argument(
         "--retry-wait", "-W", type=float, default=60,
-        help="The number of seconds to wait before retrying a failed transfer.")
+        help="Seconds to wait before retrying a genomic-range transfer.")
 
     parser_fetch.add_argument("--output-dir", default=os.getcwd(),
                               help="Output directory. The files will be saved into this directory. Must exist. "
@@ -153,5 +155,14 @@ def main():
     execute_subcommand(args, data_client)
 
 
+def main():
+    try:
+        _main()
+    except AuthenticationError as exc:
+        logging.error(str(exc))
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

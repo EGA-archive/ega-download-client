@@ -1,3 +1,7 @@
+class AuthenticationError(Exception):
+    pass
+
+
 class DataFileError(Exception):
     def __init__(self, message: str):
         super().__init__(message)

@@ -1,7 +1,6 @@
 import contextlib
 import json
 import logging
-import time
 
 import requests
 from requests import Session
@@ -9,9 +8,6 @@ from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE
 from urllib3.util import retry
 
 from pyega3.libs.stats import Stats
-
-TELEMETRY_MAX_ATTEMPTS = 3
-TELEMETRY_RETRY_BACKOFF_SECONDS = 1
 
 
 def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=None) -> Session:
@@ -105,23 +101,11 @@ class DataClient:
             yield r
 
     def post_stats(self, stats: Stats):
-        for attempt in range(1, TELEMETRY_MAX_ATTEMPTS + 1):
-            try:
-                return self._post_stats(stats)
-            except requests.exceptions.RequestException as exc:
-                if attempt == TELEMETRY_MAX_ATTEMPTS:
-                    logging.warning("Unable to submit download statistics after %d attempts: %s",
-                                    attempt, exc)
-                    return None
-                logging.warning("Unable to submit download statistics; retrying (%d/%d): %s",
-                                attempt, TELEMETRY_MAX_ATTEMPTS, exc)
-                time.sleep(TELEMETRY_RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1)))
-            except Exception as exc:
-                logging.warning("Unable to submit download statistics: %s", exc)
-                return None
-            except SystemExit as exc:
-                logging.warning("Unable to submit download statistics: authentication exited with code %s", exc.code)
-                return None
+        try:
+            return self._post_stats(stats)
+        except Exception as exc:
+            logging.warning("Unable to submit download statistics: %s", exc)
+            return None
 
     def _post_stats(self, stats: Stats):
         format = '%Y-%m-%dT%H:%M:%S'
