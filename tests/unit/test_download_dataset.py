@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from pyega3.libs.data_file import DataFile
+from pyega3.libs.data_file import DataFile, SLICE_DOWNLOAD_MAX_ATTEMPTS
 from pyega3.libs.data_set import DataSet
 
 
@@ -30,7 +30,8 @@ def test_calls_download_for_every_file_in_dataset(mocked_datafile, mock_data_ser
     for mock_file in mock_files:
         assert len(mock_file.method_calls) == 1
         assert mock_file.method_calls[0] == ('download_file_retry',
-                                             (num_connections, None, None, 5, 5, DataFile.DEFAULT_SLICE_SIZE))
+                                             (num_connections, None, None, 5, 5, DataFile.DEFAULT_SLICE_SIZE,
+                                              SLICE_DOWNLOAD_MAX_ATTEMPTS))
 
 
 @mock.patch("pyega3.libs.data_file.DataFile.from_metadata")
@@ -64,12 +65,13 @@ def test_only_download_available_files(mocked_datafile, mock_server_config, mock
     for mock_file in mock_files[1:]:
         assert len(mock_file.method_calls) == 1
         assert mock_file.method_calls[0] == ('download_file_retry',
-                                             (num_connections, None, None, 5, 5, DataFile.DEFAULT_SLICE_SIZE))
+                                             (num_connections, None, None, 5, 5, DataFile.DEFAULT_SLICE_SIZE,
+                                              SLICE_DOWNLOAD_MAX_ATTEMPTS))
 
 
 def test_no_error_if_md5_mismatch(mock_server_config, mock_data_server, dataset_with_files, mock_auth_client,
                                   mock_data_client):
-    def dfr_throws(p1, p2, p3, p4, p5, p6): raise Exception("bad MD5")
+    def dfr_throws(p1, p2, p3, p4, p5, p6, p7): raise Exception("bad MD5")
 
     with mock.patch("pyega3.libs.data_file.DataFile.download_file_retry", dfr_throws):
         dataset = DataSet(mock_data_client, dataset_with_files.id)
