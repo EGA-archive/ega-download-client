@@ -7,39 +7,43 @@ import time
 import requests
 from tqdm import tqdm
 
+MERGE_BUFFER_SIZE = 1024 * 1024
+
 
 def merge_bin_files_on_disk(target_file_name, files_to_merge, downloaded_file_total_size):
     logging.info('Combining file chunks (this operation can take a long time depending on the file size)')
     start = time.time()
+    merged_md5 = hashlib.md5()
 
     with tqdm(total=int(downloaded_file_total_size), unit='B', unit_scale=True) as pbar:
         os.rename(files_to_merge[0], target_file_name)
-        first_chunk_md5 = calculate_md5(target_file_name)
-        logging.debug(f"Merged first chunk: {files_to_merge[0]}, MD5: {first_chunk_md5}")
-
-        if pbar:
-            pbar.update(os.path.getsize(target_file_name))
+        with open(target_file_name, 'rb') as first_chunk:
+            for chunk in iter(lambda: first_chunk.read(MERGE_BUFFER_SIZE), b''):
+                merged_md5.update(chunk)
+                pbar.update(len(chunk))
 
         with open(target_file_name, 'ab') as target_file:
             for file_name in files_to_merge[1:]:
-                chunk_md5 = calculate_md5(file_name)
-                logging.info(f"Merging chunk: {file_name}, MD5: {chunk_md5}")
+                logging.info(f"Merging chunk: {file_name}")
                 with open(file_name, 'rb') as f:
                     logging.debug(file_name)
-                    copyfileobj(f, target_file, 65536, pbar)
+                    copyfileobj(f, target_file, MERGE_BUFFER_SIZE, pbar, merged_md5)
                 os.remove(file_name)
         pbar.close()
 
     end = time.time()
     logging.debug(f'Merged in {end - start} sec')
+    return merged_md5.hexdigest()
 
 
-def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None):
+def copyfileobj(f_source, f_destination, length=16 * 1024, pbar=None, digest=None):
     while 1:
         buf = f_source.read(length)
         if not buf:
             break
         f_destination.write(buf)
+        if digest is not None:
+            digest.update(buf)
         pbar.update(len(buf))
 
 

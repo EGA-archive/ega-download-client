@@ -247,6 +247,17 @@ def test_temporary_chunk_files_stored_in_temp_folder_with_suffix_tmp(mock_data_s
 
 # Feature: The user can configure the slice sizes used when downloading a file.
 
+def _download_with_mocked_slices(file, mock_download_slice, **kwargs):
+    mock_download_slice.side_effect = lambda *args: args[2]
+
+    def get_size(path):
+        return path if isinstance(path, int) else file.size - 16
+
+    with mock.patch("pyega3.libs.utils.merge_bin_files_on_disk", return_value=file.unencrypted_checksum), \
+            mock.patch("os.path.getsize", side_effect=get_size):
+        file.download_file(**kwargs)
+
+
 def test_the_user_specifies_a_slice_size(mock_data_client):
     # Given: a file that the user has permissions to download and a custom slice size
     file = DataFile(mock_data_client, file_id="EGAF123456", size=12345, unencrypted_checksum="testChecksum")
@@ -254,9 +265,10 @@ def test_the_user_specifies_a_slice_size(mock_data_client):
 
     # When: when the user downloads the file
     with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
-            with mock.patch("os.path.getsize", return_value=file.size):
-                file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
+        _download_with_mocked_slices(
+            file, mock_download_slice,
+            output_file="output_file", num_connections=1, max_slice_size=slice_size
+        )
 
     # Then: the file is downloaded in multiple slices where each slice is at most the custom slice size
     assert mock_download_slice.call_count == 13
@@ -268,9 +280,9 @@ def test_the_user_does_not_specifies_a_slice_size(mock_data_client):
 
     # When: when the user downloads the file
     with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
-            with mock.patch("os.path.getsize", return_value=file.size):
-                file.download_file(output_file="output_file", num_connections=1)
+        _download_with_mocked_slices(
+            file, mock_download_slice, output_file="output_file", num_connections=1
+        )
 
     # Then: The file is downloaded in multiple slices where each slice is at most the default slice size
     assert mock_download_slice.call_count == math.ceil(file.size / DataFile.DEFAULT_SLICE_SIZE)
@@ -289,9 +301,10 @@ def test_the_user_specifies_a_custom_slice_size_different_to_before(mock_data_cl
 
     # When: when the user downloads the file
     with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
-            with mock.patch("os.path.getsize", return_value=file.size):
-                file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
+        _download_with_mocked_slices(
+            file, mock_download_slice,
+            output_file="output_file", num_connections=1, max_slice_size=slice_size
+        )
 
     # Then: the file is downloaded in multiple slices where each slice is at most the custom slice size and delete the old slices with the warning.
     assert mock_download_slice.call_count == 13
@@ -313,9 +326,10 @@ def test_slice_file_is_reused(mock_data_client, mock_data_server, random_binary_
 
     # When: when the user downloads the file
     with mock.patch("pyega3.libs.data_file.DataFile.download_file_slice") as mock_download_slice:
-        with mock.patch("pyega3.libs.utils.md5", return_value=file.unencrypted_checksum):
-            with mock.patch("os.path.getsize", return_value=file.size):
-                file.download_file(output_file="output_file", num_connections=1, max_slice_size=slice_size)
+        _download_with_mocked_slices(
+            file, mock_download_slice,
+            output_file="output_file", num_connections=1, max_slice_size=slice_size
+        )
 
     # Then: the file is downloaded in multiple
     # slices where each slice is at most the custom

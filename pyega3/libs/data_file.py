@@ -165,14 +165,15 @@ class DataFile:
             pbar.close()
 
             downloaded_file_total_size = sum(os.path.getsize(f) for f in results)
-            if downloaded_file_total_size == file_size:
-                utils.merge_bin_files_on_disk(output_file, results, downloaded_file_total_size)
+            if downloaded_file_total_size != file_size:
+                raise SliceError(
+                    f"Downloaded slices total {downloaded_file_total_size} bytes; expected {file_size} bytes"
+                )
+            received_file_md5 = utils.merge_bin_files_on_disk(
+                output_file, results, downloaded_file_total_size
+            )
 
         not_valid_server_md5 = len(str(check_sum or '')) != 32
-
-        logging.info("Calculating md5 (this operation can take a long time depending on the file size)")
-
-        received_file_md5 = utils.md5(output_file, file_size)
 
         logging.info("Verifying file checksum")
 
