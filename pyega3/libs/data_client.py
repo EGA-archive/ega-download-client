@@ -12,22 +12,41 @@ from pyega3.libs.stats import Stats
 
 def create_session_with_retry(retry_policy: retry.Retry = None, pool_max_size=None) -> Session:
     retry_policy = retry_policy or retry.Retry(
-        status_forcelist=[429, 500, 503, 504],
-        # status is the no. of retries if response is in status_forcelist
-        status=10,
-        # total has a default value of 10,
-        # need to set total to a number higher than status so it'll respect the status retry count
-        total=20,
-        # do not retry connection errors
-        connect=False,
-        read=10,
-        # 0.3, 0.6, 1.2, 2.4, 4.8, 9.6, 19.2, 38.4, 76.8, 120 is the BACKOFF_MAX in Retry
-        backoff_factor=0.6
+        # Retry only transient HTTP failures that are expected to recover.
+        status_forcelist=[429, 500, 502, 503, 504],
+
+        # Keep retries bounded so failed download workers return control
+        # instead of spending a long time in nested retry/backoff loops.
+        total=5,
+
+        # Allow a few retries for transient connection establishment failures.
+        connect=3,
+
+        # Retry transient response/read failures without keeping a worker
+        # occupied for an excessive number of attempts.
+        read=3,
+
+        # Limit retries for transient server-side HTTP responses.
+        status=5,
+
+        # SSL/protocol failures may be classified outside connect/read.
+        other=3,
+
+        # Use a short exponential backoff between consecutive attempts.
+        backoff_factor=0.5
     )
+
     session = Session()
+
     POOL_MAX_SIZE = max(DEFAULT_POOLSIZE, pool_max_size or 0)
-    adapter = HTTPAdapter(max_retries=retry_policy, pool_maxsize=POOL_MAX_SIZE)
+
+    adapter = HTTPAdapter(
+        max_retries=retry_policy,
+        pool_maxsize=POOL_MAX_SIZE
+    )
+
     session.mount('https://', adapter)
+
     return session
 
 
@@ -58,7 +77,7 @@ class DataClient:
         headers.update(self.standard_headers)
 
         url = f"{self.metadata_url}{path}"
-        r = self.session.get(url, headers=headers)
+        r = self.session.get(url, headers=headers, timeout=(30, 60))  # Separate connect and read inactivity timeouts for metadata requests.
         r.raise_for_status()
 
         reply = r.json()
@@ -74,15 +93,21 @@ class DataClient:
             headers.update(extra_headers)
 
         url = f'{self.url}{path}'
-        request_timeout_in_sec = 1800  # 30 minutes
-        # TODO The default is 2min and it is too short for receiving 100MB data
-        # however is 30 min a good timeout?
-        with self.session.get(url, headers=headers, stream=True, timeout=request_timeout_in_sec) as r:
+        request_timeout = (30, 60) # Separate connect and read inactivity timeouts for streaming downloads.
+
+        with self.session.get(url, headers=headers, stream=True, timeout=request_timeout) as r:
             self.print_debug_info(url, None, f"Response headers: {r.headers}")
             r.raise_for_status()
             yield r
 
     def post_stats(self, stats: Stats):
+        try:
+            return self._post_stats(stats)
+        except Exception as exc:
+            logging.warning("Unable to submit download statistics: %s", exc)
+            return None
+
+    def _post_stats(self, stats: Stats):
         format = '%Y-%m-%dT%H:%M:%S'
         stats.session_id = self.standard_headers.get('Session-Id')
         stats.user_id = self.auth_client.user_id
@@ -101,7 +126,7 @@ class DataClient:
         }
 
         response = self.session.post(f"{self.stats_url}", json=payload,
-                                     headers={'Authorization': f'Bearer {self.auth_client.token}'})
+                                     headers={'Authorization': f'Bearer {self.auth_client.token}'}, timeout=(30, 60))
 
         if response.status_code != requests.codes.ok:
             logging.warning(f'Failed to report stats to EGA: {json.dumps(payload)}')

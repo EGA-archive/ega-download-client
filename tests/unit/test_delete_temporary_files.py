@@ -6,7 +6,7 @@ import pytest
 import responses
 from requests import PreparedRequest
 
-from pyega3.libs.data_file import DOWNLOAD_FILE_MEMORY_BUFFER_SIZE, DataFile
+from pyega3.libs.data_file import DOWNLOAD_FILE_MEMORY_BUFFER_SIZE, SLICE_DOWNLOAD_MAX_ATTEMPTS, DataFile
 
 test_file_id = 'test_file_id1'
 expected_file_size = DOWNLOAD_FILE_MEMORY_BUFFER_SIZE * 3
@@ -62,15 +62,11 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
     or kept, depending on the TEMPORARY_FILES_SHOULD_BE_DELETED flag.
     """
 
-    number_of_retries = 2
     not_enough_bytes = int(expected_file_size / 3 - 1000)
     content = bytearray(os.urandom(not_enough_bytes))
     output_dir = os.path.dirname(output_file_path)
 
-    # First, normal GET request:
-    mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
-    # Then all the retry attempt:
-    for _ in range(number_of_retries):
+    for _ in range(SLICE_DOWNLOAD_MAX_ATTEMPTS):
         mock_requests.add(responses.GET, f'{mock_server_config.url_api}/files/{file.id}', body=content, status=200)
 
     mock_requests.add_callback(
@@ -79,7 +75,7 @@ def download_with_exception(mock_requests, output_file_path, mock_server_config,
         callback=lambda request: (200, {}, request.body)
     )
     with pytest.raises(Exception) as context_manager:
-        file.download_file_retry(1, output_dir, None, number_of_retries, 0.1)
+        file.download_file_retry(1, output_dir, None, max_retries=0, retry_wait=0)
 
     exception_message = str(context_manager.value)
     assert re.compile(r'Slice error: received=\d+, requested=\d+').search(exception_message)

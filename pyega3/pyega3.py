@@ -12,9 +12,10 @@ from os.path import join, abspath, dirname
 from pyega3.libs.auth_client import AuthClient
 from pyega3.libs.credentials import Credentials
 from pyega3.libs.data_client import DataClient
+from pyega3.libs.error import AuthenticationError
 from pyega3.libs.server_config import ServerConfig
 from pyega3.libs.utils import get_client_ip
-from pyega3.libs.data_file import DataFile
+from pyega3.libs.data_file import DataFile, SLICE_DOWNLOAD_MAX_ATTEMPTS
 from pyega3.libs.commands import execute_subcommand
 
 base_dir = abspath(dirname(__file__))
@@ -23,7 +24,7 @@ session_id = random.getrandbits(32)
 logging_level = logging.INFO
 
 
-def main():
+def _main():
     parser = argparse.ArgumentParser(
         description="Download from the European Genome-phenome Archive. Client version: " + VERSION)
     parser.add_argument("-d", "--debug", action="store_true", help="Extra debugging messages")
@@ -37,6 +38,8 @@ def main():
     parser.add_argument("-t", "--test", action="store_true", help="Test user activated")
     parser.add_argument("-ms", "--max-slice-size", type=int, default=DataFile.DEFAULT_SLICE_SIZE,
                         help="Set maximum size for each slice in bytes (default: 100 MB)")
+    parser.add_argument("--max-slice-attempts", type=int, default=SLICE_DOWNLOAD_MAX_ATTEMPTS,
+                        help="Maximum attempts for each whole-file slice (default: 3)")
     parser.add_argument("-j", "--json", action="store_true", help="Output data in JSON format instead of tables")
     parser.add_argument("-v", "--version", action="store_true",
                         help="Displays the client's version number. Please note, "
@@ -80,11 +83,12 @@ def main():
 
     parser_fetch.add_argument(
         "--max-retries", "-M", type=int, default=5,
-        help="The maximum number of times to retry a failed transfer. Any negative number means infinite number of retries.")
+        help="Maximum retries for a genomic-range transfer. "
+             "Any negative number means infinite retries.")
 
     parser_fetch.add_argument(
         "--retry-wait", "-W", type=float, default=60,
-        help="The number of seconds to wait before retrying a failed transfer.")
+        help="Seconds to wait before retrying a genomic-range transfer.")
 
     parser_fetch.add_argument("--output-dir", default=os.getcwd(),
                               help="Output directory. The files will be saved into this directory. Must exist. "
@@ -95,6 +99,8 @@ def main():
                                    "which were left on the disk after a failed transfer.")
 
     args = parser.parse_args()
+    if args.max_slice_attempts < 1:
+        parser.error("--max-slice-attempts must be at least 1")
     if args.debug:
         global logging_level
         logging_level = logging.DEBUG
@@ -153,5 +159,14 @@ def main():
     execute_subcommand(args, data_client)
 
 
+def main():
+    try:
+        _main()
+    except AuthenticationError as exc:
+        logging.error(str(exc))
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

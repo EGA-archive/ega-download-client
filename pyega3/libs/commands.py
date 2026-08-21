@@ -43,7 +43,8 @@ def fetch_data(args, data_client):
     if args.identifier[3] == 'D':
         dataset = DataSet(data_client, args.identifier)
         dataset.download(args.connections, output_dir, genomic_range_args,
-                         args.max_retries, args.retry_wait, args.max_slice_size)
+                         args.max_retries, args.retry_wait, args.max_slice_size,
+                         args.max_slice_attempts)
     elif args.identifier[3] == 'F':
         file = data_file.DataFile(data_client, args.identifier)
         file.download_file_retry(num_connections=args.connections,
@@ -51,7 +52,8 @@ def fetch_data(args, data_client):
                                  genomic_range_args=genomic_range_args,
                                  max_retries=args.max_retries,
                                  retry_wait=args.retry_wait,
-                                 max_slice_size=args.max_slice_size)
+                                 max_slice_size=args.max_slice_size,
+                                 max_slice_attempts=args.max_slice_attempts)
     else:
         logging.error(
             "Unrecognized identifier - please use EGAD accession for dataset request"
