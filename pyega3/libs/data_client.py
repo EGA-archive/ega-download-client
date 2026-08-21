@@ -58,7 +58,7 @@ class DataClient:
         headers.update(self.standard_headers)
 
         url = f"{self.metadata_url}{path}"
-        r = self.session.get(url, headers=headers)
+        r = self.session.get(url, headers=headers, timeout=(30, 60))  # Separate connect and read inactivity timeouts for metadata requests.
         r.raise_for_status()
 
         reply = r.json()
@@ -100,7 +100,7 @@ class DataClient:
         }
 
         response = self.session.post(f"{self.stats_url}", json=payload,
-                                     headers={'Authorization': f'Bearer {self.auth_client.token}'})
+                                     headers={'Authorization': f'Bearer {self.auth_client.token}'}, timeout=(30, 60))
 
         if response.status_code != requests.codes.ok:
             logging.warning(f'Failed to report stats to EGA: {json.dumps(payload)}')
