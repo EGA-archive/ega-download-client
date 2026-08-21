@@ -74,10 +74,9 @@ class DataClient:
             headers.update(extra_headers)
 
         url = f'{self.url}{path}'
-        request_timeout_in_sec = 1800  # 30 minutes
-        # TODO The default is 2min and it is too short for receiving 100MB data
-        # however is 30 min a good timeout?
-        with self.session.get(url, headers=headers, stream=True, timeout=request_timeout_in_sec) as r:
+        request_timeout = (30, 60) # Separate connect and read inactivity timeouts for streaming downloads.
+
+        with self.session.get(url, headers=headers, stream=True, timeout=request_timeout) as r:
             self.print_debug_info(url, None, f"Response headers: {r.headers}")
             r.raise_for_status()
             yield r
