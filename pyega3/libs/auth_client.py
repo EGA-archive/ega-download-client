@@ -34,13 +34,13 @@ class AuthClient:
                     }
 
             try:
-                r = requests.post(self.url, headers=headers, data=data)
+                r = requests.post(self.url, headers=headers, data=data, timeout=(30, 60))
                 logging.info('')
                 r.raise_for_status()
                 reply = r.json()
                 oauth_token = reply['access_token']
                 logging.info(f"Authentication success for user '{self.credentials.username}'")
-            except ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 logging.exception(f"Could not connect to the authentication service at {self.url}. "
                                   f"Check that the necessary outbound ports are open in your firewall. "
                                   f"See the documentation for more information.")
@@ -61,12 +61,11 @@ class AuthClient:
         if not self._user_id:
             headers = {'Accept': 'application/json', 'Authorization': f'Bearer {self.token}'}
             user_info_url = urljoin(self.url, 'userinfo')
-            r = requests.post(user_info_url, headers=headers)
+            r = requests.post(user_info_url, headers=headers, timeout=(30, 60))
             r.raise_for_status()
             reply = r.json()
             self._user_id = reply.get('sub')
         return self._user_id
-
 
 
 

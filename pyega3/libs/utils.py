@@ -96,7 +96,7 @@ def get_client_ip():
     endpoint = 'https://ipinfo.io/json'
     unknown_status = 'Unknown'
     try:
-        response = requests.get(endpoint, verify=True)
+        response = requests.get(endpoint, verify=True, timeout=(10, 15))
         if response.status_code != 200:
             print('Status:', response.status_code, 'Problem with the request.')
             return unknown_status
